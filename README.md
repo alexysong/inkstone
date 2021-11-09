@@ -1,17 +1,17 @@
 <img src="https://github.com/alexysong/inkstone/blob/main/figs/logo.png" align="middle" alt="logo" width="250">
 
-**Inkstone** simulates the electromagnetic properties of 3D and 2D multi-layered structures with in-plane periodicicy, such as gratings, photonic-crystal slabs, metasurfaces, vertical-cavity or photonic-crystal surface emitting lasers (VCSEL, PCSEL), (patterned) solar cells, nano-antennas, and more.
+**Inkstone** simulates the electromagnetic properties of 3D and 2D multi-layered structures with in-plane periodicity, such as gratings, photonic-crystal slabs, metasurfaces, vertical-cavity or photonic-crystal surface-emitting lasers (VCSEL, PCSEL), (patterned) solar cells, nano-antennas, and more.
 
-Internally, Inkstone implements rigurous couled-wave analysis (RCWA), a. k. a. Fourier Modal Method (FMM). 
+Internally, Inkstone implements rigorous coupled-wave analysis (RCWA), a. k. a. Fourier Modal Method (FMM). 
 
 ### Inkstone can calculate: 
-* the reflection, transmission, and the absorption of the structure
+* the reflection, transmission, and absorption of the structure
 * the total and by-order power fluxes of the propagating and the evanescent waves in each layer
 * electric and magnetic field amplitudes at any locations in the structure,
 * band-structures based on the determinant of the scattering matrix of the structure.
 
 ### Features of Inkstone:
-* It supports efficient and flexible parameter-scanning. You can change part of your sturcture such as the shapes and sizes of some patterns, or some material parameters. Inkstone only recalculates the modified parts and produces the final results efficiently.
+* It supports efficient and flexible parameter-scanning. You can change part of your structure such as the shapes and sizes of some patterns, or some material parameters. Inkstone only recalculates the modified parts and produces the final results efficiently.
 * It allows both tensorial permittivities and tensorial permeabilities, such as in anisotropic, magneto-optical, or gyromagnetic materials. 
 * It can calculate the determinant of the scattering matrix on the complex frequency plane. 
 * Pre-defined shapes of patterns can be used, including rectangular, parallelogram, disk, ellipse, 1D, and polygons. Closed-form Fourier transforms and corrections for Gibbs phenomena are implemented. 
