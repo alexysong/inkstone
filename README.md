@@ -1,4 +1,4 @@
-<img src="figs/logo.png" alt="drawing" width="200"/>
+<img src="figs/logo.png" alt="drawing" width="300"/>
 ====
 
 **Inkstone** simulates the electromagnetic properties of 3D and 2D multi-layered structures with in-plane periodicicy, such as gratings, photonic-crystal slabs, metasurfaces, vertical-cavity or photonic-crystal surface emitting lasers (VCSEL, PCSEL), (patterned) solar cells, nano-antennas, and more.
