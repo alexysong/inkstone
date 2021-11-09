@@ -1,4 +1,4 @@
-<img src="https://github.com/alexysong/inkstone/blob/main/figs/logo.png" align="middle" alt="logo" width="250"/>
+<img src="https://github.com/alexysong/inkstone/blob/main/figs/logo.png" align="middle" alt="logo" width="250">
 
 **Inkstone** simulates the electromagnetic properties of 3D and 2D multi-layered structures with in-plane periodicicy, such as gratings, photonic-crystal slabs, metasurfaces, vertical-cavity or photonic-crystal surface emitting lasers (VCSEL, PCSEL), (patterned) solar cells, nano-antennas, and more.
 
@@ -54,7 +54,7 @@ By this convention, a permittivity of $\varepsilon_r + i\varepsilon_i$ with $\va
 
 ### Coordinates and incident angles
 
-<img src="https://github.com/alexysong/inkstone/blob/main/figs/PhC_slab_vector_incident.svg" alt="drawing" width="300"/>
+<img src="https://github.com/alexysong/inkstone/blob/main/figs/PhC_slab_vector_incident.svg" alt="drawing" width="300">
 
 (Inkstone, **In**cident $\bm{k}$ on **st**acked peri**o**dic **n**ano **e**lectromagnetic structures.)
 
