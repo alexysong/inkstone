@@ -25,7 +25,7 @@ Internally, Inkstone implements rigurous couled-wave analysis (RCWA), a. k. a. F
     $ pip install inkstone
 Or,
 
-    $ git clone git://github.com/alexsong/inkstone
+    $ git clone git://github.com/alexysong/inkstone
     $ pip install .
 
 ### Usage
