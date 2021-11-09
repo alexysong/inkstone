@@ -3,8 +3,6 @@
 
 **Inkstone** simulates the electromagnetic properties of 3D and 2D multi-layered structures with in-plane periodicicy, such as gratings, photonic-crystal slabs, metasurfaces, vertical-cavity or photonic-crystal surface emitting lasers (VCSEL, PCSEL), (patterned) solar cells, nano-antennas, and more.
 
-<!-- Inkstone allows efficient and flexible parameter-sweeping by storing the unmodified parts of the structure and recalculating only the modified parts. -->
-
 Internally, Inkstone implements rigurous couled-wave analysis (RCWA), a. k. a. Fourier Modal Method (FMM). 
 
 ### Inkstone can calculate: 
@@ -48,7 +46,9 @@ We adopt a natural unit system, where vacuum permittivity, permeability, and lig
 
 ### Sign convention
 Sign conventions in electromagnetic waves:
+
 $$e^{i(kx-\omega t)}$$
+
 where $k$ is the wavevector, $x$ is spatial location, $\omega$ is frequency, $t$ is time.
 
 By this convention, a permittivity of $\varepsilon_r + i\varepsilon_i$ with $\varepsilon_i>0$ means material loss, and $\varepsilon_i<0$ means material gain.
