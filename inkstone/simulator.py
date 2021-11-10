@@ -551,7 +551,7 @@ class Inkstone:
 
         if layer.need_recalc_al_bl:
 
-            t1 = time.clock()
+            t1 = time.process_time()
 
             if layer.in_mid_out == 'in':
                 layer.al_bl = (self.pr.ai, self.bi)
@@ -598,7 +598,7 @@ class Inkstone:
             layer.need_recalc_al_bl = False
 
             if self.pr.show_calc_time:
-                print('{:.6f}   al bl'.format(time.clock() - t1))
+                print('{:.6f}   al bl'.format(time.process_time() - t1))
 
     def _calc_bi_ao(self):
         """
@@ -607,7 +607,7 @@ class Inkstone:
         # this takes a little bit of time (~1ms)
 
         if self._need_recalc_bi_ao:
-            t1 = time.clock()
+            t1 = time.process_time()
             ai_v = self.pr.ai.reshape((2 * self.pr.num_g, 1))
             bo_v = self.pr.bo.reshape((2 * self.pr.num_g, 1))
             sm11 = self.sm[0]
@@ -626,7 +626,7 @@ class Inkstone:
             self._need_recalc_bi_ao = False
 
             if self.pr.show_calc_time:
-                print('{:.6f}   bi ao'.format(time.clock() - t1))
+                print('{:.6f}   bi ao'.format(time.process_time() - t1))
 
     def _calc_sm(self):
         """
@@ -635,7 +635,7 @@ class Inkstone:
         # Dynamic csms.
 
         if self._need_recalc_sm:
-            t1 = time.clock()
+            t1 = time.process_time()
 
             n_layers = len(self.layers)
             layersl = list(self.layers.values())
@@ -702,7 +702,7 @@ class Inkstone:
             self._need_recalc_sm = False
 
             if self.pr.show_calc_time:
-                print('{:.6f}   calc sm'.format(time.clock() - t1))
+                print('{:.6f}   calc sm'.format(time.process_time() - t1))
 
     def _calc_csm_layer(self, i: int):
         """
@@ -714,7 +714,7 @@ class Inkstone:
         ----------
         i   :   index of the layer to calculate csm
         """
-        t1 = time.clock()
+        t1 = time.process_time()
 
         layersl = list(self.layers.values())
         if i == len(layersl) - 1:
@@ -742,7 +742,7 @@ class Inkstone:
                     ix = s1[1] + 1
 
         if self.pr.show_calc_time:
-            print('{:.6f}   _calc_csm_layer'.format(time.clock() - t1))
+            print('{:.6f}   _calc_csm_layer'.format(time.process_time() - t1))
 
     def _calc_csmr_layer(self, i: int):
         """
@@ -754,7 +754,7 @@ class Inkstone:
         ----------
         i   :   index of the layer (forward counting) to calculate csmr till (included).
         """
-        t1 = time.clock()
+        t1 = time.process_time()
 
         n_layers = len(self.layers)
         layersl = list(self.layers.values())
@@ -799,7 +799,7 @@ class Inkstone:
                     self.csmsr.insert(ii, (s[0], n_layers - 1, csm))
 
         if self.pr.show_calc_time:
-            print('{:.6f}   _calc_csmr_layer'.format(time.clock() - t1))
+            print('{:.6f}   _calc_csmr_layer'.format(time.process_time() - t1))
 
     def _determine_layers(self):
         """Determine if a layer is the incident or the output layer."""
@@ -819,7 +819,7 @@ class Inkstone:
 
     def _determine_recalc(self):
         """decide the recalculation token of the subroutines in solver"""
-        # t1 = time.clock()
+        # t1 = time.process_time()
 
         n_layers = len(self.layers)
         layersl = list(self.layers.values())
@@ -855,7 +855,7 @@ class Inkstone:
             for layer in self.layers.values():
                 layer.need_recalc_al_bl = True
 
-        # print('determine recalc', time.clock() - t1)
+        # print('determine recalc', time.process_time() - t1)
 
     def solve(self):
         """
@@ -863,7 +863,7 @@ class Inkstone:
 
         All user API that require solving will call this method to solve the structure first.
         """
-        t1 = time.clock()
+        t1 = time.process_time()
 
         if not self.pr.q0_contain_0:
             self._determine_layers()
@@ -873,7 +873,7 @@ class Inkstone:
             self._calc_bi_ao()
 
         if self.pr.show_calc_time:
-            print("{:.6f}   Solving time".format((time.clock() - t1)))
+            print("{:.6f}   Solving time".format((time.process_time() - t1)))
 
     def _calc_field_fs_layer_fb(self,
                                 layer: str,
@@ -1167,7 +1167,7 @@ class Inkstone:
         i = list(self.layers.keys()).index(layer)
         self._calc_al_bl_layer(i)
 
-        t1 = time.clock()
+        t1 = time.process_time()
         exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)
         ex, ey, ez, hx, hy, hz = [a + b for a, b in [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
 
@@ -1184,7 +1184,7 @@ class Inkstone:
             sb = sb.real
 
         if self.pr.show_calc_time:
-            print('{:.6f}   calc flux from coef'.format(time.clock() - t1))
+            print('{:.6f}   calc flux from coef'.format(time.process_time() - t1))
 
         return sf, sb
 
@@ -1198,7 +1198,7 @@ class Inkstone:
         i = list(self.layers.keys()).index(layer)
         self._calc_al_bl_layer(i)
 
-        t1 = time.clock()
+        t1 = time.process_time()
         if type(order) is tuple:
             order = [order]
         idx = np.array([self.pr.idx_g.index(o) for o in order])
@@ -1220,7 +1220,7 @@ class Inkstone:
             sb = sb.real
 
         if self.pr.show_calc_time:
-            print('{:.6f}   calc flux from coef'.format(time.clock() - t1))
+            print('{:.6f}   calc flux from coef'.format(time.process_time() - t1))
 
         return sf, sb
 

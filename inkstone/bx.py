@@ -105,9 +105,9 @@ class Bx:
         -------
 
         """
-        # t0 = time.clock()
+        # t0 = time.process_time()
         _ft = np.array(self.shp.ft(**kw_gibbs), dtype=complex)
-        # print(time.clock()-t0)
+        # print(time.process_time()-t0)
 
         # no way of knowing if its material or that of the outer box changed
         # hence just recalculate every time. It takes no time anyway.
@@ -130,16 +130,16 @@ class Bx:
         mu = mu_inv - mu_out
         mu_inv = mu_inv - mu_out_inv
 
-        # t1 = time.clock()
+        # t1 = time.process_time()
         ep = epsi[None, :, :] * _ft[:, None, None]  # (N, 3, 3) shape
         ei = epsi_inv[None, :, :] * _ft[:, None, None]
         mu = mu[None, :, :] * _ft[:, None, None]
         mi = mu_inv[None, :, :] * _ft[:, None, None]
-        # t2 = time.clock()
+        # t2 = time.process_time()
         # print('ndarray time', t2-t1)
-        # t1 = time.clock()
+        # t1 = time.process_time()
         ep, ei, mu, mi = [[a for a in em] for em in [ep, ei, mu, mi]]
-        # print('convert to list time', time.clock()-t1)
+        # print('convert to list time', time.process_time()-t1)
 
         return ep, ei, mu, mi
 

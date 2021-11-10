@@ -299,7 +299,7 @@ class Layer:
         # todo: implement add material permittivity and permeability complex tensors
         # todo: for uniform layer, is it simpler?
 
-        t1 = time.clock()
+        t1 = time.process_time()
 
         # calculate the Fourier components of the background material.
         mtr = self.materials[self.material_bg]
@@ -324,11 +324,11 @@ class Layer:
         self.mu_inv_fs = mia
 
         if self.pr.show_calc_time:
-            print("{:.6f}   _calc_ep_mu_fs_3d".format(time.clock() - t1) + ", layer "+self.name)
+            print("{:.6f}   _calc_ep_mu_fs_3d".format(time.process_time() - t1) + ", layer "+self.name)
 
     def _cons_ep_mu_cm_3d(self):
         """ Construct epsilon and mu convolution matrices """
-        t1 = time.clock()
+        t1 = time.process_time()
 
         if self.patterns:
             idx = self.pr.idx_conv_mtx
@@ -355,7 +355,7 @@ class Layer:
                 = [np.diag(np.full(self.pr.num_g, em[i, j], dtype=complex)) for em in [epsi_bg, epsi_bg_inv, mu_bg, mu_bg_inv] for i, j in [(0, 0), (0, 1), (1, 0), (1, 1), (2, 2)]]
 
         if self.pr.show_calc_time:
-            print("{:.6f}   _cons_ep_mu_cm_3d".format(time.clock() - t1) + ", layer "+self.name)
+            print("{:.6f}   _cons_ep_mu_cm_3d".format(time.process_time() - t1) + ", layer "+self.name)
 
     def reconstruct(self,
                     n1: int = None,
@@ -419,7 +419,7 @@ class Layer:
     def _calc_PQ_3d(self):
         """Calculate the P and Q matrix"""
 
-        t1 = time.clock()
+        t1 = time.process_time()
 
         o = self.pr.omega
         epxx, epxy, epyx, epyy, epzz, \
@@ -452,12 +452,12 @@ class Layer:
         self.Q = Q
 
         if self.pr.show_calc_time:
-            print("{:.6f}   _calc_PQ_3d".format(time.clock() - t1) + ", layer "+self.name)
+            print("{:.6f}   _calc_PQ_3d".format(time.process_time() - t1) + ", layer "+self.name)
 
     def _calc_eig_3d(self):
         """ Calculate the eigen modes in the layer """
 
-        t1 = time.clock()
+        t1 = time.process_time()
 
         ql2, self.phil = la.eig(- self.P @ self.Q)
         self._rad_cha = np.where(ql2.real > 0)[0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
@@ -471,12 +471,12 @@ class Layer:
         # self.psil = 1j * sla.solve(self.P, self.phil) @ np.diag(self.ql)
 
         if self.pr.show_calc_time:
-            print("{:.6f}   _calc_eig_3d".format(time.clock() - t1) + ", layer "+self.name)
+            print("{:.6f}   _calc_eig_3d".format(time.process_time() - t1) + ", layer "+self.name)
 
     def _calc_eig_3d_uniform(self):
         """ Efficient calculation of eigen for uniform layer """
 
-        t1 = time.clock()
+        t1 = time.process_time()
 
         if self.is_vac:
             self.ql = self.pr.q0
@@ -553,7 +553,7 @@ class Layer:
             self.psil = psil
 
         if self.pr.show_calc_time:
-            print("{:.6f}   _calc_eig_3d_uniform".format(time.clock() - t1) + ", layer "+self.name)
+            print("{:.6f}   _calc_eig_3d_uniform".format(time.process_time() - t1) + ", layer "+self.name)
 
     def _calc_eig_2d(self):
         """
@@ -566,7 +566,7 @@ class Layer:
         *   no off-diagonal components in permittivity and permeability
         *   incident waves in x-z plane, no phi rotation.
         """
-        t1 = time.clock()
+        t1 = time.process_time()
 
         o = self.pr.omega
         eixx = self.eixxcm
@@ -639,12 +639,12 @@ class Layer:
         self._rad_cha = _rc[0] + [a+self.pr.num_g for a in _rc[1]]
 
         if self.pr.show_calc_time:
-            print("{:.6f}   _calc_eig_2d".format(time.clock() - t1) + ", layer "+self.name)
+            print("{:.6f}   _calc_eig_2d".format(time.process_time() - t1) + ", layer "+self.name)
 
     def _calc_im(self):
         """Calculate the interface matrix."""
 
-        t1 = time.clock()
+        t1 = time.process_time()
 
         if self.is_vac:
             self.im = self.pr.im0
@@ -653,12 +653,12 @@ class Layer:
             self.im = (al0, bl0)
 
         if self.pr.show_calc_time:
-            print("{:.6f}   _calc_im".format(time.clock() - t1) + ", layer "+self.name)
+            print("{:.6f}   _calc_im".format(time.process_time() - t1) + ", layer "+self.name)
 
     def _calc_sm(self):
         """ calculate the scattering matrix of current layer """
 
-        t1 = time.clock()
+        t1 = time.process_time()
 
         if self.is_vac and self.thickness == 0:
             self.sm = self.pr.sm0
@@ -677,7 +677,7 @@ class Layer:
             self.sm = sm
 
         if self.pr.show_calc_time:
-            print("{:.6f}   _calc_sm layer".format(time.clock() - t1) + ", layer "+self.name)
+            print("{:.6f}   _calc_sm layer".format(time.process_time() - t1) + ", layer "+self.name)
 
     def solve(self):
         """
@@ -686,7 +686,7 @@ class Layer:
         -------
 
         """
-        t1 = time.clock()
+        t1 = time.process_time()
 
         if self.if_mod:
             self._calc_ep_mu_fs_3d()
@@ -706,5 +706,5 @@ class Layer:
             self.if_t_change = False
 
         if self.pr.show_calc_time:
-            print('{:.6f}'.format(time.clock() - t1) + '   layer ' + self.name + ' solve total')
+            print('{:.6f}'.format(time.process_time() - t1) + '   layer ' + self.name + ' solve total')
 

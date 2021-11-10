@@ -100,18 +100,18 @@ class LayerCopy:
         return self.layer.rad_cha
 
     def solve(self):
-        t1 = time.clock()
+        t1 = time.process_time()
         if self.layer.if_mod or self._if_t_change:
             self.layer.solve()
             self._calc_sm()
             self._if_t_change = False
         if self.layer.pr.show_calc_time:
-            print('{:.6f}'.format(time.clock() - t1) + '   layer ' + self.name+' solve (layer copy)')
+            print('{:.6f}'.format(time.process_time() - t1) + '   layer ' + self.name+' solve (layer copy)')
 
     def _calc_sm(self):
         """ calculate the scattering matrix of current layer """
 
-        t1 = time.clock()
+        t1 = time.process_time()
 
         if self.is_vac and self.thickness == 0:
             self.sm = self.layer.pr.sm0
@@ -130,5 +130,5 @@ class LayerCopy:
             self.sm = sm
 
         if self.layer.pr.show_calc_time:
-            print('{:.6f}   _calc_sm  (layer copy)'.format(time.clock() - t1))
+            print('{:.6f}   _calc_sm  (layer copy)'.format(time.process_time() - t1))
 

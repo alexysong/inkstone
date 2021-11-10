@@ -396,14 +396,14 @@ class Params:
     def _calc_Km(self):
         """Calculate Kx Ky matrices"""
         if self.ks:
-            # t1 = time.clock()
+            # t1 = time.process_time()
             ksa = np.array(self.ks)  # Nx2 shape
             kx = ksa[:, 0]
             ky = ksa[:, 1]
             self.Kx = kx
             self.Ky = ky
 
-            # print('_calc_Km', time.clock() - t1)
+            # print('_calc_Km', time.process_time() - t1)
 
             self._calc_P0Q0()
 
@@ -414,7 +414,7 @@ class Params:
 
     def _calc_ks_ep_mu(self):
         if self.idx_g:
-            # t1 = time.clock()
+            # t1 = time.process_time()
 
             m, n = max_idx_diff(self.idx_g)
             self.mmax = m
@@ -423,12 +423,12 @@ class Params:
             y = np.arange(-n, n+1)
             xx, yy = np.meshgrid(x, y)
 
-            # t2 = time.clock()
+            # t2 = time.process_time()
 
             self.idx_g_ep_mu = list(zip(xx.ravel(), yy.ravel()))
             self.idxa_g_ep_mu = (xx, yy)
 
-            # t3 = time.clock()
+            # t3 = time.process_time()
 
             b1, b2 = self.recipr_vec
             b1n, b2n = [la.norm(b) for b in [b1, b2]]
@@ -445,12 +445,12 @@ class Params:
 
             # print(t2 - t1)
             # print(t3 - t2)
-            # print(time.clock() - t3)
-            # print('_calc_ks_ep_mu', time.clock()-t1)
+            # print(time.process_time() - t3)
+            # print('_calc_ks_ep_mu', time.process_time()-t1)
 
     def _calc_q0(self):
         if self._num_g_ac and (self.omega is not None) and self.ks:
-            # t1 = time.clock()
+            # t1 = time.process_time()
             k_parallel = np.linalg.norm(np.array(self.ks), axis=-1)
             q02 = np.ones(self._num_g_ac) * np.square(self.omega) - np.square(k_parallel) + 0j
             self._rad_cha_0 = np.where(q02.real > 0)[0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
@@ -475,12 +475,12 @@ class Params:
                 q0[q0.imag < 0] *= -1
             # todo: what to do at q02.real == 0 case (Woods)
             self.q0 = np.concatenate([q0, q0])
-            # print('_calc_q0', time.clock() - t1)
+            # print('_calc_q0', time.process_time() - t1)
             self._calc_psi0()
 
     def _calc_P0Q0(self):
         if (self.omega is not None) and (self.Kx is not None) and (self.Ky is not None):
-            # t1 = time.clock()
+            # t1 = time.process_time()
 
             Kx = self.Kx
             Ky = self.Ky
@@ -491,7 +491,7 @@ class Params:
             P21 = -o + 1. / o * Ky * Ky
             P22 = - 1. / o * Ky * Kx
 
-            # t2 = time.clock()
+            # t2 = time.process_time()
             # print('P0 Q0 blocks', t2 - t1)
 
             self.P0_val = (P11, P12, P21, P22)
@@ -505,7 +505,7 @@ class Params:
 
     def _calc_psi0(self):
         if (self.Q0_val is not None) and (self.q0 is not None) and (self._num_g_ac is not None):
-            # t1 = time.clock()
+            # t1 = time.process_time()
             with np.errstate(divide='raise'):
                 try:
                     q0_inv = 1. / self.q0
@@ -525,7 +525,7 @@ class Params:
                     warn("Vacuum propagation constant 0 encountered. Possibly Wood's anomaly. Structure not solved.", RuntimeWarning)
                     self.q0_contain_0 = True
 
-            # print('_calc_psi0', time.clock() - t1)
+            # print('_calc_psi0', time.process_time() - t1)
 
     def _calc_im0(self):
         if self._num_g_ac:
@@ -537,13 +537,13 @@ class Params:
         """calculate vacuum scattering matrix"""
         # todo: change into sparse to save memory
         if self._num_g_ac:
-            # t1 = time.clock()
+            # t1 = time.process_time()
             s11_0 = np.zeros((2 * self._num_g_ac, 2 * self._num_g_ac), dtype=complex)
             s12_0 = np.eye(2 * self._num_g_ac, dtype=complex)
             s21_0 = s12_0
             s22_0 = s11_0
             self.sm0 = (s11_0, s12_0, s21_0, s22_0)
-            # print('_calc_s_0_3d', time.clock() - t1)
+            # print('_calc_s_0_3d', time.process_time() - t1)
 
     @property
     def uc_area(self) -> float:
@@ -572,7 +572,7 @@ class Params:
         This is used for setting incidence in high orders.
         """
         if self.ks:
-            # t1 = time.clock()
+            # t1 = time.process_time()
 
             cphi = np.zeros(self._num_g_ac, complex)
             sphi = np.zeros(self._num_g_ac, complex)
@@ -605,13 +605,13 @@ class Params:
             self.cos_varthetas = list(cthe)
             self.sin_varthetas = list(sthe)
 
-            # print('_calc_angles', time.clock()-t1)
+            # print('_calc_angles', time.process_time()-t1)
         self.calc_ai_bo_3d()
 
     def calc_ai_bo_3d(self):
         """calculate incident ai and bo amplitudes"""
 
-        # t1 = time.clock()
+        # t1 = time.process_time()
 
         aibo = [self.ai, self.bo]
         for ii, (sa, pa, od) in enumerate([[self._s_amps, self._p_amps, self._incident_orders], [self._s_amps_bk, self._p_amps_bk, self._incident_orders_bk]]):
@@ -628,5 +628,5 @@ class Params:
                         ab[i + self._num_g_ac] = s * self.cos_phis[i] + p * self.sin_varthetas[i] * self.sin_phis[i]  # e_y
                 aibo[ii] = ab
         self.ai, self.bo = aibo
-        # print('calc_ai_bo_3d', time.clock() - t1)
+        # print('calc_ai_bo_3d', time.process_time() - t1)
 
