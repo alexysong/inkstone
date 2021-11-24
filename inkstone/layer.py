@@ -261,7 +261,7 @@ class Layer:
                         if (r1[0] < bx2.shp.side_lengths[0] / 2.) and (r1[1] < bx2.shp.side_lengths[1] / 2.):
                             bx1.outside = bx2
                             break
-                    if bx2.shp.shape == 'parallelogram':
+                    elif bx2.shp.shape == 'parallelogram':
                         shp: Para = bx2.shp
                         r = np.array(pt1) - np.array(shp.center)
                         a = shp.angle * np.pi / 180.
