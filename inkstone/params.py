@@ -220,7 +220,7 @@ class Params:
         return self._k_inci
 
     @property
-    def theta(self) -> float:
+    def theta(self) -> Union[float, complex]:
         """he angle between incident k and z axis, in degrees, range: [0, pi/2]"""
         if self._theta is not None:
             theta = self._theta / np.pi * 180.
@@ -229,7 +229,7 @@ class Params:
         return theta
 
     @theta.setter
-    def theta(self, val: float):
+    def theta(self, val: Union[float, complex]):
         if val is not None:
             self._theta: float = val * np.pi / 180.
             self._calc_k_inci()
@@ -269,7 +269,7 @@ class Params:
         """
         return self._ccnif
 
-    @ ccnif.setter
+    @ccnif.setter
     def ccnif(self, val):
         if (val == "physical") or (val == "ac"):
             self._ccnif = val
@@ -359,8 +359,8 @@ class Params:
 
     def _calc_k_inci(self):
         if (self.theta is not None) and (self.phi is not None) and (self.omega is not None):
-            kx = self.omega.real * np.sin(self._theta) * np.cos(self._phi)
-            ky = self.omega.real * np.sin(self._theta) * np.sin(self._phi)
+            kx = self.omega.real * np.cos(np.pi/2 - self._theta) * np.cos(self._phi)
+            ky = self.omega.real * np.cos(np.pi/2 - self._theta) * np.sin(self._phi)
             # todo: using self.omega (kx ky complex) also gives answers, physical meaning is different
             self._k_inci: Tuple[float, float] = (kx, ky)
             self._calc_ks()
@@ -522,7 +522,8 @@ class Params:
                     self.psi0 = psi0
 
                 except FloatingPointError:
-                    warn("Vacuum propagation constant 0 encountered. Possibly Wood's anomaly. Structure not solved.", RuntimeWarning)
+                    warn("Vacuum propagation constant 0 encountered. Possibly Wood's anomaly.", RuntimeWarning)
+                    # print(self.frequency, self.k_inci, self.theta, self.q0, self.ks, self.idx_g)
                     self.q0_contain_0 = True
 
             # print('_calc_psi0', time.process_time() - t1)
@@ -590,7 +591,7 @@ class Params:
             sphi[i0] = 0.
             cphi[ib] = ksa[ib, 0] / k_pa[ib]
             sphi[ib] = ksa[ib, 1] / k_pa[ib]
-            cthe = k_pa / self.omega
+            cthe = k_pa / self.omega + 0j
             sthe = np.sqrt(1 - cthe**2 + 0j)
 
             # these ensure the incident channel has real cos, sin

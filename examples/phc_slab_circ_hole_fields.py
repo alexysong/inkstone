@@ -44,7 +44,7 @@ from matplotlib import pyplot as plt
 
 plt.pcolormesh(np.linspace(-0.5, 0.5, 101),
                np.linspace(-0.2, 0.7, 91),
-               np.abs(Ex))
+               np.abs(Ex[0, :, :]).T, shading='gouraud')
 plt.xlabel('x')
 plt.ylabel('z')
 plt.colorbar()

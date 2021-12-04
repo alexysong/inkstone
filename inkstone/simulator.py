@@ -359,9 +359,11 @@ class Inkstone:
         """
         Add a pattern to a layer.
 
+        The shapes should not intersect with one another, but may be contained in one another or share a side.
+
         Parameters
         ----------
-        layer      :   the name of the layer to add the pattern
+        layer           :   the name of the layer to add the pattern
         material        :   name of the material in this pattern.
         shape           :   {'rectangle', 'disk', 'ellipse', 'polygon', '1d'}
                             for 2d calculations (1d in-plane), all patterns should be in '1d' shape.
@@ -488,7 +490,7 @@ class Inkstone:
         self.layers[layer_name].set_box(pattern_name, **kwargs)
 
     def SetExcitation(self,
-                      theta: float = None,
+                      theta: Union[float, complex] = None,
                       phi: float = None,
                       s_amplitude: Optional[Union[float, complex, List[Union[float, complex]]]] = None,
                       p_amplitude: Optional[Union[float, complex, List[Union[float, complex]]]] = None,
@@ -505,8 +507,8 @@ class Inkstone:
         theta               :
         phi                 :
                                 incident angles.
-                                theta is the oblique angle from normal (z).
-                                phi is the azimuthal angle, the angle from x axis to the in-plane projection of the incident k, ccw means positive.
+                                `theta` is the oblique angle from normal (z).
+                                `phi` is the azimuthal angle, the angle from x axis to the in-plane projection of the incident k, ccw means positive.
         s_amplitude         :   "s" means electric field parallel to xy plane, perpendicular to incident plane
                                 The incident plane contains z and k.
         p_amplitude         :   "p" means electric field polarized in the incident plane.
@@ -884,8 +886,9 @@ class Inkstone:
         Parameters
         ----------
         layer
-        z           :
-                        one z point or list of z points, z is reference to the interface between layer l-1 and l, i.e. 'start' of this layer or the 'left' interface of the layer
+        z : array_like
+            z is reference to the interface between layer l-1 and l, i.e. 'start' of this layer or the 'left' interface of the layer.
+            These points don't need to any particular ordering, neither do they need to be on a regular grid.
 
         Returns
         -------
@@ -936,49 +939,52 @@ class Inkstone:
                                  xy: Union[Tuple[float, float], List[Tuple[float, float]]],
                                  z: Union[float, List[float], np.ndarray, Tuple[float]] = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
-        Calculate fields at the list of (x, y) points in each z plane given in the z list.
+        Calculate fields at the list of (x, y) points defined in `xy` in each z plane in the `z` list.
 
-        This is the most versatile possible API for calculating the physical fields at different locations that we can still do calculations efficiently in numpy array operations.
+        This is the most versatile possible API for calculating the physical fields at different locations that is still efficient by using numpy array operations.
 
         Parameters
         ----------
-        layer
-        xy
-        z           :
-                        a z point or list of z points, z is reference to the interface between layer l-1 and l, i.e. 'start' of this layer or the 'left' interface of the layer
+        layer :
+            name of the layer
+        xy :  a single tuple or a list of tuples.
+            This is a list of random (x, y) points. These points don't need to any particular ordering, neither do they need to be on a regular grid.
+        z : array_like.
+            A list of random z points. These points don't need to any particular ordering, neither do they need to be on a regular grid.
 
         Returns
         -------
-        Ex
-        Ey
-        Ez
-        Hx
-        Hy
-        Hz  :
-                fields as ndarray at the given spatial points
-                each of them has (M, N), where M=len(xy), N=len(z)
+        Ex, Ey, Ez, Hx, Hy, Hz :
+            The returned field. Each is a 2d `numpy.ndarray`. The 1st index corresponds to the points in the `xy` list and the 2nd index corresponds to the `z` list.
         """
-        # solve structure first
-        self.solve()
-        i = list(self.layers.keys()).index(layer)
-        self._calc_al_bl_layer(i)
-
-        exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)  # each has shape (num_g, N) where N is length of z list
-        ex, ey, ez, hx, hy, hz = [a + b for a, b in [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
-
         if type(xy) is tuple:
             xy = [xy]
-        xa, ya = np.hsplit(np.array(xy), 2)  # 2d array with one column
+        if not hasattr(z, '__len__'):
+            z = [z]
 
-        kxa, kya = np.hsplit(np.array(self.pr.ks), 2)  # 2d array with one column
+        if not self.pr.q0_contain_0:
+            # solve structure first
+            self.solve()
+            i = list(self.layers.keys()).index(layer)
+            self._calc_al_bl_layer(i)
 
-        phase = xa * kxa.T + ya * kya.T
+            exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)  # each has shape (num_g, len(z))
+            ex, ey, ez, hx, hy, hz = [a + b for a, b in [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
 
-        Ex, Ey, Ez = [np.exp(1j * phase) @ e for e in [ex, ey, ez]]  # (M, N) shape, M=len(xy), N=len(z)
+            xa, ya = np.hsplit(np.array(xy), 2)  # 2d array with one column
 
-        Hx, Hy, Hz = [-1j * np.exp(1j * phase) @ h for h in [hx, hy, hz]]  # (M, N) shape, M=len(xy), N=len(z)
+            kxa, kya = np.hsplit(np.array(self.pr.ks), 2)  # 2d array with one column
 
-        return Ex.T, Ey.T, Ez.T, Hx.T, Hy.T, Hz.T
+            phase = xa * kxa.T + ya * kya.T  # shape (len(xy), numg)
+
+            Ex, Ey, Ez = [(np.exp(1j * phase) @ e) for e in [ex, ey, ez]]  # shape (len(xy), len(z))
+
+            Hx, Hy, Hz = [(-1j * np.exp(1j * phase) @ h) for h in [hx, hy, hz]]  # shape (len(xy), len(z))
+
+        else:
+            Ex, Ey, Ez, Hx, Hy, Hz = [np.nan*np.zeros((len(xy), len(z))) for i in range(6)]
+
+        return Ex, Ey, Ez, Hx, Hy, Hz
 
     def GetLayerFields(self,
                        layer: str,
@@ -994,7 +1000,7 @@ class Inkstone:
                        x: Union[float, List[float], np.ndarray, Tuple[float]] = None,
                        y: Union[float, List[float], np.ndarray, Tuple[float]] = None,
                        z: Union[float, List[float], np.ndarray, Tuple[float]] = None,
-                       ):
+                       ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Get fields at spatial locations (x, y, z) in a layer.
 
@@ -1002,14 +1008,19 @@ class Inkstone:
 
         Parameters
         ----------
-        layer
-        x
-        y
-        z   :   z is with reference to the interface between previous layer and this one. i.e. the incident side interface of this layer.
+        layer :
+            name of the layer.
+        xmin, xmax, nx, ymin, ymax, ny, zmin, zmax, nz :
+            the limits (included) and the number of points in each direction. Field values on the 3d grid points spanned will be returned.
+            Note `z` is with reference to the interface between previous layer and this one, i.e. the incident-side interface of this layer.
+        x, y, z : array_like
+            `x` overrides `xmin`, `xmax`, and `nx`. `y` overrides `ymin`, `ymax`, and `ny`. `z` overrides `zmin`, `zmax`, and `nz`.
+            Note `z` is with reference to the interface between previous layer and this one, i.e. the incident-side interface of this layer.
 
         Returns
         -------
-
+        Ex, Ey, Ez, Hx, Hy, Hz :
+            Each is an `numpy.ndarray` in Cartesian indexing, i.e. (y, x, z).
         """
         uu = []
         for c, min, max, n, s in zip([x, y, z],
@@ -1030,26 +1041,31 @@ class Inkstone:
         xx, yy = np.meshgrid(x, y)
         xy = list(zip(xx.ravel(), yy.ravel()))
 
-        return self.GetLayerFieldsListPoints(layer, xy, z)
+        fields = self.GetLayerFieldsListPoints(layer, xy, z)
+
+        Ex, Ey, Ez, Hx, Hy, Hz = [a.reshape(*(xx.shape), len(z)) for a in fields]
+
+        return Ex, Ey, Ez, Hx, Hy, Hz
 
     def GetFieldsListPoints(self,
                             xy: Union[Tuple[float, float], List[Tuple[float, float]]],
                             z: Union[float, List[float], np.ndarray, Tuple[float]] = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
-        Calculate fields at the list of (x, y) points in each z plane given in z.
+        Calculate fields at the list of (x, y) points defiend by `xy` in each z plane in the `z` list.
 
-        The input (x, y) can be a single tuple, or a list of tuples. They don't have to be on a grid.
-        z can be a single point, or a list of points. z don't have to be on a grid, or have any ordering.
-
-        This is the most versatile possible API for calculating the physical fields at different locations that we can still do calculations efficiently in numpy array operations.
+        This is the most versatile possible API for calculating the physical fields at different locations that is still efficient by using numpy array operations.
 
         Parameters
         ----------
-        xy
-        z
+        xy :  a single tuple or a list of tuples.
+            This is a list of random (x, y) points. These points don't need to any particular ordering, neither do they need to be on a regular grid.
+        z : array_like.
+            A list of random z points. These points don't need to any particular ordering, neither do they need to be on a regular grid.
 
         Returns
         -------
+        Ex, Ey, Ez, Hx, Hy, Hz :
+            The returned field. Each is a 2d `numpy.ndarray`. The 1st index corresponds to the points in the `xy` list and the 2nd index corresponds to the `z` list.
 
         """
         self.solve()
@@ -1061,7 +1077,7 @@ class Inkstone:
         else:
             za = np.array([z])
 
-        Fields = [np.zeros((len(z), len(xy)), dtype=complex) for i in range(6)]
+        Fields = [np.zeros((len(xy), len(z)), dtype=complex) for i in range(6)]
 
         z_interfaces = self.thicknesses_c[:-1]  # -1 is output with thickness 0
 
@@ -1076,7 +1092,7 @@ class Inkstone:
             if z_l:
                 fields = self.GetLayerFieldsListPoints(ll[idx], xy, z_l)
                 for F, f in zip(Fields, fields):
-                    F[iin, :] = f
+                    F[:, iin] = f
 
         Ex, Ey, Ez, Hx, Hy, Hz = Fields
 
@@ -1095,34 +1111,21 @@ class Inkstone:
                   x: Union[float, List[float], np.ndarray, Tuple[float]] = None,
                   y: Union[float, List[float], np.ndarray, Tuple[float]] = None,
                   z: Union[float, List[float], np.ndarray, Tuple[float]] = None,
-                  ):
+                  ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
-        Get fields at spatial locations.
-
-        Can define the region by giving the limits in x, y, and z, and the number of points in the three directions.
-
-        Alternatively, can directly give the coordinates in (x, y, z), which will override the limits.
-
-        If x, y and z are lists, then the fields at the 3d grid points defined by these lists are returned. This also overrides the limits defined in xmin, nx, etc.
+        Calculate fields on a 3D grid.
 
         Parameters
         ----------
-        xmin
-        xmax
-        nx
-        ymin
-        ymax
-        ny
-        zmin
-        zmax
-        nz
-        x
-        y
-        z
+        xmin, xmax, nx, ymin, ymax, ny, zmin, zmax, nz :
+            the limits (included) and the number of points in each direction. Field values on the 3d grid points spanned will be returned.
+        x, y, z : array_like
+            `x` overrides `xmin`, `xmax`, and `nx`. `y` overrides `ymin`, `ymax`, and `ny`. `z` overrides `zmin`, `zmax`, and `nz`.
 
         Returns
         -------
-
+        Ex, Ey, Ez, Hx, Hy, Hz :
+            Each is an `numpy.ndarray` in Cartesian indexing, i.e. (y, x, z).
         """
 
         uu = []
@@ -1144,47 +1147,61 @@ class Inkstone:
         xx, yy = np.meshgrid(x, y)
         xy = list(zip(xx.ravel(), yy.ravel()))
 
-        return self.GetFieldsListPoints(xy, z)
+        fields = self.GetFieldsListPoints(xy, z)
+
+        Ex, Ey, Ez, Hx, Hy, Hz = [a.reshape(*(xx.shape), len(z)) for a in fields]
+
+        return Ex, Ey, Ez, Hx, Hy, Hz
 
     def GetPowerFlux(self,
                      layer: str,
                      z: Union[float, List[float]] = None
                      ) -> Tuple[Union[float, np.ndarray], Union[float, np.ndarray]]:
         """
-        get the power flux in z direction in a layer at given z points.
+        get the power flux in z direction in a layer at the given `z` points.
+
         Parameters
         ----------
-        layer
-        z
+        layer :
+            name of the layer
+        z : array_like
+            a list of random points. These points don't need to any particular ordering, neither do they need to be on a regular grid.
 
         Returns
         -------
-        sf, sb  :   forward and backward power flux. 1d numpy ndarray of length equal to length of z
+        sf, sb :
+            forward and backward power flux. Each is an 1d `numpy.ndarray` of length equal to the number of `z` points.
 
         """
 
-        self.solve()
-        i = list(self.layers.keys()).index(layer)
-        self._calc_al_bl_layer(i)
+        if not self.pr.q0_contain_0:
 
-        t1 = time.process_time()
-        exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)
-        ex, ey, ez, hx, hy, hz = [a + b for a, b in [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
+            self.solve()
+            i = list(self.layers.keys()).index(layer)
+            self._calc_al_bl_layer(i)
 
-        sf = -1.j / 4. * ((np.einsum('i...,i...', ex.conj(), hyf) - np.einsum('i...,i...', ey.conj(), hxf))
-                          - (np.einsum('i...,i...', hy.conj(), exf) - np.einsum('i...,i...', hx.conj(), eyf)))  # 1d array of length len(z)
-        sb = -1.j / 4. * ((np.einsum('i...,i...', ex.conj(), hyb) - np.einsum('i...,i...', ey.conj(), hxb))
-                          - (np.einsum('i...,i...', hy.conj(), exb) - np.einsum('i...,i...', hx.conj(), eyb)))
+            t1 = time.process_time()
+            exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)
+            ex, ey, ez, hx, hy, hz = [a + b for a, b in [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
 
-        if sf.size == 1:
-            sf = sf[0].real
-            sb = sb[0].real
+            sf = -1.j / 4. * ((np.einsum('i...,i...', ex.conj(), hyf) - np.einsum('i...,i...', ey.conj(), hxf))
+                              - (np.einsum('i...,i...', hy.conj(), exf) - np.einsum('i...,i...', hx.conj(), eyf)))  # 1d array of length len(z)
+            sb = -1.j / 4. * ((np.einsum('i...,i...', ex.conj(), hyb) - np.einsum('i...,i...', ey.conj(), hxb))
+                              - (np.einsum('i...,i...', hy.conj(), exb) - np.einsum('i...,i...', hx.conj(), eyb)))
+
+            if sf.size == 1:
+                sf = sf[0].real
+                sb = sb[0].real
+            else:
+                sf = sf.real
+                sb = sb.real
+
+            if self.pr.show_calc_time:
+                print('{:.6f}   calc flux from coef'.format(time.process_time() - t1))
+
         else:
-            sf = sf.real
-            sb = sb.real
-
-        if self.pr.show_calc_time:
-            print('{:.6f}   calc flux from coef'.format(time.process_time() - t1))
+            sf = float('nan')
+            sb = float('nan')
 
         return sf, sb
 
@@ -1192,75 +1209,182 @@ class Inkstone:
                           layer: str,
                           order: Union[Tuple[int, int], List[Tuple[int, int]]],
                           z: Union[float, List[float]] = None) -> Tuple[np.ndarray, np.ndarray]:
-        """get the power flux of given orders in z direction in a layer at given z points."""
+        """
+        Get the power flux of given orders defined by `order` in z direction in a layer at the given `z` points.
 
-        self.solve()
-        i = list(self.layers.keys()).index(layer)
-        self._calc_al_bl_layer(i)
+        Parameters
+        ----------
+        layer :
+            name of the layer
+        order :
+            Fourier order defined by (i, j) or a list of (i, j) where i and j are integers.
+        z : array_like
+            a list of random points. These points don't need to any particular ordering, neither do they need to be on a regular grid.
 
-        t1 = time.process_time()
-        if type(order) is tuple:
-            order = [order]
-        idx = np.array([self.pr.idx_g.index(o) for o in order])
+        Returns
+        -------
+        sf, sb :
+            forward and backward power flux. Each is an 1d `numpy.ndarray` of length equal to the number of `z` points.
 
-        exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)
+        See Also
+        --------
+        GetPowerFlux
 
-        ex, ey, hx, hy = [a + b for a, b in [(exf, exb), (eyf, eyb), (hxf, hxb), (hyf, hyb)]]
+        """
 
-        sf = -1.j / 4. * ((ex.conj()[idx, :] * hyf[idx, :] - ey.conj()[idx, :] * hxf[idx, :])
-                          - (hy.conj()[idx, :] * exf[idx, :] - hx.conj()[idx, :] * eyf[idx, :]))  # 1d array of length len(z)
-        sb = -1.j / 4. * ((ex.conj()[idx, :] * hyb[idx, :] - ey.conj()[idx, :] * hxb[idx, :])
-                          - (hy.conj()[idx, :] * exb[idx, :] - hx.conj()[idx, :] * eyb[idx, :]))
+        if not self.pr.q0_contain_0:
 
-        if sf.size == 1:
-            sf = sf.ravel()[0].real
-            sb = sb.ravel()[0].real
+            self.solve()
+            i = list(self.layers.keys()).index(layer)
+            self._calc_al_bl_layer(i)
+
+            t1 = time.process_time()
+            if type(order) is tuple:
+                order = [order]
+            idx = np.array([self.pr.idx_g.index(o) for o in order])
+
+            exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)
+
+            ex, ey, hx, hy = [a + b for a, b in [(exf, exb), (eyf, eyb), (hxf, hxb), (hyf, hyb)]]
+
+            sf = -1.j / 4. * ((ex.conj()[idx, :] * hyf[idx, :] - ey.conj()[idx, :] * hxf[idx, :])
+                              - (hy.conj()[idx, :] * exf[idx, :] - hx.conj()[idx, :] * eyf[idx, :]))  # 1d array of length len(z)
+            sb = -1.j / 4. * ((ex.conj()[idx, :] * hyb[idx, :] - ey.conj()[idx, :] * hxb[idx, :])
+                              - (hy.conj()[idx, :] * exb[idx, :] - hx.conj()[idx, :] * eyb[idx, :]))
+
+            if sf.size == 1:
+                sf = sf.ravel()[0].real
+                sb = sb.ravel()[0].real
+            else:
+                sf = sf.real
+                sb = sb.real
+
+            if self.pr.show_calc_time:
+                print('{:.6f}   calc flux from coef'.format(time.process_time() - t1))
+
         else:
-            sf = sf.real
-            sb = sb.real
-
-        if self.pr.show_calc_time:
-            print('{:.6f}   calc flux from coef'.format(time.process_time() - t1))
+            sf = float('nan')
+            sb = float('nan')
 
         return sf, sb
 
-    def GetSMatrixDeterminant(self, radiation_channels_only=False) -> Tuple[Union[float, complex], float]:
+    def GetSMatrixDet(self,
+                      radiation_channels_only=False,
+                      channels: List[Tuple[int, int]] = None,
+                      channels_in: List[Tuple[int, int]] = None,
+                      channels_out: List[Tuple[int, int]] = None,
+                      channels_exclude: List[Tuple[int, int]] = None) -> Tuple[Union[float, complex], float]:
         """
         Calculate the determinant of the scattering matrix.
 
         Because the determinant typically leads to overflow or underflow, the sign and the natural logarithm of the determinant are returned.
 
+        Can optionally select a few channels and calculate the determinant of the scattering matrix among just these channels.
+
+        Parameters
+        ----------
+        radiation_channels_only :
+            if or not to only include radiation channels in the incident and output regions
+        channels :
+            selected channels in the input and the transmission regions to calculate det.
+            overrides radiation_channels_only.
+        channels_in :
+            the selected channels in the incident region
+        channels_out :
+            the selected channels in the output region
+            if either channels_in or channels_out is specified, `channels` will be overridden.
+        channels_exclude:
+            select all other channels but these ones in both the incident and the transmission regions.
+            Overrides `channels`, `channels_in` and `channels_out`.
+
         Returns
         -------
-        dets : the sign and the natural log of det(S)
+        dets :
+            the sign and the natural log of the determinant of the scattering matrix.
         """
-        self.solve()
-        sm_b = self.sm
 
-        sm = np.block([[sm_b[0], sm_b[1]],
-                       [sm_b[2], sm_b[3]]])
+        if not self.pr.q0_contain_0:
 
-        if radiation_channels_only:
-            layersl = list(self.layers.values())
-            rci = layersl[0].rad_cha
-            rco = layersl[-1].rad_cha
-            rc = np.concatenate([np.array(rci), np.array(rco)+2*self.pr.num_g])
-            sm = sm[rc, :][:, rc]
+            self.solve()
+            sm_b = self.sm
 
-        dets = la.slogdet(sm)
+            sm = np.block([[sm_b[0], sm_b[1]],
+                           [sm_b[2], sm_b[3]]])
+
+            rci = []
+            rco = []
+
+            if channels_exclude is not None:
+                rci = list(range(self.pr.num_g))
+                for a in channels_exclude:
+                    i = self.pr.idx_g.index(a)
+                    rci.pop(i)
+                rci += [a + self.pr.num_g for a in rci]
+                rco = [a + 2 * self.pr.num_g for a in rci]
+            elif channels_in is not None:
+                rci = [self.pr.idx_g.index(a) for a in channels_in]
+                rci += [a+self.pr.num_g for a in rci]
+                if channels_out is not None:
+                    rco = [self.pr.idx_g.index(a) + 2 * self.pr.num_g for a in channels_out]
+                    rco += [a + self.pr.num_g for a in rco]
+            elif channels_out is not None:
+                rco = [self.pr.idx_g.index(a) + 2 * self.pr.num_g for a in channels_out]
+                rco += [a + self.pr.num_g for a in rco]
+            elif channels is not None:
+                rci = [self.pr.idx_g.index(a) for a in channels]
+                rci += [a+self.pr.num_g for a in rci]
+                rco = [a + 2 * self.pr.num_g for a in rci]
+            elif radiation_channels_only:
+                layersl = list(self.layers.values())
+                rci = layersl[0].rad_cha
+                rco = [a + 2*self.pr.num_g for a in layersl[-1].rad_cha]
+
+            if rci or rco:
+                rc = rci + rco
+                sm = sm[rc, :][:, rc]
+
+            dets = la.slogdet(sm)
+
+        else:
+            dets = float('nan')
 
         return dets
 
+    def GetSMatrixDeterminant(self, *args, **kwargs):
+        warn("This method is an alias of `GetSMatrixDet()`. It's recommended to use `GetSMatrixDet()` instead.", FutureWarning)
+        return self.GetSMatrixDet(*args, **kwargs)
+
     def GetReducedSMatrixDeterminant(self) -> Tuple[Union[float, complex], float]:
         """
-        Calculate the determinant of the reduced scattering matrix.
+        Calculate the determinant of the reduced scattering matrix that contains only the radiation channels.
 
         The reduced scattering matrix is defined as taking only the elements that correspond to radiative channels from the entire scattering matrix.
 
-        Also see `GetSMatrixDeterminant`.
+        See Also
+        --------
+        GetSMatrixDet
 
         Returns
         -------
-        dets : the sign and the natural log of det(S)
+        dets :
+            the sign and the natural log of the determinant of the scattering matrix.
         """
-        return self.GetSMatrixDeterminant(radiation_channels_only=True)
+        warn("This method is deprecated. Use `GetRadiativeSMatrixDet()` instead.", FutureWarning)
+        return self.GetSMatrixDet(radiation_channels_only=True)
+
+    def GetRadiativeSMatrixDet(self) -> Tuple[Union[float, complex], float]:
+        """
+        Calculate the determinant of the reduced scattering matrix that contains only the radiation channels.
+
+        The reduced scattering matrix is defined as taking only the elements that correspond to radiative channels from the entire scattering matrix.
+
+        See Also
+        --------
+        GetSMatrixDet
+
+        Returns
+        -------
+        dets :
+            the sign and the natural log of the determinant of the scattering matrix.
+        """
+        return self.GetSMatrixDet(radiation_channels_only=True)
