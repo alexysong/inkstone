@@ -1029,6 +1029,10 @@ class Inkstone:
                                      [nx, ny, nz],
                                      ['x', 'y', 'z']):
             if c is not None:
+                if hasattr(c, '__len__'):
+                    c = np.array(c)
+                else:
+                    c = np.array([c])
                 u = c
             elif min is None or max is None or n is None:
                 warn(s + " points to get fields not defined properly. Default to 0.")
@@ -1077,7 +1081,7 @@ class Inkstone:
         else:
             za = np.array([z])
 
-        Fields = [np.zeros((len(xy), len(z)), dtype=complex) for i in range(6)]
+        Fields = [np.zeros((len(xy), len(za)), dtype=complex) for i in range(6)]
 
         z_interfaces = self.thicknesses_c[:-1]  # -1 is output with thickness 0
 
@@ -1135,6 +1139,10 @@ class Inkstone:
                                      [nx, ny, nz],
                                      ['x', 'y', 'z']):
             if c is not None:
+                if hasattr(c, '__len__'):
+                    c = np.array(c)
+                else:
+                    c = np.array([c])
                 u = c
             elif min is None or max is None or n is None:
                 warn(s + " points to get fields not defined properly. Default to 0.")
