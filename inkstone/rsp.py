@@ -64,7 +64,7 @@ def rsp(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
     # s11 = sb11 @ la.inv(idt - sa12 @ sb21) @ sa11
     # s12 = sb12 + sb11 @ la.inv(idt - sa12 @ sb21) @ sa12 @ sb22
 
-    print('RSP', time.process_time() - time1)
+    # print('RSP', time.process_time() - time1)
 
     return s11, s12, s21, s22
 
