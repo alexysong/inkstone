@@ -501,13 +501,13 @@ class Layer:
                 self._phil_is_idt = True
                 phil = np.eye(2*self.pr.num_g, dtype=complex)
                 v = np.eye(2, dtype=complex)[None, :, :]
-                w2 = - (pq[:, range(2), range(2)]).T.ravel()  # shape (num_g, 2) then ravel out
+                w2 = - (pq[:, range(2), range(2)])  # shape (num_g, 2)
                 self._rad_cha = np.where(w2.real > 0)[0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
                 w = np.sqrt(w2 + 0j)
 
             else:
                 w2, v = la.eig(-pq)  # w2 shape (num_g, 2), v shape (num_g, 2, 2)
-                w2 = w2.T.ravel()  # shape (num_g, 2) then ravel out
+                w2 = w2  # shape (num_g, 2)
                 self._rad_cha = np.where(w2.real > 0)[0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
                 w = np.sqrt(w2 + 0j)
 
@@ -541,7 +541,7 @@ class Layer:
                         w[(w2.real < 0) * (w.imag < 0)] *= -1
                 else:
                     w[w.imag < 0] *= -1
-            ql = w  # 1d array length 2num_g
+            ql = w.T.ravel()  # 1d array length 2num_g
             vh = -1j * p @ v / w[:, None]
 
             psil11, psil12, psil21, psil22 = [np.diag(vh[:, i, j]) for i, j in [(0, 0), (0, 1), (1, 0), (1, 1)]]
