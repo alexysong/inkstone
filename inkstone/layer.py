@@ -542,7 +542,7 @@ class Layer:
                 else:
                     w[w.imag < 0] *= -1
             ql = w.T.ravel()  # 1d array length 2num_g
-            vh = -1j * p @ v / w[:, None]
+            vh = -1j * p @ v / w[:, None, :]
 
             psil11, psil12, psil21, psil22 = [np.diag(vh[:, i, j]) for i, j in [(0, 0), (0, 1), (1, 0), (1, 1)]]
             psil = np.block([[psil11, psil12],
