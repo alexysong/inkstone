@@ -587,10 +587,27 @@ class Inkstone:
                 # csmr of next layer
                 scin11, scin12, scin21, scin22 = csmrn
 
-                al = 1. / 2. * (bl0 @ sla.solve((I - sci11 @ scp22), (sci11 @ scp21 @ ai_v + sci12 @ bo_v))
-                                + al0 @ sla.solve((I - scp22 @ sci11), (scp21 @ ai_v + scp22 @ sci12 @ bo_v)))
-                bl = 1. / 2. * (bl0 @ sla.solve((I - sc22 @ scin11), (sc21 @ ai_v + sc22 @ scin12 @ bo_v))
-                                + al0 @ sla.solve((I - scin11 @ sc22), (scin11 @ sc21 @ ai_v + scin12 @ bo_v)))
+                if (layersl[i-1].in_mid_out == "in") and not layersl[i-1].is_vac:
+                    sa = sla.lu_solve(scp21, ai_v)
+                    sb = sci12 @ bo_v
+                    al = 1. / 2. * (bl0 @ sla.solve((I - sci11 @ scp22), (sci11 @ sa + sb))
+                                    + al0 @ sla.solve((I - scp22 @ sci11), (sa + scp22 @ sb)))
+                else:
+                    sa = scp21 @ ai_v
+                    sb = sci12 @ bo_v
+                    al = 1. / 2. * (bl0 @ sla.solve((I - sci11 @ scp22), (sci11 @ sa + sb))
+                                    + al0 @ sla.solve((I - scp22 @ sci11), (sa + scp22 @ sb)))
+
+                if (layersl[i+1].in_mid_out == "out") and not layersl[i+1].is_vac:
+                    sa = sc21 @ ai_v
+                    sb = sla.lu_solve(scin12, bo_v)
+                    bl = 1. / 2. * (bl0 @ sla.solve((I - sc22 @ scin11), (sa + sc22 @ sb))
+                                    + al0 @ sla.solve((I - scin11 @ sc22), (scin11 @ sa + sb)))
+                else:
+                    sa = sc21 @ ai_v
+                    sb = scin12 @ bo_v
+                    bl = 1. / 2. * (bl0 @ sla.solve((I - sc22 @ scin11), (sa + sc22 @ sb))
+                                    + al0 @ sla.solve((I - scin11 @ sc22), (scin11 @ sa + sb)))
 
                 # ravel 2d array (just one column) to 1d array
                 al = al.ravel()
