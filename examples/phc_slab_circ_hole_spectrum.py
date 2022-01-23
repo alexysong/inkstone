@@ -52,5 +52,5 @@ transmission = np.array([a[0] for a in flux_out]) / incident
 from matplotlib import pyplot as plt
 plt.plot(freq, transmission)
 plt.xlabel('frequency')
-plt.ylabel('reflection')
+plt.ylabel('transmission')
 
