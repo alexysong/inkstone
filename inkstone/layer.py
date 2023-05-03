@@ -392,8 +392,10 @@ class Layer:
             n2 = 101
 
         # epsi_fs and mu_fs are calculated at solving stage.
-        # if call reconstruc before solving, epsi_fs and mu_fs are None.
+        # if call reconstruct before solving, epsi_fs and mu_fs are None.
         # Hence need to calculate them here.
+        if self.pr.ks_ep_mu is None:
+            self.pr._calc_ks_ep_mu()
         if (self.epsi_fs is None) or (self.mu_fs is None):
             self._calc_ep_mu_fs_3d()
         self.epsi_fs_used, self.epsi_inv_fs_used, self.mu_fs_used, self.mu_inv_fs_used = \
