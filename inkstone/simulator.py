@@ -951,6 +951,30 @@ class Inkstone:
 
         return exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb
 
+    def GetAmplitudesByOrder(self,
+                      layer: str,
+                      z: Union[float, List[float], np.ndarray, Tuple[float]] = None,
+                      order: Union[int, List[int], Tuple[int, int], List[Tuple[int, int]]] = None):
+
+        if z is None:
+            z = 0.
+
+        exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer=layer, z=z)
+
+        if order is None:
+            order = [(0, 0)]
+        elif type(order) is int:
+            order = [(order, 0)]
+        elif type(order) is tuple:
+            order = [order]
+        elif type(order[0]) is int:
+            order = [(o, 0) for o in order]
+        idx = np.array([self.pr.idx_g.index(o) for o in order])
+
+        result = [f[idx] for f in [exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb]]
+
+        return tuple(result)
+
     def GetLayerFieldsListPoints(self,
                                  layer: str,
                                  xy: Union[Tuple[float, float], List[Tuple[float, float]]],
@@ -1230,10 +1254,10 @@ class Inkstone:
 
         return sf, sb
 
-    def GetPowerFluxOrder(self,
-                          layer: str,
-                          order: Union[Tuple[int, int], List[Tuple[int, int]]],
-                          z: Union[float, List[float]] = None) -> Tuple[np.ndarray, np.ndarray]:
+    def GetPowerFluxByOrder(self,
+                            layer: str,
+                            order: Union[int, List[int], Tuple[int, int], List[Tuple[int, int]]],
+                            z: Union[float, List[float]] = None) -> Tuple[np.ndarray, np.ndarray]:
         """
         Get the power flux of given orders defined by `order` in z direction in a layer at the given `z` points.
 
@@ -1264,8 +1288,14 @@ class Inkstone:
             self._calc_al_bl_layer(i)
 
             t1 = time.process_time()
-            if type(order) is tuple:
+            if order is None:
+                order = [(0, 0)]
+            elif type(order) is int:
+                order = [(order, 0)]
+            elif type(order) is tuple:
                 order = [order]
+            elif type(order[0]) is int:
+                order = [(o, 0) for o in order]
             idx = np.array([self.pr.idx_g.index(o) for o in order])
 
             exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)
@@ -1394,7 +1424,7 @@ class Inkstone:
         dets :
             the sign and the natural log of the determinant of the scattering matrix.
         """
-        warn("This method is deprecated. Use `GetRadiativeSMatrixDet()` instead.", FutureWarning)
+        warn("This method is deprecated. Use `GetRadiativeSMatrixDet(radiation_channels_only=True)` instead.", FutureWarning)
         return self.GetSMatrixDet(radiation_channels_only=True)
 
     def GetRadiativeSMatrixDet(self) -> Tuple[Union[float, complex], float]:

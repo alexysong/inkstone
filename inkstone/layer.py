@@ -390,6 +390,12 @@ class Layer:
             n1 = 101
         if n2 is None:
             n2 = 101
+
+        # epsi_fs and mu_fs are calculated at solving stage.
+        # if call reconstruc before solving, epsi_fs and mu_fs are None.
+        # Hence need to calculate them here.
+        if (self.epsi_fs is None) or (self.mu_fs is None):
+            self._calc_ep_mu_fs_3d()
         self.epsi_fs_used, self.epsi_inv_fs_used, self.mu_fs_used, self.mu_inv_fs_used = \
             [[em[j, i, :, :] for i, j in self.pr.idx_g_ep_mu_used]
              for em in [fft.ifftshift(self.epsi_fs, axes=(0, 1)), fft.ifftshift(self.epsi_inv_fs, axes=(0, 1)), fft.ifftshift(self.mu_fs, axes=(0, 1)), fft.ifftshift(self.mu_inv_fs, axes=(0, 1))]]
