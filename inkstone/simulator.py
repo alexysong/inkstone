@@ -1129,7 +1129,7 @@ class Inkstone:
         i_in_l = [za < z_interfaces[0]]
         for idx, zi in enumerate(z_interfaces[:-1]):
             i_in_l.append((za >= zi) * (za < z_interfaces[idx + 1]))
-        i_in_l.append(za > z_interfaces[-1])
+        i_in_l.append(za >= z_interfaces[-1])
 
         for idx, iin in enumerate(i_in_l):
             za_l = za[iin] - ([0] + z_interfaces)[idx]  # z coordinate of this layer w.r.t. the left interface of this layer
