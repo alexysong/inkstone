@@ -61,6 +61,7 @@ class Params:
         self.phi0: Optional[np.ndarray] = None  # E field eigen mode in vacuum (identity matrix), side length 2*num_g
         self.psi0: Optional[np.ndarray] = None  # H field eigen mode in vacuum (Q * Phi * q^-1), side length 2*num_g
         self.q0: Optional[np.ndarray] = None  # 1d array, eigen propagation constant in z direction in vacuum, length 2*num_g
+        self.q0_inv: Optional[np.ndarray] = None  # 1d array, 1./q0, elementwise inversion of q0, length 2*num_g
         self.P0_val: Optional[Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]] = None  # Tuple of 4, each is an ndarray of size num_g, containing the diagonal elements of the 4 blocks of P0.
         self.Q0_val: Optional[Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]] = None  # Tuple of 4, each is an ndarray of size num_g, containing the diagonal elements of the 4 blocks of Q0.
         self.im0: Optional[Tuple[np.ndarray, np.ndarray]] = None  # vacuum interface matrix
@@ -149,6 +150,7 @@ class Params:
         self.if_2d()
         self._calc_gs()
         self._calc_uc_area()
+        # self._calc_ks_ep_mu()  # called through _calc_gs -> _calc_ks
 
     @property
     def recipr_vec(self) -> Tuple[Tuple[float, float], Tuple[float, float]]:
@@ -208,7 +210,7 @@ class Params:
         if val is not None:
             self._omega = val
             self._frequency = val / np.pi / 2.
-            self.q0_contain_0 = False
+            # self.q0_contain_0 = False
             self._calc_k_inci()
             # self._calc_q0()  # called through _calc_k_inci - _calc_ks
             # self._calc_P0Q0()  # called through _calc_k_inci - _calc_ks - _calc_Km
@@ -388,9 +390,9 @@ class Params:
     def _calc_ks(self):
         if self.gs and self.k_inci:
             self.ks = [(g[0]+self.k_inci[0], g[1] + self.k_inci[1]) for g in self.gs]
+            self._calc_q0()
             self._calc_Km()
             self._calc_ks_ep_mu()
-            self._calc_q0()
             self._calc_angles()
 
     def _calc_Km(self):
@@ -473,9 +475,20 @@ class Params:
                     q0[(q02.real < 0) * (q0.imag < 0)] *= -1
             else:
                 q0[q0.imag < 0] *= -1
-            # todo: what to do at q02.real == 0 case (Woods)
+            # todo: what to do at q02.real == 0 case (Woods)?
             self.q0 = np.concatenate([q0, q0])
             # print('_calc_q0', time.process_time() - t1)
+
+            if np.any(self.q0 == 0):
+                warn("Vacuum propagation constant 0 encountered. Possibly Wood's anomaly.", RuntimeWarning)
+                self.q0_contain_0 = True
+                # print(self.frequency, self.k_inci, self.theta, self.q0, self.ks, self.idx_g)
+            else:
+                self.q0_contain_0 = False
+
+            with np.errstate(divide='ignore', invalid='ignore'):
+                self.q0_inv = 1. / self.q0
+
             self._calc_psi0()
 
     def _calc_P0Q0(self):
@@ -506,25 +519,19 @@ class Params:
     def _calc_psi0(self):
         if (self.Q0_val is not None) and (self.q0 is not None) and (self._num_g_ac is not None):
             # t1 = time.process_time()
-            with np.errstate(divide='raise'):
-                try:
-                    q0_inv = 1. / self.q0
 
-                    ng = self._num_g_ac
-                    psi0 = np.zeros((2 * ng, 2 * ng), dtype=complex)
-                    r1 = range(ng)
-                    r2 = range(ng, 2 * ng)
-                    if self.Q0_val[0].size == q0_inv[:ng].size:
-                        psi0[r1, r1] = -1j * self.Q0_val[0] * q0_inv[:ng]
-                        psi0[r1, r2] = -1j * self.Q0_val[1] * q0_inv[ng:]
-                        psi0[r2, r1] = -1j * self.Q0_val[2] * q0_inv[:ng]
-                        psi0[r2, r2] = -1j * self.Q0_val[3] * q0_inv[ng:]
-                    self.psi0 = psi0
-
-                except FloatingPointError:
-                    warn("Vacuum propagation constant 0 encountered. Possibly Wood's anomaly.", RuntimeWarning)
-                    # print(self.frequency, self.k_inci, self.theta, self.q0, self.ks, self.idx_g)
-                    self.q0_contain_0 = True
+            if not self.q0_contain_0:
+                ng = self._num_g_ac
+                psi0 = np.zeros((2 * ng, 2 * ng), dtype=complex)
+                r1 = range(ng)
+                r2 = range(ng, 2 * ng)
+                q0_inv = self.q0_inv
+                if self.Q0_val[0].size == self.q0_inv[:ng].size:
+                    psi0[r1, r1] = -1j * self.Q0_val[0] * q0_inv[:ng]
+                    psi0[r1, r2] = -1j * self.Q0_val[1] * q0_inv[ng:]
+                    psi0[r2, r1] = -1j * self.Q0_val[2] * q0_inv[:ng]
+                    psi0[r2, r2] = -1j * self.Q0_val[3] * q0_inv[ng:]
+                self.psi0 = psi0
 
             # print('_calc_psi0', time.process_time() - t1)
 
