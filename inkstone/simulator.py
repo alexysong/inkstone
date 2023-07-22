@@ -914,7 +914,7 @@ class Inkstone:
         # collect the indices of the layers that needs recalculation
         self._layers_mod = []
         for i, layer in enumerate(self.layers.values()):
-            if layer.if_mod or layer.if_t_change:
+            if layer.if_mod or layer._if_t_change:
                 self._need_recalc_sm = True
                 self._layers_mod.append(i)
 

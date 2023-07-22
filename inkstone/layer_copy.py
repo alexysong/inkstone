@@ -5,6 +5,7 @@ import time
 import numpy as np
 from inkstone.layer import Layer
 from inkstone.sm import s_1l, s_1l_in, s_1l_out
+from warnings import warn
 
 
 class LayerCopy:
@@ -32,12 +33,14 @@ class LayerCopy:
         self.if_mod = True  # simulator is responsible for triggering if_mod for all
         self.need_recalc_al_bl = True
 
+        self._thickness = thickness
         self.thickness = thickness
 
     def __getattr__(self, item):
         """ignore all calls if not explicitly defined"""
         # raise Exception('what the hell')
         # print(1+1)
+        warn('You might have called something that is not defined in a copy layer: "{:s}". Instead you should call it from the original layer: "{:s}". Nothing is changed.'.format(self.name, self.original_layer_name))
         pass
 
     @property
@@ -102,6 +105,40 @@ class LayerCopy:
     @property
     def rad_cha(self) -> List[int]:
         return self.layer.rad_cha
+
+    def set_layer(self,
+                  thickness: float = None,
+                  material_bg: str = None
+                  ):
+        """
+        Set and reset parameters of the layer.
+        """
+        if (thickness is not None) and (self._thickness != thickness):
+            self._thickness = thickness
+            self._if_t_change = True
+        if material_bg is not None:
+            warn('You are setting the background material of a layer that is itself a copy. As a result, the original layer and all of its copies including this one will be changed.')
+            self.layer.set_layer(material_bg=material_bg)
+
+    def add_box(self,
+                mtr: str,
+                shp: str,
+                box_name: str = None,
+                **kwargs):
+        warn('You are adding some patterns to a copy layer: "{:s}". Instead, this pattern is added to the original layer: "{:s}" and all of its copies.'.format(self.name, self.original_layer_name))
+        self.layer.add_box(mtr=mtr, shp=shp, box_name=box_name, **kwargs)
+
+    def set_box(self,
+                box_name: str,
+                **kwargs):
+        warn('You are updating some patterns to a copy layer: "{:s}". Instead, this pattern is updated in the original layer: "{:s}" and all of its copies.'.format(self.name, self.original_layer_name))
+        self.layer.set_box(box_name=box_name, **kwargs)
+
+    def reconstruct(self,
+                    n1: int = None,
+                    n2: int = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        warn('You are requesting the reconstruction of a copy layer: "{:s}". The reconstruction of the original layer "{:s}" is returned.'.format(self.name, self.original_layer_name))
+        return self.layer.reconstruct(n1=n1, n2=n2)
 
     def solve(self):
         t1 = time.process_time()

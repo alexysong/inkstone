@@ -47,13 +47,14 @@ class Layer:
         self.pr: Params = params
 
         self.if_mod: bool = True  # if this layer is modified
-        self.if_t_change: bool = True  # if thickness changed
+        self._if_t_change: bool = True  # if thickness changed
         self.need_recalc_al_bl = True  # if the al and bl of this layer needs recalculation
 
         self.name: str = name
         self.is_copy = False
         self.original_layer_name = name
 
+        self._thickness: float = thickness
         self.thickness: float = thickness
 
         self.material_bg: str = material_bg  # background material
@@ -115,6 +116,14 @@ class Layer:
         self.set_layer(**kwargs)
 
     @property
+    def thickness(self):
+        return self._thickness
+
+    @thickness.setter
+    def thickness(self, val):
+        self.set_layer(thickness=val)
+
+    @property
     def rad_cha(self):
         """List of indices in `.params.Params.idx_g` that corresponds to radiation channels in this layer"""
         # For 1 channel with two polarizations this would be [0, num_g]
@@ -130,9 +139,9 @@ class Layer:
         """
         Set and reset parameters of the layer.
         """
-        if (thickness is not None) and (self.thickness != thickness):
-            self.thickness = thickness
-            self.if_t_change = True
+        if (thickness is not None) and (self._thickness != thickness):
+            self._thickness = thickness
+            self._if_t_change = True
         if (material_bg is not None) and (self.material_bg != material_bg):
             self.material_bg = material_bg
             self.if_mod = True
@@ -710,10 +719,10 @@ class Layer:
             else:
                 self._calc_eig_3d_uniform()
             self._calc_im()
-        if self.if_mod or self.if_t_change:
+        if self.if_mod or self._if_t_change:
             self._calc_sm()
             self.if_mod = False
-            self.if_t_change = False
+            self._if_t_change = False
 
         if self.pr.show_calc_time:
             print('{:.6f}'.format(time.process_time() - t1) + '   layer ' + self.name + ' solve total')
