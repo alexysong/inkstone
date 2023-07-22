@@ -21,12 +21,15 @@ class LayerCopy:
         """
 
         self.name = name
+        self.is_copy = True
         self.layer = layer
+        self.original_layer_name = layer.name
         self._al_bl: Optional[Tuple[np.ndarray, np.ndarray]] = None
         self.in_mid_out: str = 'mid'  # {'in', 'mid', 'out'}, if this layer is the incident, output, or a middle layer
 
         self.sm: Optional[Tuple[np.ndarray, np.ndarray]] = None
         self._if_t_change = True
+        self.if_mod = True  # simulator is responsible for triggering if_mod for all
         self.need_recalc_al_bl = True
 
         self.thickness = thickness
@@ -46,18 +49,19 @@ class LayerCopy:
         if self._thickness != val:
             self._thickness = val
             self._if_t_change = True
+            self.if_mod = True
 
     @property
     def materials_used(self):
         return self.layer.materials_used
 
-    @property
-    def if_mod(self):
-        return self.layer.if_mod
-
-    @if_mod.setter
-    def if_mod(self, val):
-        pass
+    # @property
+    # def if_mod(self):
+    #     return self.layer.if_mod
+    #
+    # @if_mod.setter
+    # def if_mod(self, val):
+    #     pass
 
     @property
     def im(self):
@@ -101,10 +105,11 @@ class LayerCopy:
 
     def solve(self):
         t1 = time.process_time()
-        if self.layer.if_mod or self._if_t_change:
+        if self.layer.if_mod or self.if_mod or self._if_t_change:
             self.layer.solve()
             self._calc_sm()
             self._if_t_change = False
+            self.if_mod = False
         if self.layer.pr.show_calc_time:
             print('{:.6f}'.format(time.process_time() - t1) + '   layer ' + self.name+' solve (layer copy)')
 

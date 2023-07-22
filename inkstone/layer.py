@@ -51,6 +51,8 @@ class Layer:
         self.need_recalc_al_bl = True  # if the al and bl of this layer needs recalculation
 
         self.name: str = name
+        self.is_copy = False
+        self.original_layer_name = name
 
         self.thickness: float = thickness
 

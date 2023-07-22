@@ -303,8 +303,13 @@ class Inkstone:
                 self._calc_thicknesses()
             if material_bg is not None and material_bg != layer.material_bg:
                 layer.set_layer(material_bg=material_bg)
+                # propagate if_mod of the layer to all layer copies
+                if layer.if_mod:
+                    for ly in self.layers.values():
+                        if ly.original_layer_name == layer.original_layer_name:
+                            ly.if_mod = True
         else:
-            warn('Did not find the layer you specified.', UserWarning)
+            warn('Did not find the layer you specified. The layer is NOT changed.', UserWarning)
 
     def ReconstructLayer(self,
                          name: str,
@@ -400,7 +405,15 @@ class Inkstone:
         if not self.pr.is_1d_latt and shape == '1d':
             warn('This is a 3D calculation (i.e. 2D in-plane). Setting 1D in-plane patterns may lead to unexpected results.', RuntimeWarning)
 
-        self.layers[layer].add_box(material, shape, box_name=pattern_name, **kwargs)
+        if layer in self.layers.keys():
+            self.layers[layer].add_box(material, shape, box_name=pattern_name, **kwargs)
+            # propagate if_mod of the layer to all layer copies
+            if self.layers[layer].if_mod:
+                for ly in self.layers.values():
+                    if ly.original_layer_name == self.layers[layer].original_layer_name:
+                        ly.if_mod = True
+        else:
+            warn('Did not find the layer you specified. The layer is not changed.', UserWarning)
 
     def AddPattern1D(self,
                      layer: str,
@@ -413,7 +426,15 @@ class Inkstone:
         if not self.pr.is_1d_latt:
             warn('This is a 3D calculation (i.e. 2D in-plane). Setting 1D in-plane patterns may lead to unexpected results.', RuntimeWarning)
 
-        self.layers[layer].add_box(material, "1d", box_name=pattern_name, width=width, center=center, **kw_gibbs)
+        if layer in self.layers.keys():
+            self.layers[layer].add_box(material, "1d", box_name=pattern_name, width=width, center=center, **kw_gibbs)
+            # propagate if_mod of the layer to all layer copies
+            if self.layers[layer].if_mod:
+                for ly in self.layers.values():
+                    if ly.original_layer_name == self.layers[layer].original_layer_name:
+                        ly.if_mod = True
+        else:
+            warn('Did not find the layer you specified. The layer is not changed.', UserWarning)
 
     def AddPatternRectangle(self,
                             layer: str,
@@ -427,7 +448,15 @@ class Inkstone:
         if self.pr.is_1d_latt:
             warn('This is a 2D calculation (i.e. 1D in-plane). Setting 2D in-plane patterns may lead to unexpected results.', RuntimeWarning)
 
-        self.layers[layer].add_box(material, "rectangle", box_name=pattern_name, side_lengths=side_lengths, center=center, angle=angle, **kw_gibbs)
+        if layer in self.layers.keys():
+            self.layers[layer].add_box(material, "rectangle", box_name=pattern_name, side_lengths=side_lengths, center=center, angle=angle, **kw_gibbs)
+            # propagate if_mod of the layer to all layer copies
+            if self.layers[layer].if_mod:
+                for ly in self.layers.values():
+                    if ly.original_layer_name == self.layers[layer].original_layer_name:
+                        ly.if_mod = True
+        else:
+            warn('Did not find the layer you specified. The layer is not changed.', UserWarning)
 
     def AddPatternParallelogram(self,
                                 layer: str,
@@ -443,7 +472,15 @@ class Inkstone:
         if self.pr.is_1d_latt:
             warn('This is a 2D calculation (i.e. 1D in-plane). Setting 2D in-plane patterns may lead to unexpected results.', RuntimeWarning)
 
-        self.layers[layer].add_box(material, "parallelogram", box_name=pattern_name, side_lengths=side_lengths, center=center, angle=angle, shear_angle=shear_angle, **kw_gibbs)
+        if layer in self.layers.keys():
+            self.layers[layer].add_box(material, "parallelogram", box_name=pattern_name, side_lengths=side_lengths, center=center, angle=angle, shear_angle=shear_angle, **kw_gibbs)
+            # propagate if_mod of the layer to all layer copies
+            if self.layers[layer].if_mod:
+                for ly in self.layers.values():
+                    if ly.original_layer_name == self.layers[layer].original_layer_name:
+                        ly.if_mod = True
+        else:
+            warn('Did not find the layer you specified. The layer is not changed.', UserWarning)
 
     def AddPatternDisk(self,
                        layer: str,
@@ -456,7 +493,15 @@ class Inkstone:
         if self.pr.is_1d_latt:
             warn('This is a 2D calculation (i.e. 1D in-plane). Setting 2D in-plane patterns may lead to unexpected results.', RuntimeWarning)
 
-        self.layers[layer].add_box(material, "disk", box_name=pattern_name, radius=radius, center=center, **kw_gibbs)
+        if layer in self.layers.keys():
+            self.layers[layer].add_box(material, "disk", box_name=pattern_name, radius=radius, center=center, **kw_gibbs)
+            # propagate if_mod of the layer to all layer copies
+            if self.layers[layer].if_mod:
+                for ly in self.layers.values():
+                    if ly.original_layer_name == self.layers[layer].original_layer_name:
+                        ly.if_mod = True
+        else:
+            warn('Did not find the layer you specified. The layer is not changed.', UserWarning)
 
     def AddPatternEllipse(self,
                           layer: str,
@@ -470,8 +515,15 @@ class Inkstone:
         if self.pr.is_1d_latt:
             warn('This is a 2D calculation (i.e. 1D in-plane). Setting 2D in-plane patterns may lead to unexpected results.', RuntimeWarning)
 
-        self.layers[layer].add_box(material, "ellipse", box_name=pattern_name, half_lengths=half_lengths, center=center, angle=angle, **kw_gibbs)
-
+        if layer in self.layers.keys():
+            self.layers[layer].add_box(material, "ellipse", box_name=pattern_name, half_lengths=half_lengths, center=center, angle=angle, **kw_gibbs)
+            # propagate if_mod of the layer to all layer copies
+            if self.layers[layer].if_mod:
+                for ly in self.layers.values():
+                    if ly.original_layer_name == self.layers[layer].original_layer_name:
+                        ly.if_mod = True
+        else:
+            warn('Did not find the layer you specified. The layer is not changed.', UserWarning)
 
     def AddPatternPolygon(self,
                           layer: str,
@@ -483,11 +535,27 @@ class Inkstone:
         if self.pr.is_1d_latt:
             warn('This is a 2D calculation (i.e. 1D in-plane). Setting 2D in-plane patterns may lead to unexpected results.', RuntimeWarning)
 
-        self.layers[layer].add_box(material, "polygon", box_name=pattern_name, vertices=vertices, **kw_gibbs)
-
+        if layer in self.layers.keys():
+            self.layers[layer].add_box(material, "polygon", box_name=pattern_name, vertices=vertices, **kw_gibbs)
+            # propagate if_mod of the layer to all layer copies
+            if self.layers[layer].if_mod:
+                for ly in self.layers.values():
+                    if ly.original_layer_name == self.layers[layer].original_layer_name:
+                        ly.if_mod = True
+        else:
+            warn('Did not find the layer you specified. The layer is not changed.', UserWarning)
 
     def SetPattern(self, layer_name, pattern_name: str, **kwargs):
-        self.layers[layer_name].set_box(pattern_name, **kwargs)
+        if layer_name in self.layers.keys():
+            self.layers[layer_name].set_box(pattern_name, **kwargs)
+            # propagate if_mod of the layer to all layer copies
+            layer = self.layers[layer_name]
+            if layer.if_mod:
+                for ly in self.layers.values():
+                    if ly.original_layer_name == layer.original_layer_name:
+                        ly.if_mod = True
+        else:
+            warn('Did not find the layer you specified. The layer is NOT changed.', UserWarning)
 
     def SetExcitation(self,
                       theta: Union[float, complex] = None,
