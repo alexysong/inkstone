@@ -52,11 +52,19 @@ where $k$ is the wavevector, $x$ is spatial location, $\omega$ is frequency, $t$
 
 By this convention, a permittivity of $\varepsilon_r + i\varepsilon_i$ with $\varepsilon_i>0$ means material loss, and $\varepsilon_i<0$ means material gain.
 
-### Coordinates and incident angles
+### Coordinates, incident angles, and polarizations
 
 <img src="https://github.com/alexysong/inkstone/blob/main/figs/PhC_slab_vector_incident.svg" alt="drawing" width="300">
 
 (Inkstone, **In**cident $\bm{k}$ on **st**acked peri**o**dic **n**ano **e**lectromagnetic structures.)
+
+$\theta$ is defined as the angle between the incident $\vec{k}$ and the normal to the $xy$ plane. $\phi$ is defined as the angle between the projection of $\vec{k}$ in plane and $\hat{x}$. 
+
+$s$ polarization is when $\vec{E}$ field of the incoming plane wave is in the $xy$ plane. $p$ polarization is orthogonal to it. 
+
+For $\theta=0$, $\phi=0$, $s$ is when $\vec{E}$ of incoming wave is along $\hat{y}$, $p$ is the orthogonal one. 
+
+In 2d simulations (1d grating), the space is assumed to be $x$ and $z$. Here, $s$ is when $\vec{E}$ of the incoming wave is in and out of the solving 2d space. $p$ is again orthogonal to it.
 
 ## Citing
 If you find Inkstone useful for your research, we would apprecite you citing our [paper](https://doi.org/10.1103/PhysRevLett.120.193903). For your convenience, you can use the following BibTex entry:
