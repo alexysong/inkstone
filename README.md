@@ -64,7 +64,7 @@ $s$ polarization is when $\vec{E}$ field of the incoming plane wave is in the $x
 
 For $\theta=0$, $\phi=0$, $s$ is when $\vec{E}$ of incoming wave is along $\hat{y}$, $p$ is the orthogonal one. 
 
-In 2d simulations (1d grating), the space is assumed to be $x$ and $z$. Here, $s$ is when $\vec{E}$ of the incoming wave is in and out of the solving 2d space. $p$ is again orthogonal to it.
+In 2d simulations (1d grating), the space is assumed to be in $x$ and $z$. Here, $s$ is when $\vec{E}$ of the incoming wave is in and out of the solving 2d space. $p$ is again orthogonal to it.
 
 ## Citing
 If you find Inkstone useful for your research, we would apprecite you citing our [paper](https://doi.org/10.1103/PhysRevLett.120.193903). For your convenience, you can use the following BibTex entry:
