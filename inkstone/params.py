@@ -632,6 +632,7 @@ class Params:
                     for i in range(len(idx)):
                         s = sa[i]
                         p = pa[i]
+                        # s first then p. in scattering matrix of the system, the first half indices of Sij is s, second half is p.
                         ab[i] = -s * self.sin_phis[i] + p * self.sin_varthetas[i] * self.cos_phis[i]  # e_x
                         ab[i + self._num_g_ac] = s * self.cos_phis[i] + p * self.sin_varthetas[i] * self.sin_phis[i]  # e_y
                 aibo[ii] = ab
