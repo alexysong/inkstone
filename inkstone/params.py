@@ -387,6 +387,57 @@ class Params:
             self._calc_conv_mtx_idx()
             # self.calc_ai_bo_3d()  # called through _calc_ks() - _calc_angles()
 
+    def _remove_gs(self,
+                   idxs_rm: List[Tuple[int, int]]):
+        """
+        remove certain g points by given list of g indices such as [(1, -2)]
+
+        Parameters
+        ----------
+        idxs_rm:
+            indices to remove, each element in this list should be a tuple of integers like (1, -2)
+
+        Returns
+        -------
+
+        """
+        idx_g_new = []
+        gs_new = []
+        for ii, idx in enumerate(self.idx_g):
+            to_add = True
+            for idx_rm in idxs_rm:
+                if idx == idx_rm:
+                    to_add = False
+                    break
+            if to_add:
+                idx_g_new.append(idx)
+                gs_new.append(self.gs[ii])
+        self.idx_g = idx_g_new
+        self.gs = gs_new
+        self._num_g_ac = len(self.gs)
+        self._calc_ks()
+        self._calc_conv_mtx_idx()
+
+    def _remove_gs_xuhao(self,
+                         idxs: List[int]):
+        """
+        Remove g points by the index in the current idx_g list, for example, idxs=[3, 5] means to remove the 3rd and the 5th element in the g list.
+
+        Parameters
+        ----------
+        idxs
+
+        Returns
+        -------
+
+        """
+        for ii in sorted(idxs, reverse=True):
+            del self.gs[ii]
+            del self.idx_g[ii]
+        self._num_g_ac = len(self.gs)
+        self._calc_ks()
+        self._calc_conv_mtx_idx()
+
     def _calc_ks(self):
         if self.gs and self.k_inci:
             self.ks = [(g[0]+self.k_inci[0], g[1] + self.k_inci[1]) for g in self.gs]
@@ -476,15 +527,19 @@ class Params:
             else:
                 q0[q0.imag < 0] *= -1
             # todo: what to do at q02.real == 0 case (Woods)?
-            self.q0 = np.concatenate([q0, q0])
-            # print('_calc_q0', time.process_time() - t1)
 
-            if np.any(self.q0 == 0):
-                warn("Vacuum propagation constant 0 encountered. Possibly Wood's anomaly.", RuntimeWarning)
+            if np.any(q0 == 0.):
                 self.q0_contain_0 = True
+                # warn("Vacuum propagation constant 0 encountered. Possibly Wood's anomaly. These channels are removed.", RuntimeWarning)
+                idxs_rm = np.where(q0 == 0.)[0]
+                q0 = np.delete(q0, idxs_rm)
+                self._remove_gs_xuhao(idxs_rm)
                 # print(self.frequency, self.k_inci, self.theta, self.q0, self.ks, self.idx_g)
             else:
                 self.q0_contain_0 = False
+
+            self.q0 = np.concatenate([q0, q0])
+            # print('_calc_q0', time.process_time() - t1)
 
             with np.errstate(divide='ignore', invalid='ignore'):
                 self.q0_inv = 1. / self.q0
