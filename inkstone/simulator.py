@@ -574,7 +574,7 @@ class Inkstone:
         ----------
         theta               :
         phi                 :
-                                incident angles.
+                                incident angles in units of degrees.
                                 `theta` is the oblique angle from normal (z).
                                 `phi` is the azimuthal angle, the angle from x axis to the in-plane projection of the incident k, ccw means positive.
         s_amplitude         :   "s" means electric field parallel to xy plane, perpendicular to incident plane
@@ -1340,8 +1340,8 @@ class Inkstone:
 
         Returns
         -------
-        sf, sb :
-            forward and backward power flux. Each is an 1d `numpy.ndarray` of length equal to the number of `z` points.
+        sf, sb :    ndarray
+            forward and backward power flux. Each is an 2d ndarray of shape (len(order), len(z)）.
 
         See Also
         --------
@@ -1364,6 +1364,8 @@ class Inkstone:
                 order = [order]
             elif type(order[0]) is int:
                 order = [(o, 0) for o in order]
+            else:
+                raise('Incorrect datatype for input argument `order`.', RuntimeError)
             idx = np.array([self.pr.idx_g.index(o) for o in order])
 
             exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)
@@ -1391,12 +1393,108 @@ class Inkstone:
 
         return sf, sb
 
+    def GetSMatrix(self,
+                   radiation_channels_only: bool = True,
+                   channels: List[Tuple[int, int]] = None,
+                   channels_in: List[Tuple[int, int]] = None,
+                   channels_out: List[Tuple[int, int]] = None,
+                   channels_exclude: List[Tuple[int, int]] = None
+                   ) -> [Tuple[Union[float, complex], float],
+                         Tuple[List[Tuple]]]:
+        """
+        Get the scattering matrix of the entire structure.
+
+        Can optionally select a few channels and return the scattering matrix between them.
+
+        Parameters
+        ----------
+        radiation_channels_only :
+            if or not to only include radiation channels in the incident and output regions
+        channels :
+            selected channels in the input and the transmission regions to calculate det.
+            overrides radiation_channels_only.
+        channels_in :
+            the selected channels in the incident region
+        channels_out :
+            the selected channels in the output region
+            if either channels_in or channels_out is specified, `channels` will be overridden.
+        channels_exclude:
+            select all other channels but these ones in both the incident and the transmission regions.
+            Overrides `channels`, `channels_in` and `channels_out`.
+
+        Returns
+        -------
+        dets :
+            the scattering matrix.
+        idx :
+            the channel index
+        """
+
+        if not self.pr.q0_contain_0:
+
+            self.solve()
+            sm_b = self.sm
+
+            sm = np.block([[sm_b[0], sm_b[1]],
+                           [sm_b[2], sm_b[3]]])
+
+            rci = []
+            rco = []
+            _rco = []
+
+            if channels_exclude is not None:
+                rci = list(range(self.pr.num_g))
+                for a in channels_exclude:
+                    i = self.pr.idx_g.index(a)
+                    rci.pop(i)
+                rci += [a + self.pr.num_g for a in rci]
+                rco = [a + 2 * self.pr.num_g for a in rci]
+            elif channels_in is not None:
+                rci = [self.pr.idx_g.index(a) for a in channels_in]
+                rci += [a+self.pr.num_g for a in rci]
+                if channels_out is not None:
+                    rco = [self.pr.idx_g.index(a) + 2 * self.pr.num_g for a in channels_out]
+                    rco += [a + self.pr.num_g for a in rco]
+            elif channels_out is not None:
+                rco = [self.pr.idx_g.index(a) + 2 * self.pr.num_g for a in channels_out]
+                rco += [a + self.pr.num_g for a in rco]
+            elif channels is not None:
+                rci = [self.pr.idx_g.index(a) for a in channels]
+                rci += [a+self.pr.num_g for a in rci]
+                rco = [a + 2 * self.pr.num_g for a in rci]
+            elif radiation_channels_only:
+                layersl = list(self.layers.values())
+                rci = layersl[0].rad_cha
+                rco = layersl[-1].rad_cha
+                _rco = [a + 2*self.pr.num_g for a in rco]
+
+            if rci or _rco:
+                rc = rci + _rco
+                sm = sm[rc, :][:, rc]
+
+            if rci:
+                idx_i = [self.pr.idx_g[ii] for ii in rci[:len(rci)//2]]
+            else:
+                idx_i = self.pr.idx_g
+            if rco:
+                idx_o = [self.pr.idx_g[ii] for ii in rco[:len(rco)//2]]
+            else:
+                idx_o = self.pr.idx_g
+
+        else:
+            sm = float('nan')
+            idx_i = float('nan')
+            idx_o = float('nan')
+
+        return sm, (idx_i, idx_o)
+
     def GetSMatrixDet(self,
-                      radiation_channels_only=False,
+                      radiation_channels_only: bool=False,
                       channels: List[Tuple[int, int]] = None,
                       channels_in: List[Tuple[int, int]] = None,
                       channels_out: List[Tuple[int, int]] = None,
-                      channels_exclude: List[Tuple[int, int]] = None) -> Tuple[Union[float, complex], float]:
+                      channels_exclude: List[Tuple[int, int]] = None
+                      ) -> Tuple[Union[float, complex], float]:
         """
         Calculate the determinant of the scattering matrix.
 
@@ -1425,49 +1523,10 @@ class Inkstone:
         dets :
             the sign and the natural log of the determinant of the scattering matrix.
         """
+        sm, idx = self.GetSMatrix(radiation_channels_only=radiation_channels_only, channels=channels, channels_in=channels_in, channels_out=channels_out, channels_exclude=channels_exclude)
 
-        if not self.pr.q0_contain_0:
-
-            self.solve()
-            sm_b = self.sm
-
-            sm = np.block([[sm_b[0], sm_b[1]],
-                           [sm_b[2], sm_b[3]]])
-
-            rci = []
-            rco = []
-
-            if channels_exclude is not None:
-                rci = list(range(self.pr.num_g))
-                for a in channels_exclude:
-                    i = self.pr.idx_g.index(a)
-                    rci.pop(i)
-                rci += [a + self.pr.num_g for a in rci]
-                rco = [a + 2 * self.pr.num_g for a in rci]
-            elif channels_in is not None:
-                rci = [self.pr.idx_g.index(a) for a in channels_in]
-                rci += [a+self.pr.num_g for a in rci]
-                if channels_out is not None:
-                    rco = [self.pr.idx_g.index(a) + 2 * self.pr.num_g for a in channels_out]
-                    rco += [a + self.pr.num_g for a in rco]
-            elif channels_out is not None:
-                rco = [self.pr.idx_g.index(a) + 2 * self.pr.num_g for a in channels_out]
-                rco += [a + self.pr.num_g for a in rco]
-            elif channels is not None:
-                rci = [self.pr.idx_g.index(a) for a in channels]
-                rci += [a+self.pr.num_g for a in rci]
-                rco = [a + 2 * self.pr.num_g for a in rci]
-            elif radiation_channels_only:
-                layersl = list(self.layers.values())
-                rci = layersl[0].rad_cha
-                rco = [a + 2*self.pr.num_g for a in layersl[-1].rad_cha]
-
-            if rci or rco:
-                rc = rci + rco
-                sm = sm[rc, :][:, rc]
-
+        if sm:
             dets = la.slogdet(sm)
-
         else:
             dets = float('nan')
 

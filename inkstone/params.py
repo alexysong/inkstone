@@ -218,7 +218,7 @@ class Params:
 
     @property
     def k_inci(self) -> Tuple[float, float]:
-        """kx and ky project of the incident wave vector"""
+        """kx and ky projection of the incident wave vector"""
         return self._k_inci
 
     @property
