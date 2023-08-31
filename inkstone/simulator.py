@@ -1525,7 +1525,7 @@ class Inkstone:
         """
         sm, idx = self.GetSMatrix(radiation_channels_only=radiation_channels_only, channels=channels, channels_in=channels_in, channels_out=channels_out, channels_exclude=channels_exclude)
 
-        if sm:
+        if sm.any():
             dets = la.slogdet(sm)
         else:
             dets = float('nan')
