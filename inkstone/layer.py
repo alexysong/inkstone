@@ -104,7 +104,7 @@ class Layer:
 
         self.al_bl: Optional[Tuple[np.ndarray, np.ndarray]] = None  # the field coefficients (al, bl).
 
-        self.in_mid_out: str = 'mid'  # {'in', 'mid', 'out'}, if this layer is the incident, output, or a middle layer
+        self._in_mid_out: str = 'mid'  # {'in', 'mid', 'out'}, if this layer is the incident, output, or a middle layer
 
         if material_bg == 'vacuum':
             self.is_vac = True
@@ -114,6 +114,14 @@ class Layer:
         self._rad_cha: Optional[List[int]] = None
 
         self.set_layer(**kwargs)
+
+    @property
+    def in_mid_out(self):
+        return self._in_mid_out
+
+    @in_mid_out.setter
+    def in_mid_out(self, val: str):
+        self._in_mid_out = val
 
     @property
     def thickness(self):

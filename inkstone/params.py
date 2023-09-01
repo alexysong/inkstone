@@ -211,6 +211,7 @@ class Params:
             self._omega = val
             self._frequency = val / np.pi / 2.
             # self.q0_contain_0 = False
+            self._calc_gs()  # recalculating gs because some g may be possibly removed in previous runs to remove Wood's anomaly.
             self._calc_k_inci()
             # self._calc_q0()  # called through _calc_k_inci - _calc_ks
             # self._calc_P0Q0()  # called through _calc_k_inci - _calc_ks - _calc_Km
@@ -530,10 +531,10 @@ class Params:
 
             if np.any(q0 == 0.):
                 self.q0_contain_0 = True
-                # warn("Vacuum propagation constant 0 encountered. Possibly Wood's anomaly. These channels are removed.", RuntimeWarning)
-                idxs_rm = np.where(q0 == 0.)[0]
-                q0 = np.delete(q0, idxs_rm)
-                self._remove_gs_xuhao(idxs_rm)
+                warn("Vacuum propagation constant 0 encountered. Possibly Wood's anomaly. These channels are removed.", RuntimeWarning)
+                # idxs_rm = np.where(q0 == 0.)[0]
+                # q0 = np.delete(q0, idxs_rm)
+                # self._remove_gs_xuhao(idxs_rm)
                 # print(self.frequency, self.k_inci, self.theta, self.q0, self.ks, self.idx_g)
             else:
                 self.q0_contain_0 = False
