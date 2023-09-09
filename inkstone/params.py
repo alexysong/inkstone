@@ -607,21 +607,6 @@ class Params:
             k_norm = np.sqrt(np.conj(Kx) * Kx + np.conj(Ky) * Ky)
 
             # # Use [ky, -kx] etc. as eigen
-            # Kxm = np.diag(Kx)
-            # Kym = np.diag(Ky)
-            # jwKxq = 1j / o * Kx * self.q0_half
-            # jwKyq = 1j / o * Ky * self.q0_half
-            # # jwkq_norm = np.sqrt(np.conj(jwKxq) * jwKxq + np.conj(jwKyq) * jwKyq)
-            # jwKxqm = np.diag(jwKxq)
-            # jwKyqm = np.diag(jwKyq)
-            #
-            # phi0 = np.block([[Kym, jwKxqm],
-            #                  [-Kxm, jwKyqm]])
-            # psi0 = np.block([[jwKxqm, Kym],
-            #                  [jwKyqm, -Kxm]])
-
-
-            # # Use [ky, -kx] etc. as eigen
             # Tx = Kx  # term with x subscript
             # Ty = Ky
             #
@@ -644,10 +629,25 @@ class Params:
             #
             # jwTxqm = np.diag(jwTxq)
             # jwTyqm = np.diag(jwTyq)
-            # phi0 = np.block([[Tym, jwTxqm],
-            #                  [-Txm, jwTyqm]])
-            # psi0 = np.block([[jwTxqm, Tym],
-            #                  [jwTyqm, -Txm]])
+            #
+            # ng = self._num_g_ac
+            # r1 = range(ng)
+            # r2 = range(ng, 2 * ng)
+            # phi0 = np.zeros((2*ng, 2*ng), dtype=complex)
+            # psi0 = phi0.copy()
+            # phi0[r1, r1] = Ty
+            # phi0[r2, r1] = -Tx
+            # phi0[r1, r2] = jwTxq
+            # phi0[r2, r2] = jwTyq
+            # psi0[r1, r1] = jwTxq
+            # psi0[r2, r1] = jwTyq
+            # psi0[r1, r2] = Ty
+            # psi0[r2, r2] = -Tx
+            #
+            # # phi0 = np.block([[Tym, jwTxqm],
+            # #                  [-Txm, jwTyqm]])
+            # # psi0 = np.block([[jwTxqm, Tym],
+            # #                  [jwTyqm, -Txm]])
             #
             # self.phi0_2x2s = np.array([[Ty, jwTxq],
             #                           [-Tx, jwTyq]])
