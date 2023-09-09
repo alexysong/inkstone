@@ -577,10 +577,12 @@ class Inkstone:
                                 incident angles in units of degrees.
                                 `theta` is the oblique angle from normal (z).
                                 `phi` is the azimuthal angle, the angle from x axis to the in-plane projection of the incident k, ccw means positive.
-        s_amplitude         :   "s" means electric field parallel to xy plane, perpendicular to incident plane
-                                The incident plane contains z and k.
+        s_amplitude         :   Electric field amplitude of incident s wave.
+                                "s" means electric field parallel to xy plane, perpendicular to incident plane. The incident plane contains z and k.
+                                A list would mean the electric field amplitude of s-wave incidence in several orders, defined by `order`
         p_amplitude         :   "p" means electric field polarized in the incident plane.
-        order               :   incident wave is in which Fourier order
+                                See `s_amplitude` definition.
+        order               :   The Fourier order(s) of incident waves
         s_amplitude_back    :   backside incident s wave from the output region
         p_amplitude_back    :   backside incident p wave form the output region
         order_back          :   Fourier order for the backside incidence
@@ -952,12 +954,12 @@ class Inkstone:
         """
         t1 = time.process_time()
 
-        if not self.pr.q0_contain_0:
-            self._determine_layers()
-            self._determine_recalc()
-            self._calc_sm()
-            # todo: if simulating det(S), no need to calc bi ao al bl
-            self._calc_bi_ao()
+        # if not self.pr.q0_contain_0:
+        self._determine_layers()
+        self._determine_recalc()
+        self._calc_sm()
+        # todo: if simulating det(S), no need to calc bi ao al bl
+        self._calc_bi_ao()
 
         if self.pr.show_calc_time:
             print("{:.6f}   Solving time".format((time.process_time() - t1)))
@@ -1071,27 +1073,27 @@ class Inkstone:
         if not hasattr(z, '__len__'):
             z = [z]
 
-        if not self.pr.q0_contain_0:
-            # solve structure first
-            self.solve()
-            i = list(self.layers.keys()).index(layer)
-            self._calc_al_bl_layer(i)
+        # if not self.pr.q0_contain_0:
+        # solve structure first
+        self.solve()
+        i = list(self.layers.keys()).index(layer)
+        self._calc_al_bl_layer(i)
 
-            exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)  # each has shape (num_g, len(z))
-            ex, ey, ez, hx, hy, hz = [a + b for a, b in [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
+        exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)  # each has shape (num_g, len(z))
+        ex, ey, ez, hx, hy, hz = [a + b for a, b in [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
 
-            xa, ya = np.hsplit(np.array(xy), 2)  # 2d array with one column
+        xa, ya = np.hsplit(np.array(xy), 2)  # 2d array with one column
 
-            kxa, kya = np.hsplit(np.array(self.pr.ks), 2)  # 2d array with one column
+        kxa, kya = np.hsplit(np.array(self.pr.ks), 2)  # 2d array with one column
 
-            phase = xa * kxa.T + ya * kya.T  # shape (len(xy), numg)
+        phase = xa * kxa.T + ya * kya.T  # shape (len(xy), numg)
 
-            Ex, Ey, Ez = [(np.exp(1j * phase) @ e) for e in [ex, ey, ez]]  # shape (len(xy), len(z))
+        Ex, Ey, Ez = [(np.exp(1j * phase) @ e) for e in [ex, ey, ez]]  # shape (len(xy), len(z))
 
-            Hx, Hy, Hz = [(-1j * np.exp(1j * phase) @ h) for h in [hx, hy, hz]]  # shape (len(xy), len(z))
+        Hx, Hy, Hz = [(-1j * np.exp(1j * phase) @ h) for h in [hx, hy, hz]]  # shape (len(xy), len(z))
 
-        else:
-            Ex, Ey, Ez, Hx, Hy, Hz = [np.nan*np.zeros((len(xy), len(z))) for i in range(6)]
+        # else:
+        #     Ex, Ey, Ez, Hx, Hy, Hz = [np.nan*np.zeros((len(xy), len(z))) for i in range(6)]
 
         return Ex, Ey, Ez, Hx, Hy, Hz
 
@@ -1291,34 +1293,34 @@ class Inkstone:
 
         """
 
-        if not self.pr.q0_contain_0:
+        # if not self.pr.q0_contain_0:
 
-            self.solve()
-            i = list(self.layers.keys()).index(layer)
-            self._calc_al_bl_layer(i)
+        self.solve()
+        i = list(self.layers.keys()).index(layer)
+        self._calc_al_bl_layer(i)
 
-            t1 = time.process_time()
-            exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)
-            ex, ey, ez, hx, hy, hz = [a + b for a, b in [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
+        t1 = time.process_time()
+        exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)
+        ex, ey, ez, hx, hy, hz = [a + b for a, b in [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
 
-            sf = -1.j / 4. * ((np.einsum('i...,i...', ex.conj(), hyf) - np.einsum('i...,i...', ey.conj(), hxf))
-                              - (np.einsum('i...,i...', hy.conj(), exf) - np.einsum('i...,i...', hx.conj(), eyf)))  # 1d array of length len(z)
-            sb = -1.j / 4. * ((np.einsum('i...,i...', ex.conj(), hyb) - np.einsum('i...,i...', ey.conj(), hxb))
-                              - (np.einsum('i...,i...', hy.conj(), exb) - np.einsum('i...,i...', hx.conj(), eyb)))
+        sf = -1.j / 4. * ((np.einsum('i...,i...', ex.conj(), hyf) - np.einsum('i...,i...', ey.conj(), hxf))
+                          - (np.einsum('i...,i...', hy.conj(), exf) - np.einsum('i...,i...', hx.conj(), eyf)))  # 1d array of length len(z)
+        sb = -1.j / 4. * ((np.einsum('i...,i...', ex.conj(), hyb) - np.einsum('i...,i...', ey.conj(), hxb))
+                          - (np.einsum('i...,i...', hy.conj(), exb) - np.einsum('i...,i...', hx.conj(), eyb)))
 
-            if sf.size == 1:
-                sf = sf[0].real
-                sb = sb[0].real
-            else:
-                sf = sf.real
-                sb = sb.real
-
-            if self.pr.show_calc_time:
-                print('{:.6f}   calc flux from coef'.format(time.process_time() - t1))
-
+        if sf.size == 1:
+            sf = sf[0].real
+            sb = sb[0].real
         else:
-            sf = float('nan')
-            sb = float('nan')
+            sf = sf.real
+            sb = sb.real
+
+        if self.pr.show_calc_time:
+            print('{:.6f}   calc flux from coef'.format(time.process_time() - t1))
+
+        # else:
+        #     sf = float('nan')
+        #     sb = float('nan')
 
         return sf, sb
 
@@ -1349,47 +1351,47 @@ class Inkstone:
 
         """
 
-        if not self.pr.q0_contain_0:
+        # if not self.pr.q0_contain_0:
 
-            self.solve()
-            i = list(self.layers.keys()).index(layer)
-            self._calc_al_bl_layer(i)
+        self.solve()
+        i = list(self.layers.keys()).index(layer)
+        self._calc_al_bl_layer(i)
 
-            t1 = time.process_time()
-            if order is None:
-                order = [(0, 0)]
-            elif type(order) is int:
-                order = [(order, 0)]
-            elif type(order) is tuple:
-                order = [order]
-            elif type(order[0]) is int:
-                order = [(o, 0) for o in order]
-            else:
-                raise('Incorrect datatype for input argument `order`.', RuntimeError)
-            idx = np.array([self.pr.idx_g.index(o) for o in order])
-
-            exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)
-
-            ex, ey, hx, hy = [a + b for a, b in [(exf, exb), (eyf, eyb), (hxf, hxb), (hyf, hyb)]]
-
-            sf = -1.j / 4. * ((ex.conj()[idx, :] * hyf[idx, :] - ey.conj()[idx, :] * hxf[idx, :])
-                              - (hy.conj()[idx, :] * exf[idx, :] - hx.conj()[idx, :] * eyf[idx, :]))  # 1d array of length len(z)
-            sb = -1.j / 4. * ((ex.conj()[idx, :] * hyb[idx, :] - ey.conj()[idx, :] * hxb[idx, :])
-                              - (hy.conj()[idx, :] * exb[idx, :] - hx.conj()[idx, :] * eyb[idx, :]))
-
-            if sf.size == 1:
-                sf = sf.ravel()[0].real
-                sb = sb.ravel()[0].real
-            else:
-                sf = sf.real
-                sb = sb.real
-
-            if self.pr.show_calc_time:
-                print('{:.6f}   calc flux from coef'.format(time.process_time() - t1))
-
+        t1 = time.process_time()
+        if order is None:
+            order = [(0, 0)]
+        elif type(order) is int:
+            order = [(order, 0)]
+        elif type(order) is tuple:
+            order = [order]
+        elif type(order[0]) is int:
+            order = [(o, 0) for o in order]
         else:
-            sf = float('nan')
-            sb = float('nan')
+            raise('Incorrect datatype for input argument `order`.', RuntimeError)
+        idx = np.array([self.pr.idx_g.index(o) for o in order])
+
+        exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)
+
+        ex, ey, hx, hy = [a + b for a, b in [(exf, exb), (eyf, eyb), (hxf, hxb), (hyf, hyb)]]
+
+        sf = -1.j / 4. * ((ex.conj()[idx, :] * hyf[idx, :] - ey.conj()[idx, :] * hxf[idx, :])
+                          - (hy.conj()[idx, :] * exf[idx, :] - hx.conj()[idx, :] * eyf[idx, :]))  # 1d array of length len(z)
+        sb = -1.j / 4. * ((ex.conj()[idx, :] * hyb[idx, :] - ey.conj()[idx, :] * hxb[idx, :])
+                          - (hy.conj()[idx, :] * exb[idx, :] - hx.conj()[idx, :] * eyb[idx, :]))
+
+        if sf.size == 1:
+            sf = sf.ravel()[0].real
+            sb = sb.ravel()[0].real
+        else:
+            sf = sf.real
+            sb = sb.real
+
+        if self.pr.show_calc_time:
+            print('{:.6f}   calc flux from coef'.format(time.process_time() - t1))
+
+        # else:
+        #     sf = float('nan')
+        #     sb = float('nan')
 
         return sf, sb
 
@@ -1430,61 +1432,61 @@ class Inkstone:
             the channel index
         """
 
-        if not self.pr.q0_contain_0:
+        # if not self.pr.q0_contain_0:
 
-            self.solve()
-            sm_b = self.sm
+        self.solve()
+        sm_b = self.sm
 
-            sm = np.block([[sm_b[0], sm_b[1]],
-                           [sm_b[2], sm_b[3]]])
+        sm = np.block([[sm_b[0], sm_b[1]],
+                       [sm_b[2], sm_b[3]]])
 
-            rci = []
-            rco = []
-            _rco = []
+        rci = []
+        rco = []
+        _rco = []
 
-            if channels_exclude is not None:
-                rci = list(range(self.pr.num_g))
-                for a in channels_exclude:
-                    i = self.pr.idx_g.index(a)
-                    rci.pop(i)
-                rci += [a + self.pr.num_g for a in rci]
-                rco = [a + 2 * self.pr.num_g for a in rci]
-            elif channels_in is not None:
-                rci = [self.pr.idx_g.index(a) for a in channels_in]
-                rci += [a+self.pr.num_g for a in rci]
-                if channels_out is not None:
-                    rco = [self.pr.idx_g.index(a) + 2 * self.pr.num_g for a in channels_out]
-                    rco += [a + self.pr.num_g for a in rco]
-            elif channels_out is not None:
+        if channels_exclude is not None:
+            rci = list(range(self.pr.num_g))
+            for a in channels_exclude:
+                i = self.pr.idx_g.index(a)
+                rci.pop(i)
+            rci += [a + self.pr.num_g for a in rci]
+            rco = [a + 2 * self.pr.num_g for a in rci]
+        elif channels_in is not None:
+            rci = [self.pr.idx_g.index(a) for a in channels_in]
+            rci += [a+self.pr.num_g for a in rci]
+            if channels_out is not None:
                 rco = [self.pr.idx_g.index(a) + 2 * self.pr.num_g for a in channels_out]
                 rco += [a + self.pr.num_g for a in rco]
-            elif channels is not None:
-                rci = [self.pr.idx_g.index(a) for a in channels]
-                rci += [a+self.pr.num_g for a in rci]
-                rco = [a + 2 * self.pr.num_g for a in rci]
-            elif radiation_channels_only:
-                layersl = list(self.layers.values())
-                rci = layersl[0].rad_cha
-                rco = layersl[-1].rad_cha
-                _rco = [a + 2*self.pr.num_g for a in rco]
+        elif channels_out is not None:
+            rco = [self.pr.idx_g.index(a) + 2 * self.pr.num_g for a in channels_out]
+            rco += [a + self.pr.num_g for a in rco]
+        elif channels is not None:
+            rci = [self.pr.idx_g.index(a) for a in channels]
+            rci += [a+self.pr.num_g for a in rci]
+            rco = [a + 2 * self.pr.num_g for a in rci]
+        elif radiation_channels_only:
+            layersl = list(self.layers.values())
+            rci = layersl[0].rad_cha
+            rco = layersl[-1].rad_cha
+            _rco = [a + 2*self.pr.num_g for a in rco]
 
-            if rci or _rco:
-                rc = rci + _rco
-                sm = sm[rc, :][:, rc]
+        if rci or _rco:
+            rc = rci + _rco
+            sm = sm[rc, :][:, rc]
 
-            if rci:
-                idx_i = [self.pr.idx_g[ii] for ii in rci[:len(rci)//2]]
-            else:
-                idx_i = self.pr.idx_g
-            if rco:
-                idx_o = [self.pr.idx_g[ii] for ii in rco[:len(rco)//2]]
-            else:
-                idx_o = self.pr.idx_g
-
+        if rci:
+            idx_i = [self.pr.idx_g[ii] for ii in rci[:len(rci)//2]]
         else:
-            sm = float('nan')
-            idx_i = float('nan')
-            idx_o = float('nan')
+            idx_i = self.pr.idx_g
+        if rco:
+            idx_o = [self.pr.idx_g[ii] for ii in rco[:len(rco)//2]]
+        else:
+            idx_o = self.pr.idx_g
+
+        # else:
+        #     sm = float('nan')
+        #     idx_i = float('nan')
+        #     idx_o = float('nan')
 
         return sm, (idx_i, idx_o)
 

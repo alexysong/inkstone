@@ -66,6 +66,12 @@ For $\theta=0$, $\phi=0$, $s$ is when $\vec{E}$ of incoming wave is along $\hat{
 
 In 2d simulations (1d grating), the space is assumed to be in $x$ and $z$. Here, $s$ is when $\vec{E}$ of the incoming wave is in and out of the solving 2d space. $p$ is again orthogonal to it.
 
+## What's new
+
+*   Ver 0.3:
+
+    Solved the convergence issue at Wood's anomaly. Now the calculation maintain the same convergence, stability, and speeed near and at Wood's anomaly.
+
 ## Citing
 If you find Inkstone useful for your research, we would apprecite you citing our [paper](https://doi.org/10.1103/PhysRevLett.120.193903). For your convenience, you can use the following BibTex entry:
 

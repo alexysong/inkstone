@@ -2,7 +2,8 @@
 
 import numpy as np
 import numpy.linalg as la
-# from scipy import sparse as sps
+from scipy import sparse as sps
+import scipy.linalg as sla
 # import scipy.fft as fft
 from typing import Tuple, List, Union, Optional, Set
 # import time
@@ -60,7 +61,10 @@ class Params:
         self.nmax: Optional[int] = None  # max index in b2 direction for epsi and mu Fourier series
         self.phi0: Optional[np.ndarray] = None  # E field eigen mode in vacuum (identity matrix), side length 2*num_g
         self.psi0: Optional[np.ndarray] = None  # H field eigen mode in vacuum (Q * Phi * q^-1), side length 2*num_g
+        self.phi0_2x2s: Optional[np.ndarray] = None  # the non-zero elements of phi0 stored in (2, 2, num_g) shape
         self.q0: Optional[np.ndarray] = None  # 1d array, eigen propagation constant in z direction in vacuum, length 2*num_g
+        self.q0_half: Optional[np.ndarray] = None  # 1d array, eigen propagation constant in z direction in vacuum, length num_g
+        self.q0_0: Optional[np.ndarray] = None  # 1d array, containing idxs to the idx_g list which q0 is 0, i.e. parallel to surface
         self.q0_inv: Optional[np.ndarray] = None  # 1d array, 1./q0, elementwise inversion of q0, length 2*num_g
         self.P0_val: Optional[Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]] = None  # Tuple of 4, each is an ndarray of size num_g, containing the diagonal elements of the 4 blocks of P0.
         self.Q0_val: Optional[Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]] = None  # Tuple of 4, each is an ndarray of size num_g, containing the diagonal elements of the 4 blocks of Q0.
@@ -96,7 +100,7 @@ class Params:
         self.ai: Optional[np.ndarray] = None
         self.bo: Optional[np.ndarray] = None
 
-        self.q0_contain_0: bool = False
+        # self.q0_contain_0: bool = False
 
         self.show_calc_time = show_calc_time
 
@@ -183,7 +187,8 @@ class Params:
     def _num_g_ac(self, val: int):
         # todo: all other calc should use this than original num_g
         self.__num_g_actual = val
-        self._calc_phi0()
+        # self._calc_phi0()
+        self._calc_phi0_psi0()
         # self._calc_q0()  # called through _calc_gs - _calc_ks
         self._calc_im0()
         self._calc_s_0()
@@ -451,7 +456,7 @@ class Params:
         """Calculate Kx Ky matrices"""
         if self.ks:
             # t1 = time.process_time()
-            ksa = np.array(self.ks)  # Nx2 shape
+            ksa = np.array(self.ks)  # shape (NumG, 2)
             kx = ksa[:, 0]
             ky = ksa[:, 1]
             self.Kx = kx
@@ -460,6 +465,7 @@ class Params:
             # print('_calc_Km', time.process_time() - t1)
 
             self._calc_P0Q0()
+            # self._calc_phi0_psi0()  # called through _calc_P0Q0()
 
     def _calc_conv_mtx_idx(self):
         if self.idx_g:
@@ -529,23 +535,33 @@ class Params:
                 q0[q0.imag < 0] *= -1
             # todo: what to do at q02.real == 0 case (Woods)?
 
-            if np.any(q0 == 0.):
-                self.q0_contain_0 = True
-                warn("Vacuum propagation constant 0 encountered. Possibly Wood's anomaly. These channels are removed.", RuntimeWarning)
-                # idxs_rm = np.where(q0 == 0.)[0]
-                # q0 = np.delete(q0, idxs_rm)
-                # self._remove_gs_xuhao(idxs_rm)
-                # print(self.frequency, self.k_inci, self.theta, self.q0, self.ks, self.idx_g)
-            else:
-                self.q0_contain_0 = False
+            self.q0_0 = np.where(np.abs(q0) == 0.)[0]
+
+            # if np.any(q0 == 0.):
+            #     # todo: no need of this anymore after Wood fix
+            #     # self.q0_contain_0 = True
+            #     warn("Vacuum propagation constant 0 encountered. Possibly Wood's anomaly. ", RuntimeWarning)
+            #
+            #     # remove Wood channel. Turns out this is incorrect.
+            #     # idxs_rm = np.where(q0 == 0.)[0]
+            #     # q0 = np.delete(q0, idxs_rm)
+            #     # self._remove_gs_xuhao(idxs_rm)
+            #
+            #     # print(self.frequency, self.k_inci, self.theta, self.q0, self.ks, self.idx_g)
+            # else:
+            #     self.q0_contain_0 = False
 
             self.q0 = np.concatenate([q0, q0])
+            self.q0_half = q0
             # print('_calc_q0', time.process_time() - t1)
 
             with np.errstate(divide='ignore', invalid='ignore'):
                 self.q0_inv = 1. / self.q0
+                ii = np.where(self.q0 == 0.)
+                self.q0_inv[ii] = float('inf')
 
-            self._calc_psi0()
+            # self._calc_psi0()
+            self._calc_phi0_psi0()
 
     def _calc_P0Q0(self):
         if (self.omega is not None) and (self.Kx is not None) and (self.Ky is not None):
@@ -566,28 +582,328 @@ class Params:
             self.P0_val = (P11, P12, P21, P22)
             self.Q0_val = self.P0_val
 
-            self._calc_psi0()
+            # for testing
+            ng = self._num_g_ac
+            self.P0 = np.zeros((2*ng, 2*ng), dtype=complex)
+            r1 = range(ng)
+            r2 = range(ng, 2 * ng)
+            self.P0[r1, r1] = P11
+            self.P0[r2, r1] = P21
+            self.P0[r1, r2] = P12
+            self.P0[r2, r2] = P22
+            # self.P0 = np.block([[np.diag(P11), np.diag(P12)],
+            #                     [np.diag(P21), np.diag(P22)]])
+
+            # self._calc_psi0()
+            self._calc_phi0_psi0()
+
+    def _calc_phi0_psi0(self):
+        if (self.Q0_val is not None) and (self.q0 is not None) and (self._num_g_ac is not None):
+            # t1 = time.process_time()
+
+            o = self.omega
+            Kx = self.Kx.copy()
+            Ky = self.Ky.copy()
+            k_norm = np.sqrt(np.conj(Kx) * Kx + np.conj(Ky) * Ky)
+
+            # # Use [ky, -kx] etc. as eigen
+            # Kxm = np.diag(Kx)
+            # Kym = np.diag(Ky)
+            # jwKxq = 1j / o * Kx * self.q0_half
+            # jwKyq = 1j / o * Ky * self.q0_half
+            # # jwkq_norm = np.sqrt(np.conj(jwKxq) * jwKxq + np.conj(jwKyq) * jwKyq)
+            # jwKxqm = np.diag(jwKxq)
+            # jwKyqm = np.diag(jwKyq)
+            #
+            # phi0 = np.block([[Kym, jwKxqm],
+            #                  [-Kxm, jwKyqm]])
+            # psi0 = np.block([[jwKxqm, Kym],
+            #                  [jwKyqm, -Kxm]])
+
+
+            # # Use [ky, -kx] etc. as eigen
+            # Tx = Kx  # term with x subscript
+            # Ty = Ky
+            #
+            # # for small k just use [1, 0], [0, 1] as eigen.
+            # skc = 0.5  # small k criterion
+            # small_k = np.where(k_norm < (skc * np.abs(o)))[0]
+            # Tx[small_k] = 0.
+            # Ty[small_k] = 1.
+            # t_norm = k_norm.copy()  # term norm
+            # t_norm[small_k] = 1.
+            #
+            # Txm = np.diag(Tx)
+            # Tym = np.diag(Ty)
+            # jwTxq = 1j / o * Tx * self.q0_half
+            # jwTyq = 1j / o * Ty * self.q0_half
+            #
+            # # for small k, need separate calc here
+            # jwTxq[small_k] = -1j / o * Kx[small_k] * Ky[small_k] / self.q0_half[small_k]
+            # jwTyq[small_k] = -1j / o * (-np.conj(Kx[small_k])*Kx[small_k] - np.conj(self.q0_half[small_k])*self.q0_half[small_k]) / self.q0_half[small_k]
+            #
+            # jwTxqm = np.diag(jwTxq)
+            # jwTyqm = np.diag(jwTyq)
+            # phi0 = np.block([[Tym, jwTxqm],
+            #                  [-Txm, jwTyqm]])
+            # psi0 = np.block([[jwTxqm, Tym],
+            #                  [jwTyqm, -Txm]])
+            #
+            # self.phi0_2x2s = np.array([[Ty, jwTxq],
+            #                           [-Tx, jwTyq]])
+
+
+            # with normalization
+            q0h = self.q0_half
+            nga = self._num_g_ac
+
+            skc = 0.05  # small k criterion
+            i_knz = np.where(k_norm < (skc * np.abs(o)))[0]  # k near zero
+            i_qsw = np.where((np.abs(q0h) <= np.abs(o)) * (k_norm >= (skc * np.abs(o))))[0]  # q smaller than omega, but k_norm not near zero
+            i_qlw = np.where(np.abs(q0h) >  np.abs(o))[0]  # q larger than omega
+
+            c1 = np.array([self.Ky, -self.Kx], dtype=complex)
+            c2 = np.array([self.Kx, self.Ky], dtype=complex)
+            c1f = np.ones(nga, dtype=complex)  # multiplication factor which includes normalization
+            c2f = c1f.copy()
+
+            c1[:, i_knz] = np.array([[1.], [0.]])
+            c2[:, i_knz] = np.array([-1j / o * Kx[i_knz] * Ky[i_knz] / q0h[i_knz], -1j / o * (-np.square(Kx[i_knz]) - np.square(q0h[i_knz])) / q0h[i_knz]])  # should not be |Kx|^2
+
+            c1f[i_qlw] = o / q0h[i_qlw] / k_norm[i_qlw]
+            c2f[i_qlw] = 1j / k_norm[i_qlw]
+
+            c1f[i_qsw] = 1. / k_norm[i_qsw]
+            c2f[i_qsw] = 1j / o * q0h[i_qsw] / k_norm[i_qsw]
+
+            c1f[i_knz] = 1.
+            c2f[i_knz] = 1.
+
+            c1 *= c1f
+            c2 *= c2f
+
+            ng = self._num_g_ac
+            r1 = range(ng)
+            r2 = range(ng, 2 * ng)
+            phi0 = np.zeros((2*ng, 2*ng), dtype=complex)
+            psi0 = phi0.copy()
+            phi0[r1, r1] = c1[0, :]
+            phi0[r2, r1] = c1[1, :]
+            phi0[r1, r2] = c2[0, :]
+            phi0[r2, r2] = c2[1, :]
+            psi0[r1, r1] = c2[0, :]
+            psi0[r2, r1] = c2[1, :]
+            psi0[r1, r2] = c1[0, :]
+            psi0[r2, r2] = c1[1, :]
+
+            # phi0 = np.block([[np.diag(c1[0, :]), np.diag(c2[0, :])],
+            #                  [np.diag(c1[1, :]), np.diag(c2[1, :])]])
+            #
+            # psi0 = np.block([[np.diag(c2[0, :]), np.diag(c1[0, :])],
+            #                  [np.diag(c2[1, :]), np.diag(c1[1, :])]])
+
+            self.phi0_2x2s = np.array([c1, c2])
+
+
+            # # debugging
+            # psi00 = -1j * self.P0 @ phi0 / self.q0
+            # diff = np.abs(psi00 - psi0).max()
+            # print('psi0 diff {:g}'.format(diff))
+            #
+            # check_eigen = self.P0 @ self.P0 @ phi0
+            # diff1 = np.abs(check_eigen + phi0 * self.q0 * self.q0).max()
+            # print('check eigen {:g}'.format(diff1))
+
+            # # original
+            # phi0 = np.eye(2 * self._num_g_ac, 2 * self._num_g_ac, dtype=complex)
+            # ng = self._num_g_ac
+            # psi0 = np.zeros((2 * ng, 2 * ng), dtype=complex)
+            # r1 = range(ng)
+            # r2 = range(ng, 2 * ng)
+            # q0_inv = self.q0_inv
+            # if self.Q0_val[0].size == self.q0_inv[:ng].size:
+            #     psi0[r1, r1] = -1j * self.Q0_val[0] * q0_inv[:ng]
+            #     psi0[r1, r2] = -1j * self.Q0_val[1] * q0_inv[ng:]
+            #     psi0[r2, r1] = -1j * self.Q0_val[2] * q0_inv[:ng]
+            #     psi0[r2, r2] = -1j * self.Q0_val[3] * q0_inv[ng:]
+
+            self.phi0 = phi0
+            self.psi0 = psi0
 
     def _calc_phi0(self):
+        warn('This method is deprecated. Use `_calc_phi0_psi0` instead.', category=DeprecationWarning)
         if self._num_g_ac:
             self.phi0 = np.eye(2 * self._num_g_ac, 2 * self._num_g_ac, dtype=complex)
 
     def _calc_psi0(self):
-        if (self.Q0_val is not None) and (self.q0 is not None) and (self._num_g_ac is not None):
+        warn('This method is deprecated. Use `_calc_phi0_psi0` instead.', category=DeprecationWarning)
+
+        if (self.Q0_val is not None) and (self.q0 is not None) and (self._num_g_ac is not None) and ((self.Kx is not None) and (self.Ky is not None)):
             # t1 = time.process_time()
 
-            if not self.q0_contain_0:
-                ng = self._num_g_ac
-                psi0 = np.zeros((2 * ng, 2 * ng), dtype=complex)
-                r1 = range(ng)
-                r2 = range(ng, 2 * ng)
-                q0_inv = self.q0_inv
-                if self.Q0_val[0].size == self.q0_inv[:ng].size:
-                    psi0[r1, r1] = -1j * self.Q0_val[0] * q0_inv[:ng]
-                    psi0[r1, r2] = -1j * self.Q0_val[1] * q0_inv[ng:]
-                    psi0[r2, r1] = -1j * self.Q0_val[2] * q0_inv[:ng]
-                    psi0[r2, r2] = -1j * self.Q0_val[3] * q0_inv[ng:]
-                self.psi0 = psi0
+            # if not self.q0_contain_0:
+            ng = self._num_g_ac
+            psi0 = np.zeros((2 * ng, 2 * ng), dtype=complex)
+            r1 = range(ng)
+            r2 = range(ng, 2 * ng)
+            q0_inv = self.q0_inv
+            if self.Q0_val[0].size == self.q0_inv[:ng].size:
+                psi0[r1, r1] = -1j * self.Q0_val[0] * q0_inv[:ng]
+                psi0[r1, r2] = -1j * self.Q0_val[1] * q0_inv[ng:]
+                psi0[r2, r1] = -1j * self.Q0_val[2] * q0_inv[:ng]
+                psi0[r2, r2] = -1j * self.Q0_val[3] * q0_inv[ng:]
+
+                # # at Wood P is singular so this solving doesn't work.
+                # _P = [np.diag(Qv) for Qv in self.Q0_val]
+                # P = np.block([[_P[0], _P[1]],
+                #               [_P[2], _P[3]]])
+                # psi0 = 1j * la.solve(P, self.phi0) @ np.diag(self.q0)
+
+            o = self.omega
+            cn = np.where(np.abs(self.q0) == 0.)[0]
+            cn1 = np.where(np.abs(self.q0) < 1e-2)[0]  # for debugging
+
+            # # test setting zeros an ones
+            # for ii in cn:
+            #     if ii < ng:
+            #         if self.Ky[ii] == 0.:
+            #             psi0[ii, ii] = 0.
+            #             psi0[ii+ng, ii] = 1.
+            #             self.phi0[ii, ii] = 0.
+            #         elif self.Kx[ii] != 0.:
+            #             # psi0[ii, ii] = -self.P0_val[0][ii]
+            #             # psi0[ii+ng, ii] = -self.P0_val[2][ii]
+            #             # self.phi0[ii, ii] = 0.
+            #             if (ii == 5) or (ii == 6):
+            #                 psi0[ii, ii] = 0.
+            #                 psi0[ii+ng, ii] = 0.
+            #                 self.phi0[ii, ii] = 1.
+            #                 self.phi0[ii+ng, ii] = -1.
+            #
+            #         else:
+            #             psi0[ii, ii] = 1. * np.sign(self.Ky[ii])
+            #             psi0[ii+ng, ii] = 0.
+            #
+            #         # if (self.Ky[ii] == 0) or (self.Kx[ii] == 0):
+            #         #     # psi0[ii, ii] = -1j * 1. / o * self.Kx[cn]
+            #         #     psi0[ii, ii] = 0.
+            #         #     psi0[ii+ng, ii] = 1.
+            #         # else:
+            #         #     psi0[ii, ii] = self.P0_val[0][ii]
+            #         #     psi0[ii+ng, ii] = self.P0_val[2][ii]
+            #     else:
+            #         iim = ii-ng
+            #         if self.Kx[iim] == 0.:
+            #             psi0[ii, ii] = 0.
+            #             psi0[ii-ng, ii] = -1.
+            #             self.phi0[ii, ii] = 0.
+            #         elif self.Ky[iim] != 0.:
+            #             # psi0[ii-ng, ii] = -self.P0_val[2][iim]
+            #             # psi0[ii, ii] = -self.P0_val[3][iim]
+            #             # self.phi0[ii, ii] = 0.
+            #             if (ii == 14) or (ii == 15):
+            #                 psi0[ii, ii] = 1.
+            #                 psi0[ii-ng, ii] = -1.
+            #                 self.phi0[ii, ii] = 0.
+            #                 self.phi0[ii-ng, ii] = -0.
+            #
+            #         else:
+            #             psi0[ii, ii] = 1. * np.sign(self.Kx[iim])
+            #             psi0[ii-ng, ii] = 0.
+            #
+            #         # if (self.Ky[iim] == 0) or (self.Kx[iim] == 0):
+            #         #     psi0[ii, ii] = 0.
+            #         #     psi0[ii-ng, ii] = 1.
+            #         # else:
+            #         #     psi0[ii-ng, ii] = self.P0_val[1][iim]
+            #         #     psi0[ii, ii] = self.P0_val[3][iim]
+            #
+            #     # self.phi0[ii, ii] = 0.
+
+            # # this part is to test scaling of Phi and Psi
+            # factor = 1e-7
+            # psi0[5, 5] *= factor
+            # psi0[14, 5] *= factor
+            # self.phi0[5, 5] *= factor
+            # for ii in cn1:
+            #     if ii < ng:
+            #         if (self.Kx[ii] != 0.) and (self.Ky[ii] != 0.):
+            #             psi0[ii, ii] *= factor
+            #             psi0[ii + ng, ii] *= factor
+            #             self.phi0[ii, ii] *= factor * 1e-0
+            #     else:
+            #         iim = ii-ng
+            #         if (self.Kx[iim] != 0.) and (self.Ky[iim] != 0.):
+            #             psi0[ii-ng, ii] *= factor
+            #             psi0[ii, ii] *= factor
+            #             self.phi0[ii, ii] *= factor * 1e-0
+            #
+            # for ii in cn1:
+            #     if ii < ng:
+            #         if (self.Kx[ii] != 0.) and (self.Ky[ii] != 0.):
+            #             psi0[ii, ii] = -1j
+            #             psi0[ii + ng, ii] = 1j
+            #             self.phi0[ii, ii] = 0.
+            #             self.phi0[ii+ng, ii] = 0.
+            #
+            #     else:
+            #         iim = ii-ng
+            #         if (self.Kx[iim] != 0.) and (self.Ky[iim] != 0.):
+            #             psi0[ii-ng, ii] = 1.j
+            #             psi0[ii, ii] = -1.j
+            #             self.phi0[ii, ii] = 1.
+            #             self.phi0[ii-ng, ii] = -1.
+
+            # # worked for normal incidence, Wood at (\pm 1, \pm 1) orders
+            # ii = 0
+            # psi0[5+ii, 5+ii] = 1.
+            # psi0[5+ii+ng, 5+ii] = -1.
+            # self.phi0[5+ii, 5+ii] = 0.
+            # self.phi0[5+ii+ng, 5+ii] = 0.
+            #
+            # ii = 1
+            # psi0[5+ii, 5+ii] = 0.
+            # psi0[5+ii+ng, 5+ii] = 0.
+            # self.phi0[5+ii, 5+ii] = 1.
+            # self.phi0[5+ii+ng, 5+ii] = 1.
+            #
+            # ii = 2
+            # psi0[5+ii, 5+ii] = 0.
+            # psi0[5+ii+ng, 5+ii] = 0.
+            # self.phi0[5+ii, 5+ii] = 1.
+            # self.phi0[5+ii+ng, 5+ii] = 1.
+            #
+            # ii = 3
+            # psi0[5+ii, 5+ii] = 0.
+            # psi0[5+ii+ng, 5+ii] = 0.
+            # self.phi0[5+ii, 5+ii] = 1.
+            # self.phi0[5+ii+ng, 5+ii] = -1.
+            #
+            # ii = 0
+            # psi0[5+ii+ng, 5+ii+ng] = 0.
+            # psi0[5+ii, 5+ii+ng] = 0.
+            # self.phi0[5+ii+ng, 5+ii+ng] = 1.
+            # self.phi0[5+ii, 5+ii+ng] = -1.
+            #
+            # ii = 1
+            # psi0[5+ii+ng, 5+ii+ng] = 1.
+            # psi0[5+ii, 5+ii+ng] = 1.
+            # self.phi0[5+ii+ng, 5+ii+ng] = 0.
+            # self.phi0[5+ii, 5+ii+ng] = 0.
+            #
+            # ii = 2
+            # psi0[5+ii+ng, 5+ii+ng] = 1.
+            # psi0[5+ii, 5+ii+ng] = 1.
+            # self.phi0[5+ii+ng, 5+ii+ng] = 0.
+            # self.phi0[5+ii, 5+ii+ng] = 0.
+            #
+            # ii = 3
+            # psi0[5+ii+ng, 5+ii+ng] = 1.
+            # psi0[5+ii, 5+ii+ng] = -1.
+            # self.phi0[5+ii+ng, 5+ii+ng] = 0.
+            # self.phi0[5+ii, 5+ii+ng] = 0.
+
+            self.psi0 = psi0
 
             # print('_calc_psi0', time.process_time() - t1)
 
@@ -677,6 +993,8 @@ class Params:
 
         # t1 = time.process_time()
 
+        o = self.omega
+
         aibo = [self.ai, self.bo]
         for ii, (sa, pa, od) in enumerate([[self._s_amps, self._p_amps, self._incident_orders], [self._s_amps_bk, self._p_amps_bk, self._incident_orders_bk]]):
             if self._num_g_ac:
@@ -685,12 +1003,35 @@ class Params:
                         self.sin_phis and self.sin_varthetas and self.cos_phis and self.cos_varthetas:
                     # find the index of the input orders in the g list
                     idx = [i for order in od for i, j in enumerate(self.idx_g) if j == order]
-                    for i in range(len(idx)):
-                        s = sa[i]
-                        p = pa[i]
-                        # s first then p. in scattering matrix of the system, the first half indices of Sij is s, second half is p.
-                        ab[i] = -s * self.sin_phis[i] + p * self.sin_varthetas[i] * self.cos_phis[i]  # e_x
-                        ab[i + self._num_g_ac] = s * self.cos_phis[i] + p * self.sin_varthetas[i] * self.sin_phis[i]  # e_y
+                    for i, jj in enumerate(idx):
+                    # for i in range(len(idx)):
+                        if (jj in self.q0_0):
+                            warn('You are specifying incidence in a channel that is parallel to the surface of the structure. \n In this case, only specific field configuration is allowed.')
+                            ab[jj] = sa[i]
+                            ab[jj + self._num_g_ac] = pa[i]
+                        else:
+                            s = sa[i]
+                            p = pa[i]
+
+                            # # original
+                            # ab[i] = -s * self.sin_phis[i] + p * self.sin_varthetas[i] * self.cos_phis[i]  # e_x
+                            # ab[i + self._num_g_ac] = s * self.cos_phis[i] + p * self.sin_varthetas[i] * self.sin_phis[i]  # e_y
+
+                            # # original, corrected
+                            # ab[jj] = -s * self.sin_phis[jj] + p * self.sin_varthetas[jj] * self.cos_phis[jj]  # e_x
+                            # ab[jj + self._num_g_ac] = s * self.cos_phis[jj] + p * self.sin_varthetas[jj] * self.sin_phis[jj]  # e_y
+
+                            # with new calc that removed convergence problem at Wood
+                            ex = -s * self.sin_phis[jj] + p * self.sin_varthetas[jj] * self.cos_phis[jj]  # e_x
+                            ey = s * self.cos_phis[jj] + p * self.sin_varthetas[jj] * self.sin_phis[jj]  # e_y
+                            phi_2x2 = self.phi0_2x2s[:, :, jj]
+                            phi_2x2_i = 1 / la.det(phi_2x2) * np.array([[phi_2x2[1, 1], -phi_2x2[0, 1]],
+                                                                        [-phi_2x2[1, 0], phi_2x2[0, 0]]])
+                            # v = la.solve(phi_2x2, np.array([ex, ey]))
+                            v = phi_2x2_i @ np.array([ex, ey])
+                            ab[jj] = v[0]
+                            ab[jj + self._num_g_ac] = v[1]
+
                 aibo[ii] = ab
         self.ai, self.bo = aibo
         # print('calc_ai_bo_3d', time.process_time() - t1)
