@@ -70,10 +70,10 @@ In 2d simulations (1d grating), the space is assumed to be in $x$ and $z$. Here,
 
 *   Ver 0.3:
 
-    Solved the convergence issue at Wood's anomaly. Now the calculation maintain the same convergence, stability, and speeed near and at Wood's anomaly.
+    Solved the convergence issue at Wood's anomaly. Now the calculation maintains the same convergence, stability, and speed near and at Wood's anomaly.
 
 ## Citing
-If you find Inkstone useful for your research, we would apprecite you citing our [paper](https://doi.org/10.1103/PhysRevLett.120.193903). For your convenience, you can use the following BibTex entry:
+If you find Inkstone useful for your research, we would appreciate you citing our [paper](https://doi.org/10.1103/PhysRevLett.120.193903). For your convenience, you can use the following BibTex entry:
 
     @article{song2018broadband,
       title={Broadband Control of Topological Nodes in Electromagnetic Fields},

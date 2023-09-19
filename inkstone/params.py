@@ -453,7 +453,7 @@ class Params:
             self._calc_angles()
 
     def _calc_Km(self):
-        """Calculate Kx Ky matrices"""
+        """Calculate Kx Ky arrays"""
         if self.ks:
             # t1 = time.process_time()
             ksa = np.array(self.ks)  # shape (NumG, 2)
@@ -537,20 +537,6 @@ class Params:
 
             self.q0_0 = np.where(np.abs(q0) == 0.)[0]
 
-            # if np.any(q0 == 0.):
-            #     # todo: no need of this anymore after Wood fix
-            #     # self.q0_contain_0 = True
-            #     warn("Vacuum propagation constant 0 encountered. Possibly Wood's anomaly. ", RuntimeWarning)
-            #
-            #     # remove Wood channel. Turns out this is incorrect.
-            #     # idxs_rm = np.where(q0 == 0.)[0]
-            #     # q0 = np.delete(q0, idxs_rm)
-            #     # self._remove_gs_xuhao(idxs_rm)
-            #
-            #     # print(self.frequency, self.k_inci, self.theta, self.q0, self.ks, self.idx_g)
-            # else:
-            #     self.q0_contain_0 = False
-
             self.q0 = np.concatenate([q0, q0])
             self.q0_half = q0
             # print('_calc_q0', time.process_time() - t1)
@@ -582,7 +568,7 @@ class Params:
             self.P0_val = (P11, P12, P21, P22)
             self.Q0_val = self.P0_val
 
-            # for testing
+            # for debugging
             ng = self._num_g_ac
             self.P0 = np.zeros((2*ng, 2*ng), dtype=complex)
             r1 = range(ng)
@@ -655,20 +641,20 @@ class Params:
 
             # with normalization
             q0h = self.q0_half
-            nga = self._num_g_ac
+            ng = self._num_g_ac
 
             skc = 0.05  # small k criterion
             i_knz = np.where(k_norm < (skc * np.abs(o)))[0]  # k near zero
             i_qsw = np.where((np.abs(q0h) <= np.abs(o)) * (k_norm >= (skc * np.abs(o))))[0]  # q smaller than omega, but k_norm not near zero
             i_qlw = np.where(np.abs(q0h) >  np.abs(o))[0]  # q larger than omega
 
-            c1 = np.array([self.Ky, -self.Kx], dtype=complex)
-            c2 = np.array([self.Kx, self.Ky], dtype=complex)
-            c1f = np.ones(nga, dtype=complex)  # multiplication factor which includes normalization
+            c1 = np.array([Ky, -Kx], dtype=complex)
+            c2 = np.array([Kx, Ky], dtype=complex)
+            c1f = np.ones(ng, dtype=complex)  # multiplication factor which includes normalization
             c2f = c1f.copy()
 
             c1[:, i_knz] = np.array([[1.], [0.]])
-            c2[:, i_knz] = np.array([-1j / o * Kx[i_knz] * Ky[i_knz] / q0h[i_knz], -1j / o * (-np.square(Kx[i_knz]) - np.square(q0h[i_knz])) / q0h[i_knz]])  # should not be |Kx|^2
+            c2[:, i_knz] = -1j / o * np.array([Kx[i_knz] * Ky[i_knz] / q0h[i_knz], (-np.square(Kx[i_knz]) - np.square(q0h[i_knz])) / q0h[i_knz]])  # should not be |Kx|^2
 
             c1f[i_qlw] = o / q0h[i_qlw] / k_norm[i_qlw]
             c2f[i_qlw] = 1j / k_norm[i_qlw]
@@ -682,7 +668,6 @@ class Params:
             c1 *= c1f
             c2 *= c2f
 
-            ng = self._num_g_ac
             r1 = range(ng)
             r2 = range(ng, 2 * ng)
             phi0 = np.zeros((2*ng, 2*ng), dtype=complex)
@@ -696,16 +681,9 @@ class Params:
             psi0[r1, r2] = c1[0, :]
             psi0[r2, r2] = c1[1, :]
 
-            # phi0 = np.block([[np.diag(c1[0, :]), np.diag(c2[0, :])],
-            #                  [np.diag(c1[1, :]), np.diag(c2[1, :])]])
-            #
-            # psi0 = np.block([[np.diag(c2[0, :]), np.diag(c1[0, :])],
-            #                  [np.diag(c2[1, :]), np.diag(c1[1, :])]])
-
             self.phi0_2x2s = np.array([c1, c2])
 
-
-            # # debugging
+            # # debugging,  check if phi is eigen and consistent with psi
             # psi00 = -1j * self.P0 @ phi0 / self.q0
             # diff = np.abs(psi00 - psi0).max()
             # print('psi0 diff {:g}'.format(diff))
@@ -726,6 +704,17 @@ class Params:
             #     psi0[r1, r2] = -1j * self.Q0_val[1] * q0_inv[ng:]
             #     psi0[r2, r1] = -1j * self.Q0_val[2] * q0_inv[:ng]
             #     psi0[r2, r2] = -1j * self.Q0_val[3] * q0_inv[ng:]
+
+
+            # # try arbitrary unreal material
+            # # this works when incident/output is not "internal" vac.
+            # ng = self._num_g_ac
+            # phi0 = np.eye(2 * ng, 2 * ng, dtype=complex)
+            # psi0 = np.zeros((2 * ng, 2 * ng), dtype=complex)
+            # r1 = range(ng)
+            # r2 = range(ng, 2 * ng)
+            # psi0[r2, r1] = 1.
+            # psi0[r1, r2] = 1.
 
             self.phi0 = phi0
             self.psi0 = psi0
@@ -1006,6 +995,8 @@ class Params:
                     for i, jj in enumerate(idx):
                     # for i in range(len(idx)):
                         if (jj in self.q0_0):
+                            # todo: need to handle this and document it.
+                            #  if user specify 90 degree incidence, this is activated
                             warn('You are specifying incidence in a channel that is parallel to the surface of the structure. \n In this case, only specific field configuration is allowed.')
                             ab[jj] = sa[i]
                             ab[jj + self._num_g_ac] = pa[i]
@@ -1031,6 +1022,10 @@ class Params:
                             v = phi_2x2_i @ np.array([ex, ey])
                             ab[jj] = v[0]
                             ab[jj + self._num_g_ac] = v[1]
+
+                            # todo: if incident region is not vacuum, here ai is not pr.ai
+                            # todo: for uniform non-vacuum incident region, ai should not be pr.ai.
+                            # todo: ai bo is calculated with assumption that incident and output are vacuum, with whatever choice of 2x2 eigen. ai bo are amplitudes of corresponding eigens. However, for non vacuum layer, the phil and psil are not the same as that in vacuum, so directly copying ai here is incorrect.
 
                 aibo[ii] = ab
         self.ai, self.bo = aibo

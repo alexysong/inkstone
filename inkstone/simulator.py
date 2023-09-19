@@ -627,6 +627,12 @@ class Inkstone:
 
             if layer.in_mid_out == 'in':
                 layer.al_bl = (self.pr.ai, self.bi)
+                # todo: if incident region is not vacuum, here ai is not pr.ai
+                # todo: for uniform non-vacuum incident region, ai should not be pr.ai.
+                # todo: ai bo is calculated with assumption that incident and output are vacuum, with whatever choice of 2x2 eigen. ai bo are amplitudes of corresponding eigens. However, for non vacuum layer, the phil and psil are not the same as that in vacuum, so directly copying ai here is incorrect.
+                # here we should have if laer is vac then use pr.ai. if not we calculate it here.
+
+
             elif layer.in_mid_out == 'out':
                 layer.al_bl = (self.ao, self.pr.bo)
             else:
