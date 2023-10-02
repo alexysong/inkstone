@@ -719,11 +719,12 @@ class Params:
             r1 = range(ng)
             r2 = range(ng, 2 * ng)
             # phif[r2, r2] = -1.  # attention! this was for debugging, but note since phif=eye, it is omitted in certain calculations
-            psif[r2, r1] = 1.
-            psif[r1, r2] = 1.
+            psif[r2, r1] = 1.j
+            psif[r1, r2] = -1.j
             # todo: with the above, inverse and matrix mul with phif and psif can be speed up.
             self.phif = phif
             self.psif = psif
+
 
     def _calc_phi0(self):
         warn('This method is deprecated. Use `_calc_phi0_psi0` instead.', category=DeprecationWarning)
