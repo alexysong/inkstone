@@ -62,6 +62,8 @@ class Params:
         self.phi0: Optional[np.ndarray] = None  # E field eigen mode in vacuum (identity matrix), side length 2*num_g
         self.psi0: Optional[np.ndarray] = None  # H field eigen mode in vacuum (Q * Phi * q^-1), side length 2*num_g
         self.phi0_2x2s: Optional[np.ndarray] = None  # the non-zero elements of phi0 stored in (2, 2, num_g) shape
+        self.phif: Optional[np.ndarray] = None  # E field eigen mode in fic material, shape (2num_g, 2num_g)
+        self.psif: Optional[np.ndarray] = None  # H field eigen mode in fic material, shape (2num_g, 2num_g)
         self.q0: Optional[np.ndarray] = None  # 1d array, eigen propagation constant in z direction in vacuum, length 2*num_g
         self.q0_half: Optional[np.ndarray] = None  # 1d array, eigen propagation constant in z direction in vacuum, length num_g
         self.q0_0: Optional[np.ndarray] = None  # 1d array, containing idxs to the idx_g list which q0 is 0, i.e. parallel to surface
@@ -189,6 +191,7 @@ class Params:
         self.__num_g_actual = val
         # self._calc_phi0()
         self._calc_phi0_psi0()
+        self._calc_phif_psif()
         # self._calc_q0()  # called through _calc_gs - _calc_ks
         self._calc_im0()
         self._calc_s_0()
@@ -705,19 +708,22 @@ class Params:
             #     psi0[r2, r1] = -1j * self.Q0_val[2] * q0_inv[:ng]
             #     psi0[r2, r2] = -1j * self.Q0_val[3] * q0_inv[ng:]
 
-
-            # # try arbitrary unreal material
-            # # this works when incident/output is not "internal" vac.
-            # ng = self._num_g_ac
-            # phi0 = np.eye(2 * ng, 2 * ng, dtype=complex)
-            # psi0 = np.zeros((2 * ng, 2 * ng), dtype=complex)
-            # r1 = range(ng)
-            # r2 = range(ng, 2 * ng)
-            # psi0[r2, r1] = 1.
-            # psi0[r1, r2] = 1.
-
             self.phi0 = phi0
             self.psi0 = psi0
+
+    def _calc_phif_psif(self):
+        if self._num_g_ac:
+            ng = self._num_g_ac
+            phif = np.eye(2 * ng, 2 * ng, dtype=complex)
+            psif = np.zeros((2 * ng, 2 * ng), dtype=complex)
+            r1 = range(ng)
+            r2 = range(ng, 2 * ng)
+            # phif[r2, r2] = -1.  # attention! this was for debugging, but note since phif=eye, it is omitted in certain calculations
+            psif[r2, r1] = 1.
+            psif[r1, r2] = 1.
+            # todo: with the above, inverse and matrix mul with phif and psif can be speed up.
+            self.phif = phif
+            self.psif = psif
 
     def _calc_phi0(self):
         warn('This method is deprecated. Use `_calc_phi0_psi0` instead.', category=DeprecationWarning)

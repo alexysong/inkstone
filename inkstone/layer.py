@@ -12,7 +12,7 @@ import time
 
 from inkstone.ft.ft_2d_cnst import ft_2d_cnst
 from inkstone.im import im
-from inkstone.sm import s_1l, s_1l_in, s_1l_out
+from inkstone.sm import s_1l, s_1l_rsp, s_1l_1212, s_1l_1221
 from inkstone.params import Params
 from inkstone.bx import Bx
 from inkstone.mtr import Mtr
@@ -98,7 +98,8 @@ class Layer:
         self._phil_is_idt = False  # whether phil is identity matrix
         self.psil: Optional[np.ndarray] = None
 
-        self.im: Optional[Tuple[np.ndarray, np.ndarray]] = None  # interface matrix
+        self.iml0: Optional[Tuple[np.ndarray, np.ndarray]] = None  # interface matrix
+        self.imfl: Optional[Tuple[np.ndarray, np.ndarray]] = None  # interface matrix
         self.sm: Optional[Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]] = None  # scattering matrix
         self.csm: Optional[Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]] = None  # cumulative scattering matrix
         self.csmr: Optional[Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]] = None  # cumulative scattering matrix reversed
@@ -1036,15 +1037,27 @@ class Layer:
 
         t1 = time.process_time()
 
-        if self.is_vac:
-            self.im = self.pr.im0
-        else:
-            al0, bl0 = im(self.phil, self.psil, self.pr.phi0, self.pr.psi0, self._phil_is_idt)
-            self.im = (al0, bl0)
+        # # old calc of iml0, layer sandwiched in vac
+        # if self.is_vac:
+        #     self.iml0 = self.pr.im0
+        # else:
+        #     al0, bl0 = im(self.phil, self.psil, self.pr.phi0, self.pr.psi0, self._phil_is_idt)
+        #     self.iml0 = (al0, bl0)
+        #
+        # # calc of im0l, for debugging, assume layers sandwiched in vac
+        # a0l, b0l = im(self.pr.phi0, self.pr.psi0, self.phil, self.psil)
+        # self.imfl = (a0l, b0l)
 
-            # # for future fictitious inf thin layer
-            # a0l, b0l = im(self.pr.phi0, self.pr.psi0, self.phil, self.psil)
-            # self.im0l = (a0l, b0l)
+        # # iml0 (actually imlf), assume fic material separating all layers.
+        # al0, bl0 = im(self.phil, self.psil, self.pr.phif, self.pr.psif)
+        # self.iml0 = (al0, bl0)
+
+        # construct imfl
+        term1 = self.pr.phif @ self.phil
+        term2 = self.pr.psif @ self.psil
+        a0l = term1 + term2
+        b0l = term1 - term2
+        self.imfl = (a0l, b0l)
 
         if self.pr.show_calc_time:
             print("{:.6f}   _calc_im".format(time.process_time() - t1) + ", layer "+self.name)
@@ -1054,64 +1067,24 @@ class Layer:
 
         t1 = time.process_time()
 
-        if self.is_vac and self.thickness == 0:
-            self.sm = self.pr.sm0
-        else:
-            if self.in_mid_out == 'mid':
-                if self.thickness == 0:
-                    sm = self.pr.sm0
-                else:
-                    sm = s_1l(self.thickness, self.ql, *self.im)
-
-                    # # for future fictitious inf thin layer
-                    # a, b = self.im0l
-                    # # ia = la.inv(a)
-                    # aTlu = sla.lu_factor(a.T)
-                    # aTlu2 = (aTlu[0].copy(), aTlu[1].copy())
-                    # a1 = aTlu2[0]
-                    # a1[np.triu_indices(a1.shape[0])] *= 0.5
-                    # alu = sla.lu_factor(a)
-                    # ab = sla.lu_solve(alu, b)
-                    #
-                    # # alu = sla.lu_factor(a)
-                    # # aib = sla.lu_solve(alu, b)
-                    # # sl11 = b @ ia
-                    # sl11 = sla.lu_solve(aTlu, b.T).T
-                    # # sl12 = a - b @ ia @ b
-                    # sl12 = 0.5 * (a - b @ ab)
-                    # sl21 = aTlu2
-                    # sl22 = -ab
-                    #
-                    # f = np.exp(1j * self.ql * self.thickness)
-                    #
-                    # sf11 = np.zeros((2 * self.pr.num_g, 2 * self.pr.num_g))
-                    # sf12 = np.diag(f)
-                    # sf21 = np.diag(f)
-                    # sf22 = np.zeros((2 * self.pr.num_g, 2 * self.pr.num_g))
-                    #
-                    # sr11 = sl22
-                    # sr12 = sl21
-                    # sr21 = sl12
-                    # sr22 = sl11
-                    #
-                    # from .rsp import rsp, rsp_in, rsp_out
-                    #
-                    # ss = rsp_in(sl11, sl12, sl21, sl22, sf11, sf12, sf21, sf22)
-                    # sss = rsp_out(*ss, sr11, sr12, sr21, sr22)
-                    #
-                    # sm = sss
-                    #
-                    # self.sss = sss
-
-            elif self.in_mid_out == 'in':
-                sm = s_1l_in(*self.im)
-                # todo: use A0l, B0l, use nice fictitious layer
-            elif self.in_mid_out == 'out':
-                sm = s_1l_out(*self.im)
-                # todo: use A0l, B0l, use nice fictitious layer
+        # if self.is_vac and self.thickness == 0:
+        #     self.sm = self.pr.sm0
+        # else:
+        if self.in_mid_out == 'mid':
+            if self.thickness == 0:
+                sm = self.pr.sm0
             else:
-                raise Exception('Layer is not the incident, a middle, or the output layer.')
-            self.sm = sm
+                # sm = s_1l(self.thickness, self.ql, *self.iml0)
+                sm = s_1l_rsp(self.thickness, self.ql, *self.imfl)
+        elif self.in_mid_out == 'in':
+            # sm = s_1l_1212(*self.iml0)
+            sm = s_1l_1221(*self.imfl)
+        elif self.in_mid_out == 'out':
+            # sm = s_1l_1221(*self.iml0)
+            sm = s_1l_1212(*self.imfl)
+        else:
+            raise Exception('Layer is not the incident, a middle, or the output layer.')
+        self.sm = sm
 
         if self.pr.show_calc_time:
             print("{:.6f}   _calc_sm layer".format(time.process_time() - t1) + ", layer "+self.name)

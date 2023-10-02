@@ -4,7 +4,7 @@ from typing import Tuple, Optional, List
 import time
 import numpy as np
 from inkstone.layer import Layer
-from inkstone.sm import s_1l, s_1l_in, s_1l_out
+from inkstone.sm import s_1l, s_1l_1212, s_1l_1221, s_1l_rsp
 from warnings import warn
 
 
@@ -67,8 +67,8 @@ class LayerCopy:
     #     pass
 
     @property
-    def im(self):
-        return self.layer.im
+    def iml0(self):
+        return self.layer.iml0
 
     @property
     def ql(self):
@@ -155,21 +155,22 @@ class LayerCopy:
 
         t1 = time.process_time()
 
-        if self.is_vac and self.thickness == 0:
-            self.sm = self.layer.pr.sm0
-        else:
-            if self.in_mid_out == 'mid':
-                if self.thickness == 0:
-                    sm = self.layer.pr.sm0
-                else:
-                    sm = s_1l(self.thickness, self.layer.ql, *self.layer.im)
-            elif self.in_mid_out == 'in':
-                sm = s_1l_in(*self.layer.im)
-            elif self.in_mid_out == 'out':
-                sm = s_1l_out(*self.layer.im)
+        # if self.is_vac and self.thickness == 0:
+        #     self.sm = self.layer.pr.sm0
+        # else:
+        if self.in_mid_out == 'mid':
+            if self.thickness == 0:
+                sm = self.layer.pr.sm0
             else:
-                raise Exception('Layer is not the incident, a middle, or the output layer.')
-            self.sm = sm
+                # sm = s_1l(self.thickness, self.layer.ql, *self.layer.iml0)
+                sm = s_1l_rsp(self.thickness, self.ql, *self.imfl)
+        elif self.in_mid_out == 'in':
+            sm = s_1l_1221(*self.layer.imfl)
+        elif self.in_mid_out == 'out':
+            sm = s_1l_1212(*self.layer.imfl)
+        else:
+            raise Exception('Layer is not the incident, a middle, or the output layer.')
+        self.sm = sm
 
         if self.layer.pr.show_calc_time:
             print('{:.6f}   _calc_sm  (layer copy)'.format(time.process_time() - t1))

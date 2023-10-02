@@ -9,7 +9,7 @@ from collections import OrderedDict
 from typing import Tuple, Optional, List, Dict, Union
 import time
 
-from inkstone.rsp import rsp, rsp_in, rsp_out
+from inkstone.rsp import rsp, rsp_sa12lu, rsp_sb21lu
 from inkstone.params import Params
 from inkstone.mtr import Mtr
 from inkstone.layer import Layer
@@ -647,47 +647,114 @@ class Inkstone:
                 csm = layersl[i].csm
                 csmp = layersl[i-1].csm
 
-                # reshape 1d array ai and bo into a 2d 1-column vector
-                ai_v = self.pr.ai.reshape((2 * self.pr.num_g, 1))
-                bo_v = self.pr.bo.reshape((2 * self.pr.num_g, 1))
+                # # # # # # # # # #
+                # # old method using al0, bl0.
+                # # works with either vac or fic gap layers. With new method using a0l and b0l and fic material, csm and csmr all different because inci/output vac's sm is different
+                # # reshape 1d array ai and bo into a 2d 1-column vector
+                # ai_v = self.pr.ai.reshape((2 * self.pr.num_g, 1))
+                # bo_v = self.pr.bo.reshape((2 * self.pr.num_g, 1))
+                #
+                # al0 = layer.iml0[0]
+                # bl0 = layer.iml0[1]
+                # I = np.diag(np.ones(2 * self.pr.num_g, dtype=complex))  # identity
+                # # csm
+                # sc11, sc12, sc21, sc22 = csm
+                # # csm of previous layer
+                # scp11, scp12, scp21, scp22 = csmp
+                # # csmr
+                # sci11, sci12, sci21, sci22 = csmr
+                # # csmr of next layer
+                # scin11, scin12, scin21, scin22 = csmrn
+                #
+                # if (layersl[i-1].in_mid_out == "in") and not layersl[i-1].is_vac:
+                #     sa = sla.lu_solve(scp21, ai_v)
+                #     sb = sci12 @ bo_v
+                #     al = 1. / 2. * (bl0 @ sla.solve((I - sci11 @ scp22), (sci11 @ sa + sb))
+                #                     + al0 @ sla.solve((I - scp22 @ sci11), (sa + scp22 @ sb)))
+                # else:
+                #     sa = scp21 @ ai_v
+                #     sb = sci12 @ bo_v
+                #     al = 1. / 2. * (bl0 @ sla.solve((I - sci11 @ scp22), (sci11 @ sa + sb))
+                #                     + al0 @ sla.solve((I - scp22 @ sci11), (sa + scp22 @ sb)))
+                #
+                # if (layersl[i+1].in_mid_out == "out") and not layersl[i+1].is_vac:
+                #     sa = sc21 @ ai_v
+                #     sb = sla.lu_solve(scin12, bo_v)
+                #     bl = 1. / 2. * (bl0 @ sla.solve((I - sc22 @ scin11), (sa + sc22 @ sb))
+                #                     + al0 @ sla.solve((I - scin11 @ sc22), (scin11 @ sa + sb)))
+                # else:
+                #     sa = sc21 @ ai_v
+                #     sb = scin12 @ bo_v
+                #     bl = 1. / 2. * (bl0 @ sla.solve((I - sc22 @ scin11), (sa + sc22 @ sb))
+                #                     + al0 @ sla.solve((I - scin11 @ sc22), (scin11 @ sa + sb)))
+                #
+                # # ravel 2d array (just one column) to 1d array
+                # al_old = al.ravel()
+                # bl_old = bl.ravel()
+                # layer.al_bl = (al_old, bl_old)
+                # # # # # # # # # #
 
-                al0 = layer.im[0]
-                bl0 = layer.im[1]
+                # with fic material, no use of al0, bl0, using a0l and b0l instead
+                # works with either vac or fic gap layers
                 I = np.diag(np.ones(2 * self.pr.num_g, dtype=complex))  # identity
-                # csm
-                sc11, sc12, sc21, sc22 = csm
                 # csm of previous layer
                 scp11, scp12, scp21, scp22 = csmp
-                # csmr
-                sci11, sci12, sci21, sci22 = csmr
                 # csmr of next layer
                 scin11, scin12, scin21, scin22 = csmrn
 
-                if (layersl[i-1].in_mid_out == "in") and not layersl[i-1].is_vac:
-                    sa = sla.lu_solve(scp21, ai_v)
-                    sb = sci12 @ bo_v
-                    al = 1. / 2. * (bl0 @ sla.solve((I - sci11 @ scp22), (sci11 @ sa + sb))
-                                    + al0 @ sla.solve((I - scp22 @ sci11), (sa + scp22 @ sb)))
-                else:
-                    sa = scp21 @ ai_v
-                    sb = sci12 @ bo_v
-                    al = 1. / 2. * (bl0 @ sla.solve((I - sci11 @ scp22), (sci11 @ sa + sb))
-                                    + al0 @ sla.solve((I - scp22 @ sci11), (sa + scp22 @ sb)))
+                a, b = layer.imfl
+                # ia = la.inv(a)
+                aTlu = sla.lu_factor(a.T)
+                aTlu2 = (aTlu[0].copy(), aTlu[1].copy())
+                a1 = aTlu2[0]
+                a1[np.triu_indices(a1.shape[0])] *= 0.5
 
-                if (layersl[i+1].in_mid_out == "out") and not layersl[i+1].is_vac:
-                    sa = sc21 @ ai_v
-                    sb = sla.lu_solve(scin12, bo_v)
-                    bl = 1. / 2. * (bl0 @ sla.solve((I - sc22 @ scin11), (sa + sc22 @ sb))
-                                    + al0 @ sla.solve((I - scin11 @ sc22), (scin11 @ sa + sb)))
-                else:
-                    sa = sc21 @ ai_v
-                    sb = scin12 @ bo_v
-                    bl = 1. / 2. * (bl0 @ sla.solve((I - sc22 @ scin11), (sa + sc22 @ sb))
-                                    + al0 @ sla.solve((I - scin11 @ sc22), (scin11 @ sa + sb)))
+                alu = sla.lu_factor(a)
+                alu2 = (alu[0].copy(), alu[1].copy())
+                a1 = alu2[0]
+                a1[np.triu_indices(a1.shape[0])] *= 0.5
 
-                # ravel 2d array (just one column) to 1d array
+                ab = sla.lu_solve(alu, b)
+
+                # alu = sla.lu_factor(a)
+                # aib = sla.lu_solve(alu, b)
+                # sl11 = b @ ia
+                sl11 = sla.lu_solve(aTlu, b.T).T
+                # sl12 = a - b @ ia @ b
+                sl12 = 0.5 * (a - b @ ab)
+                sl21 = alu2
+                sl22 = -ab
+
+                ql = layer.ql
+                thickness = layer.thickness
+                f = np.exp(1j * ql * thickness)
+
+                sr11 = sl22
+                sr12 = sl21
+                sr21 = sl12
+                sr22 = sl11
+
+                from .rsp import rsp_sb21lu, rsp_sa12lu, rsp_sa12lu_sb21lu
+                if (layersl[i-1].in_mid_out == "in"):
+                    scp11, scp12, scp21, scp22 = rsp_sa12lu_sb21lu(scp11, scp12, scp21, scp22, sl11, sl12, sl21, sl22)
+                    # scp11, scp12, scp21, scp22 = rsp_sa12lu(scp11, scp12, scp21, scp22, sl11, sl12, sl21, sl22)  # for debugging
+                else:
+                    scp11, scp12, scp21, scp22 = rsp_sb21lu(scp11, scp12, scp21, scp22, sl11, sl12, sl21, sl22)
+
+                if (layersl[i+1].in_mid_out == "out"):
+                    scin11, scin12, scin21, scin22 = rsp_sa12lu_sb21lu(sr11, sr12, sr21, sr22, scin11, scin12, scin21, scin22)
+                    # scin11, scin12, scin21, scin22 = rsp_sb21lu(sr11, sr12, sr21, sr22, scin11, scin12, scin21, scin22)  # for debugging
+                else:
+                    scin11, scin12, scin21, scin22 = rsp_sa12lu(sr11, sr12, sr21, sr22, scin11, scin12, scin21, scin22)
+
+                sa = scp21 @ self.pr.ai
+                sb = scin12 @ self.pr.bo
+                al = sla.solve((I - (scp22 * f) @ (scin11 * f)), (sa + (scp22 * f) @ sb))
+                bl = sla.solve((I - (scin11 * f) @ (scp22 * f)), ((scin11 * f) @ sa + sb))
+
                 al = al.ravel()
                 bl = bl.ravel()
+
                 layer.al_bl = (al, bl)
 
             layer.need_recalc_al_bl = False
@@ -759,26 +826,28 @@ class Inkstone:
                 _csms[ilm].append((ilm, ilm, ll[ilm].sm))
 
             # handle the first layer
-            if layersl[0].is_vac:
-                self.csms[1:] = [[(i+1, j+1, csm) for (i, j, csm) in li] for li in _csms]
-                self.csms[0].append((0, 0, self.pr.sm0))
-                self.csms[0] += [(i-1, j, csm) for (i, j, csm) in self.csms[1]]
-                layersl[0].csm = layersl[0].sm
-                layersl[1].csm = self.csms[0][1][2]
-            else:
-                self.csms[1:] = [[(i + 1, j + 1, csm) for (i, j, csm) in li] for li in _csms]
-                self.csms[0].append((0, 0, layersl[0].sm))
-                ss = rsp_in(*(layersl[0].sm), *(_csms[0][-1][2]))
-                self.csms[0].append((0, _csms[0][-1][1]+1, ss))
-                layersl[0].csm = layersl[0].sm
-                layersl[_csms[0][-1][1]+1].csm = ss
+            # Update with fic gap layers: even it is vac its sm is not trivial from vac to fic
+            # if layersl[0].is_vac:
+            #     self.csms[1:] = [[(i+1, j+1, csm) for (i, j, csm) in li] for li in _csms]
+            #     self.csms[0].append((0, 0, self.pr.sm0))
+            #     self.csms[0] += [(i-1, j, csm) for (i, j, csm) in self.csms[1]]
+            #     layersl[0].csm = layersl[0].sm
+            #     layersl[1].csm = self.csms[0][1][2]
+            # else:
+            self.csms[1:] = [[(i + 1, j + 1, csm) for (i, j, csm) in li] for li in _csms]
+            self.csms[0].append((0, 0, layersl[0].sm))
+            ss = rsp_sa12lu(*(layersl[0].sm), *(_csms[0][-1][2]))
+            self.csms[0].append((0, _csms[0][-1][1]+1, ss))
+            layersl[0].csm = layersl[0].sm
+            layersl[_csms[0][-1][1]+1].csm = ss
 
             # handle last layer(s)
-            if layersl[-1].is_vac:
-                [li.append((li[-1][0], n_layers - 1, li[-1][2])) for li in self.csms if li[-1][1] == n_layers - 2]
-            elif self._layers_mod[-1] == n_layers-1:
+            # Update with fic gap layers: even it is vac its sm is not trivial from vac to fic
+            # if layersl[-1].is_vac:
+            #     [li.append((li[-1][0], n_layers - 1, li[-1][2])) for li in self.csms if li[-1][1] == n_layers - 2]
+            if self._layers_mod[-1] == n_layers-1:
                 s = next(ll[-1] for ll in self.csms if ll[-1][1] == n_layers-2)
-                csm = rsp_out(*(s[2]), *(layersl[-1].sm))
+                csm = rsp_sb21lu(*(s[2]), *(layersl[-1].sm))
                 self.csms[s[0]].append((s[0], n_layers-1, csm))
             else:
                 self._calc_csmr_layer(self._layers_mod[-1]+1)
@@ -823,7 +892,7 @@ class Inkstone:
                 csm = s[2]
                 if s[1] == 0:
                     s1 = next(s for s in reversed(self.csms[ix]) if s[1] <= i)
-                    csm = rsp_in(*csm, *s1[2])
+                    csm = rsp_sa12lu(*csm, *s1[2])
                     layersl[s1[1]].csm = csm
                     ii += 1
                     self.csms[0].insert(ii, (0, s1[1], csm))
@@ -858,12 +927,13 @@ class Inkstone:
             if not self.csmsr:
                 self.csmsr.append(self.csms[-1][0])
                 layersl[-1].csmr = self.csms[-1][0][2]
-                if layersl[-1].is_vac:
-                    _csm = (n_layers-2, n_layers-1, self.csms[-2][0][2])
-                    self.csmsr.append(_csm)
-                    layersl[-2].csmr = self.csms[-2][0][2]
-                    if self.csms[-2][-1][1] == n_layers - 2:
-                        self.csms[-2].append(_csm)
+                # Update with fic gap layers: even it is vac its sm is not trivial from vac to fic
+                # if layersl[-1].is_vac:
+                #     _csm = (n_layers-2, n_layers-1, self.csms[-2][0][2])
+                #     self.csmsr.append(_csm)
+                #     layersl[-2].csmr = self.csms[-2][0][2]
+                #     if self.csms[-2][-1][1] == n_layers - 2:
+                #         self.csms[-2].append(_csm)
 
             ii, s = next((j, x) for j, x in enumerate(reversed(self.csmsr)) if x[0] >= i)
             ii = len(self.csmsr) - ii - 1
@@ -880,7 +950,7 @@ class Inkstone:
                 csm = s[2]
                 if ix == n_layers - 1:
                     ss = _csms.pop(-1)
-                    csm = rsp_out(*ss[2], *csm)
+                    csm = rsp_sb21lu(*ss[2], *csm)
                     layersl[ss[0]].csmr = csm
                     self.csms[ss[0]].append((ss[0], n_layers - 1, csm))
                     ii += 1
@@ -1012,7 +1082,7 @@ class Inkstone:
         qla = self.layers[layer].ql[:, None]  # 1-column 2d array of length 2num_g
         d = self.layers[layer].thickness
 
-        ef = phil * al @ np.exp(1j * qla * za)
+        ef = phil * al @ np.exp(1j * qla * za)  # todo: for incident/output region, z too negative and high order ql cause overflow. this is the wave exponential decaying towards the slab
         eb = phil * bl @ np.exp(1j * qla * (d - za))
         hf = psil * al @ np.exp(1j * qla * za)
         hb = -psil * bl @ np.exp(1j * qla * (d - za))
