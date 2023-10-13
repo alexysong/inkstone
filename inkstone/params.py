@@ -571,20 +571,21 @@ class Params:
             self.P0_val = (P11, P12, P21, P22)
             self.Q0_val = self.P0_val
 
-            # for debugging
-            ng = self._num_g_ac
-            self.P0 = np.zeros((2*ng, 2*ng), dtype=complex)
-            r1 = range(ng)
-            r2 = range(ng, 2 * ng)
-            self.P0[r1, r1] = P11
-            self.P0[r2, r1] = P21
-            self.P0[r1, r2] = P12
-            self.P0[r2, r2] = P22
+            # # for debugging
+            # ng = self._num_g_ac
+            # self.P0 = np.zeros((2*ng, 2*ng), dtype=complex)
+            # r1 = range(ng)
+            # r2 = range(ng, 2 * ng)
+            # self.P0[r1, r1] = P11
+            # self.P0[r2, r1] = P21
+            # self.P0[r1, r2] = P12
+            # self.P0[r2, r2] = P22
             # self.P0 = np.block([[np.diag(P11), np.diag(P12)],
             #                     [np.diag(P21), np.diag(P22)]])
 
             # self._calc_psi0()
             self._calc_phi0_psi0()
+            self._calc_phif_psif()
 
     def _calc_phi0_psi0(self):
         if (self.Q0_val is not None) and (self.q0 is not None) and (self._num_g_ac is not None):
@@ -721,10 +722,36 @@ class Params:
             # phif[r2, r2] = -1.  # attention! this was for debugging, but note since phif=eye, it is omitted in certain calculations
             psif[r2, r1] = 1.j
             psif[r1, r2] = -1.j
-            # todo: with the above, inverse and matrix mul with phif and psif can be speed up.
             self.phif = phif
             self.psif = psif
 
+            # # for debugging
+            # phif2 = np.eye(2 * ng, 2 * ng, dtype=complex)
+            # psif2 = np.zeros((2 * ng, 2 * ng), dtype=complex)
+            # phif2[r2, r2] = -1.  # attention! this was for debugging, but note since phif=eye, it is omitted in certain calculations
+            # psif2[r2, r1] = 1.
+            # psif2[r1, r2] = -1.
+            # self.phif2 = phif2
+            # self.psif2 = psif2
+
+            # phif3 = np.zeros((2 * ng, 2 * ng), dtype=complex)
+            # psif3 = np.zeros((2 * ng, 2 * ng), dtype=complex)
+            # phif3[r1, r1] = 1.
+            # phif3[r2, r1] = 1j
+            # phif3[r1, r2] = -1j
+            # phif3[r2, r2] = 1.
+            # psif3 = phif3
+            #
+            # self.phif3 = phif3
+            # self.psif3 = psif3
+
+            # if self.P0_val is not None:
+            #     phif4 = np.random.rand(2*ng, 2*ng)
+            #     psif4 = -1j * self.P0 @ phif4 * self.q0_inv
+            #     self.phif4 = phif4
+            #     self.psif4 = psif4
+
+            # # end of debugging
 
     def _calc_phi0(self):
         warn('This method is deprecated. Use `_calc_phi0_psi0` instead.', category=DeprecationWarning)

@@ -12,7 +12,7 @@ import time
 
 from inkstone.ft.ft_2d_cnst import ft_2d_cnst
 from inkstone.im import im
-from inkstone.sm import s_1l, s_1l_rsp, s_1l_1212, s_1l_1221
+from inkstone.sm import s_1l, s_1l_rsp, s_1l_1212, s_1l_1221, s_1l_rsp_lrd
 from inkstone.params import Params
 from inkstone.bx import Bx
 from inkstone.mtr import Mtr
@@ -1048,16 +1048,45 @@ class Layer:
         # a0l, b0l = im(self.pr.phi0, self.pr.psi0, self.phil, self.psil)
         # self.imfl = (a0l, b0l)
 
-        # # iml0 (actually imlf), assume fic material separating all layers.
-        # al0, bl0 = im(self.phil, self.psil, self.pr.phif, self.pr.psif)
-        # self.iml0 = (al0, bl0)
+        # iml0 (actually imlf), assume fic material separating all layers.
+        al0, bl0 = im(self.phil, self.psil, self.pr.phif, self.pr.psif)
+        self.iml0 = (al0, bl0)
 
-        # construct imfl
-        term1 = self.pr.phif @ self.phil
-        term2 = self.pr.psif @ self.psil
+        # calc imfl
+        phif = self.pr.phif
+        psif = self.pr.psif
+        phil = self.phil
+        psil = self.psil
+        # term1 = phif @ phil
+        term1 = phil  # attention! check if phif is eye
+        term2 = psif @ psil
         a0l = term1 + term2
         b0l = term1 - term2
         self.imfl = (a0l, b0l)
+
+
+        # # debugging
+
+        # # term1 = self.pr.phif2 @ self.phil
+        # # term2 = self.pr.psif2 @ self.psil
+        # # a0l2 = term1 + term2
+        # # b0l2 = term1 - term2
+        # a0l2, b0l2 = im(self.pr.phi0, self.pr.psi0, self.phil, self.psil)
+        # self.imfl2 = (a0l2, b0l2)
+
+        # term1 = self.pr.phif3 @ self.phil
+        # term2 = self.pr.psif3 @ self.psil
+        # a0l3 = term1 + term2
+        # b0l3 = term1 - term2
+        # self.imfl3 = (a0l3, b0l3)
+
+        # term1 = sla.solve(self.pr.phif4, self.phil)
+        # term2 = sla.solve(self.pr.psif4, self.psil)
+        # a0l4 = term1 + term2
+        # b0l4 = term1 - term2
+        # self.imfl4 = (a0l4, b0l4)
+
+        # # end of debugging
 
         if self.pr.show_calc_time:
             print("{:.6f}   _calc_im".format(time.process_time() - t1) + ", layer "+self.name)
@@ -1074,8 +1103,9 @@ class Layer:
             if self.thickness == 0:
                 sm = self.pr.sm0
             else:
-                # sm = s_1l(self.thickness, self.ql, *self.iml0)
-                sm = s_1l_rsp(self.thickness, self.ql, *self.imfl)
+                sm = s_1l(self.thickness, self.ql, *self.iml0)
+                # sm = s_1l_rsp(self.thickness, self.ql, *self.imfl)
+                # sm = s_1l_rsp_lrd(self.thickness, self.ql, *self.imfl, *self.imfl4)
         elif self.in_mid_out == 'in':
             # sm = s_1l_1212(*self.iml0)
             sm = s_1l_1221(*self.imfl)

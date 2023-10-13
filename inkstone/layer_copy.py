@@ -162,8 +162,8 @@ class LayerCopy:
             if self.thickness == 0:
                 sm = self.layer.pr.sm0
             else:
-                # sm = s_1l(self.thickness, self.layer.ql, *self.layer.iml0)
-                sm = s_1l_rsp(self.thickness, self.ql, *self.imfl)
+                sm = s_1l(self.thickness, self.layer.ql, *self.layer.iml0)
+                # sm = s_1l_rsp(self.thickness, self.ql, *self.imfl)
         elif self.in_mid_out == 'in':
             sm = s_1l_1221(*self.layer.imfl)
         elif self.in_mid_out == 'out':

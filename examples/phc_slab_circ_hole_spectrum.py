@@ -20,7 +20,7 @@ from inkstone import Inkstone
 
 s = Inkstone()
 s.lattice = ((1, 0), (0, 1))
-s.num_g = 30
+s.num_g = 50
 
 s.AddMaterial(name='di', epsilon=12)
 
