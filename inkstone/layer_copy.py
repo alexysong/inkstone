@@ -165,8 +165,10 @@ class LayerCopy:
                 sm = s_1l(self.thickness, self.layer.ql, *self.layer.iml0)
                 # sm = s_1l_rsp(self.thickness, self.ql, *self.imfl)
         elif self.in_mid_out == 'in':
+            # sm = s_1l_1212(*self.iml0)
             sm = s_1l_1221(*self.layer.imfl)
         elif self.in_mid_out == 'out':
+            # sm = s_1l_1221(*self.iml0)
             sm = s_1l_1212(*self.layer.imfl)
         else:
             raise Exception('Layer is not the incident, a middle, or the output layer.')
