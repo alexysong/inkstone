@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from typing import Tuple, Union
+from typing import Tuple, Union, Optional
 import numpy as np
 # import numpy.linalg as la
 # from warnings import warn
@@ -15,10 +15,10 @@ class Mtr:
         """
         Material.
         """
-        self._epsi = None
-        self._mu = None
-        self._epsi_inv = None
-        self._mu_inv = None
+        self._epsi: Optional[np.ndarray] = None
+        self._mu: Optional[np.ndarray] = None
+        self._epsi_inv: Optional[np.ndarray] = None
+        self._mu_inv: Optional[np.ndarray] = None
 
         self.epsi = epsi
         self.mu = mu

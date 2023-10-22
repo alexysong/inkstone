@@ -842,9 +842,10 @@ class Inkstone:
             layersl[_csms[0][-1][1]+1].csm = ss
 
             # handle last layer(s)
-            # Update with fic gap layers: even it is vac its sm is not trivial from vac to fic
+            # Update with fic gap layers: even it is vac its sm is not trivial from vac to fic, hence need to remove this `if layersl[-1].is_vac` part
             # if layersl[-1].is_vac:
             #     [li.append((li[-1][0], n_layers - 1, li[-1][2])) for li in self.csms if li[-1][1] == n_layers - 2]
+            # elif self._layers_mod[-1] == n_layers-1:
             if self._layers_mod[-1] == n_layers-1:
                 s = next(ll[-1] for ll in self.csms if ll[-1][1] == n_layers-2)
                 csm = rsp_sb21lu(*(s[2]), *(layersl[-1].sm))
@@ -927,7 +928,7 @@ class Inkstone:
             if not self.csmsr:
                 self.csmsr.append(self.csms[-1][0])
                 layersl[-1].csmr = self.csms[-1][0][2]
-                # Update with fic gap layers: even it is vac its sm is not trivial from vac to fic
+                # Update with fic gap layers: even it is vac its sm is not trivial from vac to fic, hence need to remove this block
                 # if layersl[-1].is_vac:
                 #     _csm = (n_layers-2, n_layers-1, self.csms[-2][0][2])
                 #     self.csmsr.append(_csm)

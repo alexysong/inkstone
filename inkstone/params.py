@@ -230,6 +230,12 @@ class Params:
         """kx and ky projection of the incident wave vector"""
         return self._k_inci
 
+    @k_inci.setter
+    def k_inci(self, val: Tuple[float]):
+        """Directly setting incident in-plane kx and ky"""
+        self._k_inci = val
+        self._calc_ks()
+
     @property
     def theta(self) -> Union[float, complex]:
         """he angle between incident k and z axis, in degrees, range: [0, pi/2]"""
@@ -372,9 +378,10 @@ class Params:
         if (self.theta is not None) and (self.phi is not None) and (self.omega is not None):
             kx = self.omega.real * np.cos(np.pi/2 - self._theta) * np.cos(self._phi)
             ky = self.omega.real * np.cos(np.pi/2 - self._theta) * np.sin(self._phi)
-            # todo: using self.omega (kx ky complex) also gives answers, physical meaning is different
+            # todo: using self.omega (hence kx ky complex) also gives answers, physical meaning is different
             self._k_inci: Tuple[float, float] = (kx, ky)
-            self._calc_ks()
+            self.k_inci = (kx, ky)
+            # self._calc_ks()  # called in `k_inci` setter
 
     def _calc_gs(self):
         """ calculate E and H Fourier components g points """
@@ -715,13 +722,20 @@ class Params:
     def _calc_phif_psif(self):
         if self._num_g_ac:
             ng = self._num_g_ac
+
             phif = np.eye(2 * ng, 2 * ng, dtype=complex)
             psif = np.zeros((2 * ng, 2 * ng), dtype=complex)
+
             r1 = range(ng)
             r2 = range(ng, 2 * ng)
-            # phif[r2, r2] = -1.  # attention! this was for debugging, but note since phif=eye, it is omitted in certain calculations
+
+            # attention! phif is assumed to be identity in interface calculations. if need to change the form, you need to change coding there, not just changing phif here.
+            # phif[r2, r2] = -1.
+
+            # attention! If need to change this form, note in interface matrix calculations this form is assumed to speed up things. Need to change coding there, not just changing psif here.
             psif[r2, r1] = 1.j
             psif[r1, r2] = -1.j
+
             self.phif = phif
             self.psif = psif
 
