@@ -991,29 +991,26 @@ class Params:
         if self.ks:
             # t1 = time.process_time()
 
-            cphi = np.zeros(self._num_g_ac, complex)
-            sphi = np.zeros(self._num_g_ac, complex)
-            cthe = np.zeros(self._num_g_ac, complex)
-            sthe = np.zeros(self._num_g_ac, complex)
-
             idxa = np.array(self.idx_g)
             ksa = np.array(self.ks)
             k_pa = la.norm(ksa, axis=-1)  # norm of in-plane momentum
-
             i0 = (k_pa == 0.)
             ib = (k_pa != 0.)
+            ii = (idxa[:, 0] == 0) & (idxa[:, 1] == 0)
 
-            cphi[i0] = 1.
-            sphi[i0] = 0.
+            cphi = np.zeros(self._num_g_ac, complex)
+            sphi = np.zeros(self._num_g_ac, complex)
             cphi[ib] = ksa[ib, 0] / k_pa[ib]
             sphi[ib] = ksa[ib, 1] / k_pa[ib]
-            cthe = k_pa / self.omega + 0j
-            sthe = np.sqrt(1 - cthe**2 + 0j)
-
-            # these ensure the incident channel has real cos, sin
-            ii = (idxa[:, 0] == 0) & (idxa[:, 1] == 0)
+            cphi[i0] = 1.
+            sphi[i0] = 0.
             cphi[ii] = np.cos(self._phi)
             sphi[ii] = np.sin(self._phi)
+
+            cthe = k_pa / np.real(self.omega) + 0j  # this is always positive
+            # todo: when omega complex, k_parallel is still calc as real
+            # todo: needs update for non-vacuum, uniform, satisfies that condition incident
+            sthe = np.sqrt(1 - cthe**2 + 0j)
             cthe[ii] = np.cos(np.pi/2 - self._theta)
             sthe[ii] = np.sin(np.pi/2 - self._theta)
 
