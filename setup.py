@@ -8,7 +8,7 @@ def readme():
 
 
 setup(name='inkstone',
-      version='0.3.7+fl',
+      version='0.3.8',
       description='3D efficient solver for multi-stacked in-plane periodic structures using rcwa.',
       long_description=readme(),
       long_description_content_type='text/markdown',
