@@ -49,6 +49,10 @@ class Layer:
         self.if_mod: bool = True  # if this layer is modified
         self._if_t_change: bool = True  # if thickness changed
         self.need_recalc_al_bl = True  # if the al and bl of this layer needs recalculation
+        self.is_vac = None
+        self.is_diagonal = None
+        self.is_isotropic = None
+        self.is_dege = None
 
         self.name: str = name
         self.is_copy = False
@@ -57,7 +61,6 @@ class Layer:
         self._thickness: float = thickness
         self.thickness: float = thickness
 
-        self.material_bg: str = material_bg  # background material
         self.materials: Dict[str, Mtr] = materials  # all of the materials used in the structure
 
         self.materials_used: Set[str] = set()  # all the materials used by this layer
@@ -106,16 +109,59 @@ class Layer:
 
         self.al_bl: Optional[Tuple[np.ndarray, np.ndarray]] = None  # the field coefficients (al, bl).
 
-        self._in_mid_out: str = 'mid'  # {'in', 'mid', 'out'}, if this layer is the incident, output, or a middle layer
+        # --- additional variables and properties ---
+        self._material_bg: Optional[str] = None  # background material
+        self.material_bg: str = material_bg  # background material
 
-        if material_bg == 'vacuum':
-            self.is_vac = True
-        else:
-            self.is_vac = False
+        self._in_mid_out: str = 'mid'  # {'in', 'mid', 'out'}, if this layer is the incident, output, or a middle layer
 
         self._rad_cha: Optional[List[int]] = None
 
         self.set_layer(**kwargs)
+
+    @property
+    def material_bg(self):
+        return self._material_bg
+
+    @material_bg.setter
+    def material_bg(self, val):
+        if (val is not None) and (self._material_bg != val):
+            self._material_bg = val
+            self.if_mod = True
+
+            nn = True
+            if self.patterns:
+                for pattern in self.patterns.values():
+                    if pattern.mtr.name != val:
+                        self.is_isotropic = False
+                        self.is_diagonal = False
+                        self.is_dege = False
+                        self.is_vac = False
+                        nn = False
+                        break
+
+            if nn:
+                mbg: Mtr = self.materials[val]
+
+                if mbg.is_isotropic:
+                    self.is_isotropic = True
+                else:
+                    self.is_isotropic = False
+
+                if mbg.is_dege:
+                    self.is_dege = True
+                else:
+                    self.is_dege = False
+
+                if mbg.is_diagonal:
+                    self.is_diagonal = True
+                else:
+                    self.is_diagonal = False
+
+                if mbg.is_vac:
+                    self.is_vac = True
+                else:
+                    self.is_vac = False
 
     @property
     def in_mid_out(self):
@@ -152,11 +198,9 @@ class Layer:
         if (thickness is not None) and (self._thickness != thickness):
             self._thickness = thickness
             self._if_t_change = True
-        if (material_bg is not None) and (self.material_bg != material_bg):
+
+        if material_bg is not None:
             self.material_bg = material_bg
-            self.if_mod = True
-        if material_bg == 'vacuum' and not self.patterns:
-            self.is_vac = True
 
     def add_box(self,
                 mtr: str,
@@ -190,8 +234,13 @@ class Layer:
         self.patterns[box_name] = bx
         self._find_bx_outside()
         self.if_mod = True
-        if mtr != 'vacuum':
+
+        if not self.materials[mtr].is_vac:
             self.is_vac = False
+        if mtr != self.material_bg:
+            self.is_isotropic = False
+            self.is_diagonal = False
+            self.is_dege = False
 
     def set_box(self,
                 box_name: str,
@@ -657,6 +706,7 @@ class Layer:
             self.phil = self.pr.phi0
             self.psil = self.pr.psi0
             self._rad_cha = self.pr.rad_cha_0 + [i+self.pr.num_g for i in self.pr.rad_cha_0]
+            self.phil_2x2s = self.pr.phi0_2x2s
 
         else:  # not vacuum
             # before fixing Wood: for numG 100 this takes about 2ms
@@ -670,14 +720,37 @@ class Layer:
 
             p, q, pq, qp = self._calc_pq_3d_uniform(o, mxx, mxy, myx, myy, mzz, exx, exy, eyx, eyy, ezz, kxa, kya)
 
-            if (np.abs(mxy) + np.abs(myx) + np.abs(exy) + np.abs(eyx)) == 0. and (eyy/ezz == myy/mzz) and (exx/ezz == mxx/mzz):
-                # if False:  # debugging
+            # if (np.abs(mxy) + np.abs(myx) + np.abs(exy) + np.abs(eyx)) == 0. and (eyy/ezz == myy/mzz) and (exx/ezz == mxx/mzz):
+            if self.is_dege:
+                # if True:  # this is for debugging
                 # direct construction of eigen, no solving
 
-                # self._phil_is_idt = True
+                # # Using identity as phil
+                # # self._phil_is_idt = True
+                # ng = self.pr.num_g
                 # phil = np.eye(2*self.pr.num_g, dtype=complex)
                 # v = np.eye(2, dtype=complex)[None, :, :]  # for later use in constructing psi
                 # w2 = - (pq[:, range(2), range(2)])  # shape (num_g, 2)
+                # w = np.sqrt(w2 + 0j)
+                # row = np.array([[0, 0], [ng, ng]])
+                # rows = np.repeat(row[:, :, None], ng, axis=2)
+                # column = np.array([[0, ng], [0, ng]])
+                # columns = np.repeat(column[:, :, None], ng, axis=2)
+                # self.phil_2x2s = phil[rows, columns]
+                # ql = w.T.ravel()  # 1d array length 2num_g
+                # # vh = -1j * q @ v / w[:, None, :]
+                # vh = -1j * p @ v / w[:, None, :]
+                # todo: q p
+                # psil = np.zeros((2*ng, 2*ng), dtype=complex)
+                # r1 = range(ng)
+                # r2 = range(ng, 2 * ng)
+                # psil[r1, r1] = vh[:, 0, 0]
+                # psil[r1, r2] = vh[:, 0, 1]
+                # psil[r2, r1] = vh[:, 1, 0]
+                # psil[r2, r2] = vh[:, 1, 1]
+
+
+                # construct phil and psil that is Wood-stable
                 w2 = o**2 * exx * myy - myy/mzz * Ky * Ky - exx / ezz * Kx * Kx
                 w2 = np.concatenate([w2, w2])
                 self._rad_cha = np.where(w2.real > 0)[0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
@@ -687,8 +760,6 @@ class Layer:
 
                 ql = w.T.ravel()  # 1d array length 2num_g
 
-                # construct eigen Phi and Psi, with Wood fixing: no inf or nans, normalized
-                # with normalization
                 o = self.pr.omega
                 Kx = self.pr.Kx.copy()
                 Ky = self.pr.Ky.copy()
@@ -697,18 +768,28 @@ class Layer:
 
                 ng = self.pr.num_g
                 qlh = ql[:ng]  # 1d array of length num_g
-                skc = 0.05  # small k criterion
-                i_knz = np.where(k_norm < (skc * np.abs(o)))[0]  # k near zero
-                i_qsw = np.where((np.abs(qlh) <= np.abs(o)) * (k_norm >= (skc * np.abs(o))))[0]  # q smaller than omega, but k_norm not near zero
-                i_qlw = np.where(np.abs(qlh) >  np.abs(o))[0]  # q larger than omega
+                # skc = 0.05
+                # i_knz = np.where(k_norm < (skc * np.abs(o)))[0]
+                i_kez = np.where(k_norm == 0.)[0]  # k is zero
+                # i_qsw = np.where((np.abs(qlh) <= np.abs(o)) * (k_norm >= (skc * np.abs(o))))[0]
+                i_qsw = np.where((np.abs(qlh) < np.abs(o)))[0]
+                i_qlw = np.where(np.abs(qlh) > np.abs(o))[0]
+                idxa = np.array(self.pr.idx_g)
+                ii = (idxa[:, 0] == 0) & (idxa[:, 1] == 0)
 
                 c1 = np.array([eyy * Ky, -exx * Kx], dtype=complex)
                 c2 = np.array([Kx, Ky], dtype=complex)
-                c1f = np.ones(ng, dtype=complex)  # multiplication factor which includes normalization
+                c1f = np.ones(ng, dtype=complex)
                 c2f = c1f.copy()
 
-                c1[:, i_knz] = np.array([[1.], [0.]])
-                c2[:, i_knz] = -1j / o / alpha * np.array([1. / mzz * Kx[i_knz] * Ky[i_knz] / qlh[i_knz], 1./myy*(-exx/ezz*np.square(Kx[i_knz]) - np.square(qlh[i_knz])) / qlh[i_knz]])  # should not be |Kx|^2
+                # c1[:, i_knz] = np.array([[1.], [0.]])
+                # c2[:, i_knz] = -1j / o / alpha * np.array([1. / mzz * Kx[i_knz] * Ky[i_knz] / qlh[i_knz], 1./myy*(-exx/ezz*np.square(Kx[i_knz]) - np.square(qlh[i_knz])) / qlh[i_knz]])  # should not be |Kx|^2
+                c1[:, i_kez] = np.array([[1.], [0.]], dtype=complex)
+                c2[:, i_kez] = np.array([[0.], [1.]], dtype=complex)
+                cphi = np.cos(self.pr._phi)
+                sphi = np.sin(self.pr._phi)
+                c1[:, ii] = np.array([[sphi], [-cphi]], dtype=complex)
+                c2[:, ii] = np.array([[cphi], [sphi]], dtype=complex)
 
                 c1f[i_qlw] = o / qlh[i_qlw] / k_norm[i_qlw]
                 c2f[i_qlw] = 1j / k_norm[i_qlw]
@@ -716,8 +797,14 @@ class Layer:
                 c1f[i_qsw] = 1. / k_norm[i_qsw]
                 c2f[i_qsw] = 1j / o * qlh[i_qsw] / k_norm[i_qsw]
 
-                c1f[i_knz] = 1.
-                c2f[i_knz] = 1.
+                # c1f[i_knz] = 1.
+                # c2f[i_knz] = 1.
+
+                c1f[i_kez] = 1.
+                c2f[i_kez] = 1j * qlh[i_kez] / o
+
+                c1f[ii] = 1.
+                c2f[ii] = 1j * qlh[ii] / o
 
                 c1 *= c1f
                 c2 *= c2f
@@ -735,7 +822,8 @@ class Layer:
                 psil[r1, r2] = c1[0, :]
                 psil[r2, r2] = c1[1, :]
 
-                self.phil_2x2s = np.array([c1, c2])
+                self.phil_2x2s = np.moveaxis(np.array([c1, c2]), 0, 1)
+
 
                 # # debugging, check if phi is eigen and consistent with psi
                 # P = np.zeros((2 * ng, 2 * ng), dtype=complex)
@@ -773,21 +861,20 @@ class Layer:
                 i_wn0 = np.where(wn0)
 
                 vh = np.zeros((self.pr.num_g, 2, 2), dtype=complex)
-                vh[i_wn0[0], :, i_wn0[1]] = -1j * (q[i_wn0[0], :, :] @ v[i_wn0[0], :, i_wn0[1]][:, :, None])[:, :, 0] / w[i_wn0[0], i_wn0[1], None]
+                vh[i_wn0[0], :, i_wn0[1]] = -1j * (p[i_wn0[0], :, :] @ v[i_wn0[0], :, i_wn0[1]][:, :, None])[:, :, 0] / w[i_wn0[0], i_wn0[1], None]
                 # vh = -1j * q @ v / w[:, None, :]
 
                 if wis0.any():
                     w2h_, vh_ = la.eig(-qp)
 
-                    # shift frequency such that no ql==0, recalculate _p, _q, eigen freq _w, eigen vector _v and _vh
-                    _o = o * (1 + 1e-13)  # omega prime
+                    _o = o * (1 + 1e-13)
                     _p, _q, _pq, _qp = self._calc_pq_3d_uniform(_o, mxx, mxy, myx, myy, mzz, exx, exy, eyx, eyy, ezz, kxa, kya)
                     _w2, _v = la.eig(-_pq)  # w2 shape (num_g, 2), v shape (num_g, 2, 2)
                     _w2 = _w2  # shape (num_g, 2)
                     _w = np.sqrt(_w2 + 0j)
                     _v_w0 = _v[i_wis0[0], :, i_wis0[1]]
-                    _vh = -1j * (_p[i_wis0[0], :, :] @ _v_w0[:, :, None])[:, :, 0] / _w[i_wis0[0], i_wis0[1], None]
-                    # for each eigen vector in _v and _vh corresponding to ql==0, compare the norm of the column in _v and _vh
+                    _vh = -1j * (_p[i_wis0[0], :, :] @ _v_w0[:, :, None])[:, :, 0] / _w[i_wis0[0], i_wis0[1], None]  # todo: q p
+
                     for ii in range(len(i_wis0[0])):
                         _vh_norm = np.sqrt(np.conj(_vh[ii]) @ _vh[ii])
                         _v_norm = np.sqrt(np.conj(_v_w0[ii]) @ _v_w0[ii])
@@ -799,28 +886,33 @@ class Layer:
                             # the column of v is already correct
                             vh[i_wis0[0][ii], :, i_wis0[1][ii]] = np.array([0., 0.])
 
-                # normalize such that the larger norm of v and vh's each column is 1
                 vn = sla.norm(np.moveaxis(v, 1, 2).reshape(self.pr.num_g*2, 2), axis=1).reshape(self.pr.num_g, 2)[:, None, :]
                 vhn = sla.norm(np.moveaxis(vh, 1, 2).reshape(self.pr.num_g * 2, 2), axis=1).reshape(self.pr.num_g, 2)[:, None, :]
                 nm = np.maximum(vn, vhn)
                 v /= nm
                 vh /= nm
 
-                r1 = range(self.pr.num_g)
-                r2 = range(self.pr.num_g, 2 * self.pr.num_g)
+                ng = self.pr.num_g
+                r1 = range(ng)
+                r2 = range(ng, 2 * ng)
 
-                phil = np.zeros((2*self.pr.num_g, 2*self.pr.num_g), dtype=complex)
+                phil = np.zeros((2*ng, 2*ng), dtype=complex)
                 phil[r1, r1] = v[:, 0, 0]
                 phil[r1, r2] = v[:, 0, 1]
                 phil[r2, r1] = v[:, 1, 0]
                 phil[r2, r2] = v[:, 1, 1]
 
-                psil = np.zeros((2*self.pr.num_g, 2*self.pr.num_g), dtype=complex)
+                psil = np.zeros((2*ng, 2*ng), dtype=complex)
                 psil[r1, r1] = vh[:, 0, 0]
                 psil[r2, r1] = vh[:, 1, 0]
                 psil[r1, r2] = vh[:, 0, 1]
                 psil[r2, r2] = vh[:, 1, 1]
 
+                row = np.array([[0, 0], [ng, ng]])
+                rows = np.repeat(row[:, :, None], ng, axis=2)
+                column = np.array([[0, ng], [0, ng]])
+                columns = np.repeat(column[:, :, None], ng, axis=2)
+                self.phil_2x2s = phil[rows, columns]
 
                 # # debugging, check if phil is eigen and consistent with psil
                 # ng = self.pr.num_g
@@ -851,36 +943,9 @@ class Layer:
                 # print('check eigen {:g}'.format(diff1))
                 # a = 1
 
-
-            # Now this is is done in `_w_sign_channel()`
-            # if self.in_mid_out == 'mid':
-            #     w[w.imag < 0] *= -1
-            # else:
-            #     if self.pr.omega.imag < 0:
-            #         if self.pr.ccnif == "physical":
-            #             w[(w2.real < 0) * (w.imag < 0)] *= -1
-            #         elif self.pr.ccnif == "ac":
-            #             w[(w2.real < 0) * (w.imag > 0)] *= -1
-            #         else:
-            #             warn("ccnif not recognized. Default to 'physical'.")
-            #             w[(w2.real < 0) * (w.imag < 0)] *= -1
-            #     elif self.pr.omega.imag > 0:
-            #         if self.pr.ccpif == "ac":
-            #             w[(w2.real < 0) * (w.imag < 0)] *= -1
-            #         elif self.pr.ccpif == "physical":
-            #             w[(w2.real < 0) * (w.imag > 0)] *= -1
-            #         else:
-            #             warn("ccpif not recognized. Default to 'ac'.")
-            #             w[(w2.real < 0) * (w.imag < 0)] *= -1
-            #     else:
-            #         w[w.imag < 0] *= -1
-
-
             # ql = w.T.ravel()  # 1d array length 2num_g
-
+            # # vh = -1j * q @ v / w[:, None, :]
             # vh = -1j * p @ v / w[:, None, :]
-            #
-            # psil11, psil12, psil21, psil22 = [np.diag(vh[:, i, j]) for i, j in [(0, 0), (0, 1), (1, 0), (1, 1)]]
             #
             # ng = self.pr.num_g
             # r1 = range(ng)
@@ -1048,9 +1113,9 @@ class Layer:
         # a0l, b0l = im(self.pr.phi0, self.pr.psi0, self.phil, self.psil)
         # self.imfl = (a0l, b0l)
 
-        # iml0 (actually imlf), assume fic material separating all layers.
-        al0, bl0 = im(self.phil, self.psil, self.pr.phif, self.pr.psif)
-        self.iml0 = (al0, bl0)
+        # iml0 (actually imlf),
+        # al0, bl0 = im(self.phil, self.psil, self.pr.phif, self.pr.psif)
+        # self.iml0 = (al0, bl0)
 
         # calc imfl
         phif = self.pr.phif
@@ -1103,8 +1168,8 @@ class Layer:
             if self.thickness == 0:
                 sm = self.pr.sm0
             else:
-                sm = s_1l(self.thickness, self.ql, *self.iml0)
-                # sm = s_1l_rsp(self.thickness, self.ql, *self.imfl)
+                # sm = s_1l(self.thickness, self.ql, *self.iml0)
+                sm = s_1l_rsp(self.thickness, self.ql, *self.imfl)
                 # sm = s_1l_rsp_lrd(self.thickness, self.ql, *self.imfl, *self.imfl4)
         elif self.in_mid_out == 'in':
             # sm = s_1l_1212(*self.iml0)

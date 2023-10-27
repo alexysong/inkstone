@@ -92,6 +92,10 @@ class Params:
         self.sin_varthetas: Optional[List[float, complex]] = None
         self.cos_phis: Optional[List[float]] = None
         self.sin_phis: Optional[List[float]] = None
+        self.cos_varthetas_bk: Optional[List[float]] = None  # incident angles
+        self.sin_varthetas_bk: Optional[List[float, complex]] = None
+        self.cos_phis_bk: Optional[List[float]] = None
+        self.sin_phis_bk: Optional[List[float]] = None
 
         self._incident_orders = None
         self._incident_orders_bk = None
@@ -105,6 +109,11 @@ class Params:
         # self.q0_contain_0: bool = False
 
         self.show_calc_time = show_calc_time
+
+        self._inci_is_iso_nonvac = False
+        self._ind_inci = 1.
+        self._out_is_iso_nonvac = False
+        self._ind_out = 1.
 
         # property initialization can change other attributes hence must be after initialization of other attributes.
         if latt_vec is not None:
@@ -195,7 +204,7 @@ class Params:
         # self._calc_q0()  # called through _calc_gs - _calc_ks
         self._calc_im0()
         self._calc_s_0()
-        # self.calc_ai_bo_3d()  # called through _calc_gs
+        # self._calc_ai_bo_3d()  # called through _calc_gs
 
     @property
     def frequency(self) -> Union[float, complex]:
@@ -219,7 +228,7 @@ class Params:
             self._omega = val
             self._frequency = val / np.pi / 2.
             # self.q0_contain_0 = False
-            self._calc_gs()  # recalculating gs because some g may be possibly removed in previous runs to remove Wood's anomaly.
+            # self._calc_gs()  # recalculating gs because some g may be possibly removed in previous runs to remove Wood's anomaly.
             self._calc_k_inci()
             # self._calc_q0()  # called through _calc_k_inci - _calc_ks
             # self._calc_P0Q0()  # called through _calc_k_inci - _calc_ks - _calc_Km
@@ -372,15 +381,62 @@ class Params:
         if (len(self._incident_orders_bk) != len(self._s_amps_bk)) or (len(self._incident_orders_bk) != len(self._p_amps_bk)):
             raise Exception("The list length of the backside incident s amplitudes, p amplitudes, and incident orders are not equal.")
 
-        self.calc_ai_bo_3d()
+        # self._calc_ai_bo_3d()
+
+    @property
+    def inci_is_iso_nonvac(self) -> bool:
+        """if inci region is isotropic non-vacuum"""
+        return self._inci_is_iso_nonvac
+
+    @inci_is_iso_nonvac.setter
+    def inci_is_iso_nonvac(self, val):
+        self._inci_is_iso_nonvac = val
+        self._calc_k_inci()
+
+    @property
+    def ind_inci(self) -> float:
+        """inci region refractive index"""
+        return self._ind_inci
+
+    @ind_inci.setter
+    def ind_inci(self, val):
+        self._ind_inci = val
+        self._calc_k_inci()
+
+    @property
+    def out_is_iso_nonvac(self) -> bool:
+        """if out region is isotropic non-vacuum"""
+        return self._out_is_iso_nonvac
+
+    @out_is_iso_nonvac.setter
+    def out_is_iso_nonvac(self, val):
+        self._out_is_iso_nonvac = val
+        self._calc_k_inci()
+
+    @property
+    def ind_out(self) -> float:
+        """out region refractive index"""
+        return self._ind_out
+
+    @ind_out.setter
+    def ind_out(self, val):
+        self._ind_out = val
+        self._calc_k_inci()
 
     def _calc_k_inci(self):
+        """calculate incident kx and ky"""
         if (self.theta is not None) and (self.phi is not None) and (self.omega is not None):
-            kx = self.omega.real * np.cos(np.pi/2 - self._theta) * np.cos(self._phi)
-            ky = self.omega.real * np.cos(np.pi/2 - self._theta) * np.sin(self._phi)
-            # todo: using self.omega (hence kx ky complex) also gives answers, physical meaning is different
+            if self.inci_is_iso_nonvac:
+                k = self.omega.real * self.ind_inci  # todo: what if ind_inci complex?
+            else:
+                k = self.omega.real
+            # todo: for complex freq, should here be np.abs(self.omega) or self.omega.real?
+            # todo: using self.omega (hence kx ky complex) also gives answers, but the physical meaning is different
+            kx = k * np.cos(np.pi/2 - self._theta) * np.cos(self._phi)
+            ky = k * np.cos(np.pi/2 - self._theta) * np.sin(self._phi)
             self._k_inci: Tuple[float, float] = (kx, ky)
             self.k_inci = (kx, ky)
+
             # self._calc_ks()  # called in `k_inci` setter
 
     def _calc_gs(self):
@@ -401,7 +457,7 @@ class Params:
             self._num_g_ac = len(self.gs)
             self._calc_ks()
             self._calc_conv_mtx_idx()
-            # self.calc_ai_bo_3d()  # called through _calc_ks() - _calc_angles()
+            # self._calc_ai_bo_3d()  # called through _calc_ks() - _calc_angles()
 
     def _remove_gs(self,
                    idxs_rm: List[Tuple[int, int]]):
@@ -598,10 +654,10 @@ class Params:
         if (self.Q0_val is not None) and (self.q0 is not None) and (self._num_g_ac is not None):
             # t1 = time.process_time()
 
-            o = self.omega
-            Kx = self.Kx.copy()
-            Ky = self.Ky.copy()
-            k_norm = np.sqrt(np.conj(Kx) * Kx + np.conj(Ky) * Ky)
+            # o = self.omega
+            # Kx = self.Kx.copy()
+            # Ky = self.Ky.copy()
+            # k_norm = np.sqrt(np.conj(Kx) * Kx + np.conj(Ky) * Ky)
 
             # # Use [ky, -kx] etc. as eigen
             # Tx = Kx  # term with x subscript
@@ -653,19 +709,34 @@ class Params:
             # with normalization
             q0h = self.q0_half
             ng = self._num_g_ac
+            o = self.omega
+            Kx = self.Kx.copy()
+            Ky = self.Ky.copy()
+            k_norm = np.sqrt(np.conj(Kx) * Kx + np.conj(Ky) * Ky)
 
-            skc = 0.05  # small k criterion
-            i_knz = np.where(k_norm < (skc * np.abs(o)))[0]  # k near zero
-            i_qsw = np.where((np.abs(q0h) <= np.abs(o)) * (k_norm >= (skc * np.abs(o))))[0]  # q smaller than omega, but k_norm not near zero
-            i_qlw = np.where(np.abs(q0h) >  np.abs(o))[0]  # q larger than omega
+            # skc = 0.05
+            # i_knz = np.where(k_norm < (skc * np.abs(o)))[0]
+            i_kez = np.where(k_norm == 0.)[0]
+            # i_qsw = np.where((np.abs(q0h) <= np.abs(o)) * (k_norm >= (skc * np.abs(o))))[0]
+            i_qsw = np.where((np.abs(q0h) < np.abs(o)))[0]
+            i_qlw = np.where(np.abs(q0h) > np.abs(o))[0]
+            # when allowing imaginary/complex kx, ky: when ky = i kx, q = omega, but k_norm is not zero. But this case doesn't matter. as long as k_norm not zero, it can be divided.
+            idxa = np.array(self.idx_g)
+            ii = (idxa[:, 0] == 0) & (idxa[:, 1] == 0)
 
             c1 = np.array([Ky, -Kx], dtype=complex)
             c2 = np.array([Kx, Ky], dtype=complex)
-            c1f = np.ones(ng, dtype=complex)  # multiplication factor which includes normalization
+            c1f = np.ones(ng, dtype=complex)
             c2f = c1f.copy()
 
-            c1[:, i_knz] = np.array([[1.], [0.]])
-            c2[:, i_knz] = -1j / o * np.array([Kx[i_knz] * Ky[i_knz] / q0h[i_knz], (-np.square(Kx[i_knz]) - np.square(q0h[i_knz])) / q0h[i_knz]])  # should not be |Kx|^2
+            # c1[:, i_knz] = np.array([[1.], [0.]])
+            # c2[:, i_knz] = -1j / o * np.array([Kx[i_knz] * Ky[i_knz] / q0h[i_knz], (-np.square(Kx[i_knz]) - np.square(q0h[i_knz])) / q0h[i_knz]])  # should not be |Kx|^2
+            c1[:, i_kez] = np.array([[1.], [0.]], dtype=complex)
+            c2[:, i_kez] = np.array([[0.], [1.]], dtype=complex)
+            cphi = np.cos(self._phi)
+            sphi = np.sin(self._phi)
+            c1[:, ii] = np.array([[sphi], [-cphi]], dtype=complex)
+            c2[:, ii] = np.array([[cphi], [sphi]], dtype=complex)
 
             c1f[i_qlw] = o / q0h[i_qlw] / k_norm[i_qlw]
             c2f[i_qlw] = 1j / k_norm[i_qlw]
@@ -673,8 +744,14 @@ class Params:
             c1f[i_qsw] = 1. / k_norm[i_qsw]
             c2f[i_qsw] = 1j / o * q0h[i_qsw] / k_norm[i_qsw]
 
-            c1f[i_knz] = 1.
-            c2f[i_knz] = 1.
+            # c1f[i_knz] = 1.
+            # c2f[i_knz] = 1.
+
+            c1f[i_kez] = 1.
+            c2f[i_kez] = 1j * q0h[i_kez] / o
+
+            c1f[ii] = 1.
+            c2f[ii] = 1j * q0h[ii] / o
 
             c1 *= c1f
             c2 *= c2f
@@ -692,7 +769,7 @@ class Params:
             psi0[r1, r2] = c1[0, :]
             psi0[r2, r2] = c1[1, :]
 
-            self.phi0_2x2s = np.array([c1, c2])
+            self.phi0_2x2s = np.moveaxis(np.array([c1, c2]), 0, 1)
 
             # # debugging,  check if phi is eigen and consistent with psi
             # psi00 = -1j * self.P0 @ phi0 / self.q0
@@ -1007,23 +1084,42 @@ class Params:
             cphi[ii] = np.cos(self._phi)
             sphi[ii] = np.sin(self._phi)
 
-            cthe = k_pa / np.real(self.omega) + 0j  # this is always positive
+            if self.inci_is_iso_nonvac:
+                k = self.omega.real * self.ind_inci
+            else:
+                k = self.omega.real
+            cthe = k_pa / k + 0j  # this is always positive
             # todo: when omega complex, k_parallel is still calc as real
-            # todo: needs update for non-vacuum, uniform, satisfies that condition incident
             sthe = np.sqrt(1 - cthe**2 + 0j)
             cthe[ii] = np.cos(np.pi/2 - self._theta)
             sthe[ii] = np.sin(np.pi/2 - self._theta)
 
+            if self.out_is_iso_nonvac:
+                k = self.omega.real * self.ind_out
+            else:
+                k = self.omega.real
+            cthe_bk = k_pa / k + 0j  # this is always positive
+            # todo: when omega complex, k_parallel is still calc as real
+            sthe_bk = np.sqrt(1 - cthe_bk**2 + 0j)
+            cthe_bk[ii] = np.cos(np.pi/2 - self._theta)
+            sthe_bk[ii] = np.sin(np.pi/2 - self._theta)
+
             self.cos_phis = list(cphi)
             self.sin_phis = list(sphi)
+            self.cos_phis_bk = self.cos_phis.copy()
+            self.sin_phis_bk = self.sin_phis.copy()
             self.cos_varthetas = list(cthe)
             self.sin_varthetas = list(sthe)
+            self.cos_varthetas_bk = list(cthe)
+            self.sin_varthetas_bk = list(sthe)
+
 
             # print('_calc_angles', time.process_time()-t1)
-        self.calc_ai_bo_3d()
+        # self._calc_ai_bo_3d()
 
-    def calc_ai_bo_3d(self):
+    def _calc_ai_bo_3d(self):
         """calculate incident ai and bo amplitudes"""
+        warn('this method is deprecated. It is moved to simulator', DeprecationWarning)
 
         # t1 = time.process_time()
 
@@ -1068,11 +1164,7 @@ class Params:
                             ab[jj] = v[0]
                             ab[jj + self._num_g_ac] = v[1]
 
-                            # todo: if incident region is not vacuum, here ai is not pr.ai
-                            # todo: for uniform non-vacuum incident region, ai should not be pr.ai.
-                            # todo: ai bo is calculated with assumption that incident and output are vacuum, with whatever choice of 2x2 eigen. ai bo are amplitudes of corresponding eigens. However, for non vacuum layer, the phil and psil are not the same as that in vacuum, so directly copying ai here is incorrect.
-
                 aibo[ii] = ab
         self.ai, self.bo = aibo
-        # print('calc_ai_bo_3d', time.process_time() - t1)
+        # print('_calc_ai_bo_3d', time.process_time() - t1)
 

@@ -249,6 +249,7 @@ class Inkstone:
             self.total_thickness += thickness
             self.thicknesses_c.append(self.total_thickness)
             self.csms.append([])
+            # self._determine_layers()
         else:
             warn('A layer with the given name already exists. This new layer is NOT added.')
 
@@ -278,6 +279,7 @@ class Inkstone:
             self.thicknesses_c.append(self.total_thickness)
 
             self.csms.append([])
+            # self._determine_layers()
         else:
             warn('A layer with the given name already exists. This new layer is NOT added.')
 
@@ -308,6 +310,7 @@ class Inkstone:
                     for ly in self.layers.values():
                         if ly.original_layer_name == layer.original_layer_name:
                             ly.if_mod = True
+            # self._determine_layers()
         else:
             warn('Did not find the layer you specified. The layer is NOT changed.', UserWarning)
 
@@ -577,6 +580,7 @@ class Inkstone:
                                 incident angles in units of degrees.
                                 `theta` is the oblique angle from normal (z).
                                 `phi` is the azimuthal angle, the angle from x axis to the in-plane projection of the incident k, ccw means positive.
+                                Note, these are angles in the incident region (the angles in the output region could be different and are automatically calculated).
         s_amplitude         :   Electric field amplitude of incident s wave.
                                 "s" means electric field parallel to xy plane, perpendicular to incident plane. The incident plane contains z and k.
                                 A list would mean the electric field amplitude of s-wave incidence in several orders, defined by `order`
@@ -592,16 +596,20 @@ class Inkstone:
         the s and p amplitudes and the orders in the front side and the backside can all be lists.
 
         """
-        # todo: if incident not vacuum, then the incident wave shouldn't be Fourier order (which in general is not eigen)
 
+        layer_inci: Layer = list(self.layers.values())[0]
+        layer_out: Layer = list(self.layers.values())[-1]
         self.theta = theta
         self.phi = phi
-
         if (s_amplitude is not None) or (p_amplitude is not None) or (order is not None) or (s_amplitude_back is not None) or (p_amplitude_back is not None) or (order_back is not None):
             self.pr.set_inci_ord_amp(s_amplitude, p_amplitude, order, s_amplitude_back, p_amplitude_back, order_back)
             self._need_recalc_bi_ao = True
-            for ly in self.layers.values():
+            for ly in list(self.layers.values()):
                 ly.need_recalc_al_bl = True
+
+        if (not layer_inci.is_isotropic) or (not layer_out.is_isotropic):
+            warn('Incident region and/or output region is not uniform isotropic. s and p waves with arbitrary angles are not guaranteed to be eign.', UserWarning)
+            # todo: if incident not isotropic
 
     def SetFrequency(self, freq: Union[float, complex]):
         """
@@ -613,6 +621,61 @@ class Inkstone:
         """
         # todo: test complex frequency
         self.frequency = freq
+
+    def _calc_ai_bo_3d(self):
+        """calculate incident ai and bo amplitudes"""
+
+        # t1 = time.process_time()
+
+        o = self.pr.omega
+
+        layer_inci: Layer = list(self.layers.values())[0]
+
+        aibo = [self.ai, self.bo]
+        for ii, (sa, pa, od, sphi, cphi, sthe, cthe) in enumerate([[self.pr._s_amps, self.pr._p_amps, self.pr._incident_orders, self.pr.sin_phis, self.pr.cos_phis, self.pr.sin_varthetas, self.pr.cos_varthetas], [self.pr._s_amps_bk, self.pr._p_amps_bk, self.pr._incident_orders_bk, self.pr.sin_phis_bk, self.pr.cos_phis_bk, self.pr.sin_varthetas_bk, self.pr.cos_varthetas_bk]]):
+            if self.pr._num_g_ac:
+                ab = np.zeros(2 * self.pr._num_g_ac) + 0j
+                if (sa or pa) and od and self.pr.idx_g and \
+                        sphi and cphi and sthe and cthe:
+                    # find the index of the input orders in the g list
+                    idx = [i for order in od for i, j in enumerate(self.pr.idx_g) if j == order]
+                    for i, jj in enumerate(idx):
+                    # for i in range(len(idx)):
+                        if (jj in self.pr.q0_0):
+                            # todo: need to handle this and document it.
+                            # if user specify 90 degree incidence, this is activated
+                            warn('You are specifying incidence in a channel that is parallel to the surface of the structure. \n In this case, only specific field configuration is allowed.')
+                            ab[jj] = sa[i]
+                            ab[jj + self.pr._num_g_ac] = pa[i]
+                        else:
+                            s = sa[i]
+                            p = pa[i]
+                            sp = sphi[jj]
+                            cp = cphi[jj]
+                            st = sthe[jj]
+                            ct = cthe[jj]
+
+                            # # original
+                            # ab[i] = -s * self.sin_phis[i] + p * self.sin_varthetas[i] * self.cos_phis[i]  # e_x
+                            # ab[i + self._num_g_ac] = s * self.cos_phis[i] + p * self.sin_varthetas[i] * self.sin_phis[i]  # e_y
+
+                            # # original, corrected
+                            # ab[jj] = -s * self.sin_phis[jj] + p * self.sin_varthetas[jj] * self.cos_phis[jj]  # e_x
+                            # ab[jj + self._num_g_ac] = s * self.cos_phis[jj] + p * self.sin_varthetas[jj] * self.sin_phis[jj]  # e_y
+
+                            # with new calc that removed convergence problem at Wood
+                            ex = -s * sp + p * st * cp  # e_x
+                            ey = s * cp + p * st * sp  # e_y
+                            phi_2x2 = layer_inci.phil_2x2s[:, :, jj]
+                            v = la.solve(phi_2x2, np.array([ex, ey]))
+                            ab[jj] = v[0]
+                            ab[jj + self.pr._num_g_ac] = v[1]
+
+                            # todo: uniform anisotropic material, non-uniform material
+
+                aibo[ii] = ab
+        self.ai, self.bo = aibo
+        # print('_calc_ai_bo_3d', time.process_time() - t1)
 
     def _calc_al_bl_layer(self, i: int):
         """Calculate the field coefficients al and bl of a layer"""
@@ -626,15 +689,10 @@ class Inkstone:
             t1 = time.process_time()
 
             if layer.in_mid_out == 'in':
-                layer.al_bl = (self.pr.ai, self.bi)
-                # todo: if incident region is not vacuum, here ai is not pr.ai
-                # todo: for uniform non-vacuum incident region, ai should not be pr.ai.
-                # todo: ai bo is calculated with assumption that incident and output are vacuum, with whatever choice of 2x2 eigen. ai bo are amplitudes of corresponding eigens. However, for non vacuum layer, the phil and psil are not the same as that in vacuum, so directly copying ai here is incorrect.
-                # here we should have if laer is vac then use pr.ai. if not we calculate it here.
-
+                layer.al_bl = (self.ai, self.bi)
 
             elif layer.in_mid_out == 'out':
-                layer.al_bl = (self.ao, self.pr.bo)
+                layer.al_bl = (self.ao, self.bo)
             else:
 
                 self._calc_csmr_layer(i)
@@ -747,8 +805,8 @@ class Inkstone:
                 else:
                     scin11, scin12, scin21, scin22 = rsp_sa12lu(sr11, sr12, sr21, sr22, scin11, scin12, scin21, scin22)
 
-                sa = scp21 @ self.pr.ai
-                sb = scin12 @ self.pr.bo
+                sa = scp21 @ self.ai
+                sb = scin12 @ self.bo
                 al = sla.solve((I - (scp22 * f) @ (scin11 * f)), (sa + (scp22 * f) @ sb))
                 bl = sla.solve((I - (scin11 * f) @ (scp22 * f)), ((scin11 * f) @ sa + sb))
 
@@ -770,8 +828,8 @@ class Inkstone:
 
         if self._need_recalc_bi_ao:
             t1 = time.process_time()
-            ai_v = self.pr.ai.reshape((2 * self.pr.num_g, 1))
-            bo_v = self.pr.bo.reshape((2 * self.pr.num_g, 1))
+            ai_v = self.ai.reshape((2 * self.pr.num_g, 1))
+            bo_v = self.bo.reshape((2 * self.pr.num_g, 1))
             sm11 = self.sm[0]
             sm12 = self.sm[1]
             sm21 = self.sm[2]
@@ -981,6 +1039,15 @@ class Inkstone:
             else:
                 layer.in_mid_out = 'mid'
 
+        layer_inci: Layer = list(self.layers.values())[0]
+        if (not layer_inci.is_vac) and (layer_inci.is_isotropic):
+            self.pr.inci_is_iso_nonvac = True
+            self.pr.ind_inci = np.sqrt(self.materials[layer_inci.material_bg].epsi[0, 0] * self.materials[layer_inci.material_bg].mu[0, 0])
+        layer_out: Layer = list(self.layers.values())[-1]
+        if (not layer_out.is_vac) and (layer_out.is_isotropic):
+            self.pr.out_is_iso_nonvac = True
+            self.pr.ind_out = np.sqrt(self.materials[layer_out.material_bg].epsi[0, 0] * self.materials[layer_out.material_bg].mu[0, 0])
+
         # todo: when _in_mid_out changes, the layer's sm, al, bl, idx_sm_c_mod, idx_sm_ci_mod all may change.
 
     def _determine_recalc(self):
@@ -1036,6 +1103,7 @@ class Inkstone:
         self._determine_recalc()
         self._calc_sm()
         # todo: if simulating det(S), no need to calc bi ao al bl
+        self._calc_ai_bo_3d()  # need to be after `_calc_sm()` because this needs the eigen of the inci and output layers. todo: determine if need recalc
         self._calc_bi_ao()
 
         if self.pr.show_calc_time:
