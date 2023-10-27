@@ -1170,7 +1170,21 @@ class Inkstone:
                       layer: str,
                       z: Union[float, List[float], np.ndarray, Tuple[float]] = None,
                       order: Union[int, List[int], Tuple[int, int], List[Tuple[int, int]]] = None):
+        """
+        Get the electric and magnetic fields by Fourier order in a given layer at a given z.
 
+        Parameters
+        ----------
+        layer
+        z
+        order:
+            order can be int or list of int (for 2d problems), 2-tuple or list of 2-tuples for 3d problems.
+
+        Returns
+        -------
+        Ex forward, Ex backward, Ey forward, Ey backward, Ez forward, Ez backward, Hx forward, Hx backward, Hy forward, Hy backward, Hz forward, Hz backward
+            These are the complex field amplitudes in the given orders.
+        """
         if z is None:
             z = 0.
 
