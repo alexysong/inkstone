@@ -559,17 +559,15 @@ class Layer:
             w2h_, vh_ = la.eig(- self.Q @ self.P)
 
             o = self.pr.omega
-            _o = o * (1 + 1e-13)  # omega prime
-            # _p, _q, _pq, _qp = self._calc_pq_3d_uniform(_o, mxx, mxy, myx, myy, mzz, exx, exy, eyx, eyy, ezz, kxa, kya)
+            _o = o * (1 + 1e-13)
             P, Q = self._calc_PQ_3d(_o)
 
-            # shift frequency such that no ql==0, recalculate _p, _q, eigen freq _w, eigen vector _v and _vh
             _w2, _v = la.eig(-P @ Q)  # w2 shape (num_g, 2), v shape (num_g, 2, 2)
             _w2 = _w2  # shape (num_g, 2)
             _w = np.sqrt(_w2 + 0j)
             _v_w0 = _v[:, i_wis0[0]]
-            _vh = -1j * P @ _v_w0 / _w[i_wis0[0]]
-            # for each eigen vector in _v and _vh corresponding to ql==0, compare the norm of the column in _v and _vh
+            _vh = -1j * Q @ _v_w0 / _w[i_wis0[0]]
+
             for ii in range(len(i_wis0[0])):
                 _vh_norm = np.sqrt(np.conj(_vh[ii]) @ _vh[ii])
                 _v_norm = np.sqrt(np.conj(_v_w0[ii]) @ _v_w0[ii])
@@ -722,7 +720,7 @@ class Layer:
 
             # if (np.abs(mxy) + np.abs(myx) + np.abs(exy) + np.abs(eyx)) == 0. and (eyy/ezz == myy/mzz) and (exx/ezz == mxx/mzz):
             if self.is_dege:
-                # if True:  # this is for debugging
+                # if False:  # this is for debugging
                 # direct construction of eigen, no solving
 
                 # # Using identity as phil
@@ -732,15 +730,16 @@ class Layer:
                 # v = np.eye(2, dtype=complex)[None, :, :]  # for later use in constructing psi
                 # w2 = - (pq[:, range(2), range(2)])  # shape (num_g, 2)
                 # w = np.sqrt(w2 + 0j)
+                # w = self._w_sign_channel(w, w2)
                 # row = np.array([[0, 0], [ng, ng]])
                 # rows = np.repeat(row[:, :, None], ng, axis=2)
                 # column = np.array([[0, ng], [0, ng]])
                 # columns = np.repeat(column[:, :, None], ng, axis=2)
                 # self.phil_2x2s = phil[rows, columns]
                 # ql = w.T.ravel()  # 1d array length 2num_g
-                # # vh = -1j * q @ v / w[:, None, :]
-                # vh = -1j * p @ v / w[:, None, :]
-                # todo: q p
+                # vh = -1j * q @ v / w[:, None, :]
+                # # vh = -1j * p @ v / w[:, None, :]
+                # # todo: q p
                 # psil = np.zeros((2*ng, 2*ng), dtype=complex)
                 # r1 = range(ng)
                 # r2 = range(ng, 2 * ng)
@@ -861,7 +860,7 @@ class Layer:
                 i_wn0 = np.where(wn0)
 
                 vh = np.zeros((self.pr.num_g, 2, 2), dtype=complex)
-                vh[i_wn0[0], :, i_wn0[1]] = -1j * (p[i_wn0[0], :, :] @ v[i_wn0[0], :, i_wn0[1]][:, :, None])[:, :, 0] / w[i_wn0[0], i_wn0[1], None]
+                vh[i_wn0[0], :, i_wn0[1]] = -1j * (q[i_wn0[0], :, :] @ v[i_wn0[0], :, i_wn0[1]][:, :, None])[:, :, 0] / w[i_wn0[0], i_wn0[1], None]
                 # vh = -1j * q @ v / w[:, None, :]
 
                 if wis0.any():
@@ -873,7 +872,7 @@ class Layer:
                     _w2 = _w2  # shape (num_g, 2)
                     _w = np.sqrt(_w2 + 0j)
                     _v_w0 = _v[i_wis0[0], :, i_wis0[1]]
-                    _vh = -1j * (_p[i_wis0[0], :, :] @ _v_w0[:, :, None])[:, :, 0] / _w[i_wis0[0], i_wis0[1], None]  # todo: q p
+                    _vh = -1j * (_q[i_wis0[0], :, :] @ _v_w0[:, :, None])[:, :, 0] / _w[i_wis0[0], i_wis0[1], None]
 
                     for ii in range(len(i_wis0[0])):
                         _vh_norm = np.sqrt(np.conj(_vh[ii]) @ _vh[ii])
