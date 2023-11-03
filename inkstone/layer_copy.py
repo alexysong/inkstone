@@ -71,6 +71,10 @@ class LayerCopy:
         return self.layer.iml0
 
     @property
+    def imfl(self):
+        return self.layer.imfl
+
+    @property
     def ql(self):
         return self.layer.ql
 
