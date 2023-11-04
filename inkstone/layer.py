@@ -787,7 +787,7 @@ class Layer:
                 c2[:, i_kez] = np.array([[0.], [1.]], dtype=complex)
                 cphi = np.cos(self.pr._phi)
                 sphi = np.sin(self.pr._phi)
-                c1[:, ii] = np.array([[sphi], [-cphi]], dtype=complex)
+                c1[:, ii] = np.array([[eyy * sphi], [-exx * cphi]], dtype=complex)
                 c2[:, ii] = np.array([[cphi], [sphi]], dtype=complex)
 
                 c1f[i_qlw] = o / qlh[i_qlw] / k_norm[i_qlw]
