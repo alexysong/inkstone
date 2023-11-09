@@ -25,8 +25,9 @@ class LayerCopy:
         self.is_copy = True
         self.layer = layer
         self.original_layer_name = layer.name
+        self.pr = self.layer.pr
         self._al_bl: Optional[Tuple[np.ndarray, np.ndarray]] = None
-        self.in_mid_out: str = 'mid'  # {'in', 'mid', 'out'}, if this layer is the incident, output, or a middle layer
+        self._in_mid_out: str = 'mid'  # {'in', 'mid', 'out'}, if this layer is the incident, output, or a middle layer
 
         self.sm: Optional[Tuple[np.ndarray, np.ndarray]] = None
         self._if_t_change = True
@@ -149,6 +150,53 @@ class LayerCopy:
                 **kwargs):
         warn('You are updating some patterns to a copy layer: "{:s}". Instead, this pattern is updated in the original layer: "{:s}" and all of its copies.'.format(self.name, self.original_layer_name))
         self.layer.set_box(box_name=box_name, **kwargs)
+
+
+    @property
+    def in_mid_out(self):
+        return self._in_mid_out
+
+    @in_mid_out.setter
+    def in_mid_out(self, val: str):
+        self._in_mid_out = val
+        self._set_pr_inci_out()
+
+    def _set_pr_inci_out(self):
+        """set inci parameters in Params"""
+        if self.in_mid_out == 'in':
+            if self.is_vac:
+                self.pr.inci_is_vac = True
+                self.pr.inci_is_iso_nonvac = False
+                self.pr.ind_inci = 1.
+            elif self.is_isotropic:
+                self.pr.inci_is_vac = False
+                self.pr.inci_is_iso_nonvac = True
+                if self.materials and self.material_bg:
+                    mbg = self.materials[self.material_bg]
+                    self.pr.ind_inci = np.sqrt(mbg.epsi[0, 0] * mbg.mu[0, 0])
+            else:
+                self.pr.inci_is_vac = False
+                self.pr.inci_is_iso_nonvac = False
+                self.pr.ind_inci = None
+        if self.in_mid_out == 'out':
+            if self.is_vac:
+                self.pr.out_is_vac = True
+                self.pr.out_is_iso_nonvac = False
+                self.pr.ind_out = 1.
+            elif self.is_isotropic:
+                self.pr.out_is_vac = False
+                self.pr.out_is_iso_nonvac = True
+                if self.materials and self.material_bg:
+                    mbg = self.materials[self.material_bg]
+                    self.pr.ind_out = np.sqrt(mbg.epsi[0, 0] * mbg.mu[0, 0])
+            else:
+                self.pr.out_is_vac = False
+                self.pr.out_is_iso_nonvac = False
+                self.pr.ind_out = None
+
+
+    # def _set_pr_inci_out(self):
+    #     self.layer._set_pr_inci_out()
 
     def reconstruct(self,
                     n1: int = None,

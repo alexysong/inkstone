@@ -46,10 +46,9 @@ class Inkstone:
 
         self._need_recalc_sm: bool = True  # if the structure has been modified
 
-        # todo: recalc after adding layers
         self._layers_mod: List[int] = []  # the indices of the layers that are modified.
 
-        # todo: this is not needed
+        # this is not needed
         # self._inci_changed: bool = True  # if incidence changed
 
         self.ai: Optional[np.ndarray] = None  # incident wave amplitudes from the incident region.
@@ -241,9 +240,13 @@ class Inkstone:
         thickness           :   regardless of user input, the first layer and the last layer's thicknesses are set to 0
         material_background :   background material
         """
-
         if name not in self.layers.keys():
             layer = Layer(name, thickness, material_background, self.materials, self.pr)
+            if not self.layers:
+                if thickness != 0.:
+                    warn('You set the first layer (incident region) thickness to be nonzero. This thickness is ignored and set to 0, i.e. treated as infinity. If you meant there was an infinite vacuum before this layer, please explicitly add that using AddLayer().')
+                    thickness = 0.
+                layer.in_mid_out = 'in'
             self.layers[name] = layer
             self.thicknesses[name] = thickness
             self.total_thickness += thickness
@@ -298,13 +301,22 @@ class Inkstone:
 
         """
         if name in self.layers.keys():
-            layer = self.layers[name]  #: Layer2D
+            layer = self.layers[name]
             if thickness is not None and thickness != layer.thickness:
+                if layer.in_mid_out == 'in':
+                    warn("The incident region thickness needs to be 0 and can't be changed.", RuntimeWarning)
+                    thickness = 0.
+                elif layer.in_mid_out == 'out':
+                    warn("The output region thickness needs to be 0 and can't be changed.", RuntimeWarning)
+                    thickness = 0.
                 layer.set_layer(thickness=thickness)
                 self.thicknesses[name] = thickness
                 self._calc_thicknesses()
             if material_bg is not None and material_bg != layer.material_bg:
                 layer.set_layer(material_bg=material_bg)
+
+                # Updates to inci layer parameters in `Params` is called through layer.set_layer - material_bg setter - _set_pr_inci_out()
+
                 # propagate if_mod of the layer to all layer copies
                 if layer.if_mod:
                     for ly in self.layers.values():
@@ -335,10 +347,14 @@ class Inkstone:
 
         Returns
         -------
-        xx      :   x coordinates
-        yy      :   y coordinates
-        epsilon :
-        mu
+        xx          :
+                        x coordinates in a unit cell (2d ndarray), shape (n2, n1)
+        yy          :
+                        y coordinates in a unit cell (2d ndarray), shape (n2, n1)
+        epsi        :
+                        reconstructed epsi in a unit cell, shape (n2, n1, 3, 3)
+        mu          :
+                        reconstructed mu in a unit cell, shape (n2, n1, 3, 3)
 
         """
         if name in self.layers.keys():
@@ -568,7 +584,9 @@ class Inkstone:
                       order: Union[Tuple[int, int], List[Tuple[int, int]]] = None,
                       s_amplitude_back: Union[float, List[float]] = None,
                       p_amplitude_back: Union[float, List[float]] = None,
-                      order_back: Union[Tuple[int, int], List[Tuple[int, int]]] = None
+                      order_back: Union[Tuple[int, int], List[Tuple[int, int]]] = None,
+                      kx: Union[float, complex] = None,
+                      ky: Union[float, complex] = None,
                       ):
         """
         Set the excitation plane wave.
@@ -590,6 +608,8 @@ class Inkstone:
         s_amplitude_back    :   backside incident s wave from the output region
         p_amplitude_back    :   backside incident p wave form the output region
         order_back          :   Fourier order for the backside incidence
+        kx, ky              :   the in-plane wave vector of the incident waves.
+
 
         Notes
         -----
@@ -597,19 +617,167 @@ class Inkstone:
 
         """
 
-        layer_inci: Layer = list(self.layers.values())[0]
-        layer_out: Layer = list(self.layers.values())[-1]
-        self.theta = theta
-        self.phi = phi
+        li: Layer = list(self.layers.values())[0]
+        lo: Layer = list(self.layers.values())[-1]
+
+        if ((theta is not None) or (phi is not None)) and ((kx is not None) or (ky is not None)):
+            raise Exception("Please specify either (theta, phi) or (kx, ky) but not at the same time.")
+
+        if theta is not None:
+            if phi is not None:
+                self.pr.iesbtpsp = True
+                self.pr.iesbksp = False
+                self.pr.iesbe = False
+                self.theta = theta
+                self.phi = phi
+            else:
+                raise Exception("Both theta and phi need to be set.")
+        elif phi is not None:
+                raise Exception("Both theta and phi need to be set.")
+
+        if kx is not None:
+            if ky is not None:
+                self.pr.iesbksp = True
+                self.pr.iesbtpsp = False
+                self.pr.iesbe = False
+                self.pr.k_pa_inci = (kx, ky)
+                for layer_name, layer in self.layers.items():
+                    layer.if_mod = True
+            else:
+                raise Exception("Both kx and ky need to be set.")
+        elif ky is not None:
+            raise Exception("Both kx and ky need to be set.")
+
         if (s_amplitude is not None) or (p_amplitude is not None) or (order is not None) or (s_amplitude_back is not None) or (p_amplitude_back is not None) or (order_back is not None):
             self.pr.set_inci_ord_amp(s_amplitude, p_amplitude, order, s_amplitude_back, p_amplitude_back, order_back)
             self._need_recalc_bi_ao = True
             for ly in list(self.layers.values()):
                 ly.need_recalc_al_bl = True
 
-        if (not layer_inci.is_isotropic) or (not layer_out.is_isotropic):
-            warn('Incident region and/or output region is not uniform isotropic. s and p waves with arbitrary angles are not guaranteed to be eign.', UserWarning)
-            # todo: if incident not isotropic
+        if (not li.is_isotropic) and (s_amplitude or p_amplitude):
+            raise Exception('Incident region is not uniform isotropic. s and p waves with arbitrary angles are not guaranteed to be eign. Use `SetExcitationByEigen()` instead.')
+
+        if (not lo.is_isotropic) and (s_amplitude_back or p_amplitude_back):
+            raise Exception('Output region is not uniform isotropic. s and p waves with arbitrary angles are not guaranteed to be eign. If you are setting incidence from this back side, please consider use `SetExcitationByEigen()` instead.')
+
+
+    def SetExcitationByEigen(self,
+                             kx: Union[float, complex],
+                             ky: Union[float, complex],
+                             a: Optional[Union[float, complex, List[Union[float, complex]]]] = None,
+                             # sa: Optional[Union[float, complex, List[Union[float, complex]]]] = None,
+                             # pa: Optional[Union[float, complex, List[Union[float, complex]]]] = None,
+                             eigen_number: Union[int, List[int]] = None,
+                             ab: Optional[Union[float, complex, List[Union[float, complex]]]] = None,
+                             # sab: Optional[Union[float, complex, List[Union[float, complex]]]] = None,
+                             # pab: Optional[Union[float, complex, List[Union[float, complex]]]] = None,
+                             eigen_number_back:  Union[int, List[int]] = None
+                             ):
+        """
+        Set excitation to the structure by specifying in-plane wave vectors kx and ky and the amplitudes of the eigen waves in the incident and output regions.
+
+        This method can be useful when the incident and the output regions are not isotropic or not uniform.
+
+        Parameters
+        ----------
+        kx
+        ky
+        # sa
+        # pa
+        a :
+            sa and pa are the complex electric field amplitude of the s and p waves if the incident layer supports s and p waves as eigen.
+            When the incident layer's eigen are not s and p waves, sa and pa are the electric field amplitudes of the two eigen modes at this (kx, ky).
+            A list would mean the electric field amplitudes of incidence in several eigen numbers, defined by `en`.
+        eigen_number:
+        # sab
+        # pab
+        ab
+            sab and pab are the amplitudes of the waves incident from the backside "output" region
+        eigen_number_back :
+
+        Returns
+        -------
+
+        """
+        # todo: test this API
+        # Note: can't set s and p. only uniform not is_dege can have [for certain kx ky there are two eigen modes not degenerate in q]. non-uniform， one kx ky is not an eigen.
+        # Note: do eigens have fixed (kx, ky)? no... They are a combination of Fourier orders.
+
+        en = eigen_number
+        enb = eigen_number_back
+
+        if (en is None) and (enb is None):
+            raise Exception('You must select at least an eigen number from either the incident side or the output side.')
+        else:
+            ae = []
+            for (_a, _n) in [(a, en), (ab, enb)]:
+                if _n is not None:
+                    if not hasattr(_n, "__len__"):
+                        _n = [_n]
+                    _n = np.array(_n)
+
+                    if _a is None:
+                        raise Exception('You input eigen number but not its amplitude.')
+                    elif not hasattr(_a, "__len__"):
+                        _a = [_a]
+                    _a = np.array(_a)
+
+                    if len(_a) != len(_n):
+                        raise Exception('The length of the amplitudes and the eigen numbers are not the same.')
+                else:
+                    if _a is not None:
+                        raise Exception('You input eigen amplitude but not the eigen number.')
+
+                ae.append(_a)
+                ae.append(_n)
+        a, en, ab, enb = ae
+
+        self.pr._s_amps = None
+        self.pr._s_amps_bk = None
+        self.pr._p_amps = None
+        self.pr._p_amps_bk = None
+        self.pr._theta = None
+        self.pr._phi = None
+        # self.pr.sin_phis, self.pr.cos_phis, self.pr.sin_varthetas, self.pr.cos_varthetas are auto updated when setting inci kx and ky. No need to reset them
+
+        self.pr.k_pa_inci = (kx, ky)
+
+        ll = list(self.layers.values())
+        li = ll[0]
+        # lo = ll[-1]
+        # o = self.pr.omega
+        if li.is_isotropic:
+            warn('Uniform isotropic medium. You can use `SetExcitation()` which works with theta, phi, s and p wave amplitudes.', UserWarning)
+            # Note: should not reinvent the wheel. Could just call SetExcitation() from here, but then possible confusion in self.pr.iesbe and self.pr.iesbtpsp.
+            kn = np.sqrt(np.abs(kx) ** 2 + np.abs(ky) ** 2)
+            if kn != 0.:
+                self.pr._phi = np.arccos(kx / kn)  # not setting property self.pr.phi to avoid double calling stuff like self.pr._calc_ks()
+            else:
+                warn("At normal incidence, phi is uncertain and default to 0.")
+                self.pr._phi = 0.
+            self.pr._theta = np.arcsin(kn / self.pr.kii.real)
+            # problem: in this case, not sure which eigen is s and p, when user sets ai, user doesn't know the eigen which is not solved yet.
+            # logically, whether or not isotropic, should delete theta phi. However, uniform layer's eigen choice depend on theta phi (1.  s and p happen to give Wood stability 2 eigen choosing s and p is user friendly, and ai bo simple).
+            # if kx=ky=0, ambiguity in phi still. In the code, the internally chosen eigen decides the effective phi. It could even be the two degenerate eigen are chosen to be not orthonormal, hence phi not defined. But then again as of [202310] The eigens in uniform isotropic is chosen by s and p using cos(phi) and sin(phi)
+        else:
+            self.pr._theta = None
+            self.pr._phi = None
+
+        # todo: lo, bo?
+
+        aibo = []
+        for z, n in zip([a, ab], [en, enb]):
+            i = np.zeros(2*self.pr.num_g, dtype=complex)
+            i[n] = z
+            aibo.append(i)
+            # todo: is this done?
+
+        self.ai, self.bo = aibo
+
+        self.pr.iesbe = True
+        self.pr.iesbtpsp = False
+        self.pr.iesbksp = False
+
 
     def SetFrequency(self, freq: Union[float, complex]):
         """
@@ -619,7 +787,6 @@ class Inkstone:
         ----------
         freq   :   incident wave frequency.
         """
-        # todo: test complex frequency
         self.frequency = freq
 
     def _calc_ai_bo_3d(self):
@@ -631,49 +798,55 @@ class Inkstone:
 
         layer_inci: Layer = list(self.layers.values())[0]
 
-        aibo = [self.ai, self.bo]
-        for ii, (sa, pa, od, sphi, cphi, sthe, cthe) in enumerate([[self.pr._s_amps, self.pr._p_amps, self.pr._incident_orders, self.pr.sin_phis, self.pr.cos_phis, self.pr.sin_varthetas, self.pr.cos_varthetas], [self.pr._s_amps_bk, self.pr._p_amps_bk, self.pr._incident_orders_bk, self.pr.sin_phis_bk, self.pr.cos_phis_bk, self.pr.sin_varthetas_bk, self.pr.cos_varthetas_bk]]):
-            if self.pr._num_g_ac:
-                ab = np.zeros(2 * self.pr._num_g_ac) + 0j
-                if (sa or pa) and od and self.pr.idx_g and \
-                        sphi and cphi and sthe and cthe:
-                    # find the index of the input orders in the g list
-                    idx = [i for order in od for i, j in enumerate(self.pr.idx_g) if j == order]
-                    for i, jj in enumerate(idx):
-                    # for i in range(len(idx)):
-                        if (jj in self.pr.q0_0):
-                            # todo: need to handle this and document it.
-                            # if user specify 90 degree incidence, this is activated
-                            warn('You are specifying incidence in a channel that is parallel to the surface of the structure. \n In this case, only specific field configuration is allowed.')
-                            ab[jj] = sa[i]
-                            ab[jj + self.pr._num_g_ac] = pa[i]
-                        else:
-                            s = sa[i]
-                            p = pa[i]
-                            sp = sphi[jj]
-                            cp = cphi[jj]
-                            st = sthe[jj]
-                            ct = cthe[jj]
+        aibo = []
+        if self.pr.iesbe:
+            pass
 
-                            # # original
-                            # ab[i] = -s * self.sin_phis[i] + p * self.sin_varthetas[i] * self.cos_phis[i]  # e_x
-                            # ab[i + self._num_g_ac] = s * self.cos_phis[i] + p * self.sin_varthetas[i] * self.sin_phis[i]  # e_y
+        elif self.pr.iesbtpsp or self.pr.iesbksp:
 
-                            # # original, corrected
-                            # ab[jj] = -s * self.sin_phis[jj] + p * self.sin_varthetas[jj] * self.cos_phis[jj]  # e_x
-                            # ab[jj + self._num_g_ac] = s * self.cos_phis[jj] + p * self.sin_varthetas[jj] * self.sin_phis[jj]  # e_y
+            for ii, (sa, pa, od, sphi, cphi, sthe, cthe) in enumerate([[self.pr._s_amps, self.pr._p_amps, self.pr._incident_orders, self.pr.sin_phis, self.pr.cos_phis, self.pr.sin_varthetas, self.pr.cos_varthetas], [self.pr._s_amps_bk, self.pr._p_amps_bk, self.pr._incident_orders_bk, self.pr.sin_phis_bk, self.pr.cos_phis_bk, self.pr.sin_varthetas_bk, self.pr.cos_varthetas_bk]]):
+                if self.pr._num_g_ac:
+                    ab = np.zeros(2 * self.pr._num_g_ac) + 0j
+                    if (sa or pa) and od and self.pr.idx_g and \
+                            sphi and cphi and sthe and cthe:
+                        # find the index of the input orders in the g list
+                        idx = [i for order in od for i, j in enumerate(self.pr.idx_g) if j == order]
+                        for i, jj in enumerate(idx):
+                        # for i in range(len(idx)):
+                            if (jj in self.pr.q0_0):
+                                # todo: need to handle this and document it.
+                                # if user specify 90 degree incidence, this is activated
+                                warn('You are specifying incidence in a channel that is parallel to the surface of the structure. \n In this case, only specific field configuration is allowed.')
+                                ab[jj] = sa[i]
+                                ab[jj + self.pr._num_g_ac] = pa[i]
+                            else:
+                                s = sa[i]
+                                p = pa[i]
+                                sp = sphi[jj]
+                                cp = cphi[jj]
+                                st = sthe[jj]
+                                ct = cthe[jj]
 
-                            # with new calc that removed convergence problem at Wood
-                            ex = -s * sp + p * st * cp  # e_x
-                            ey = s * cp + p * st * sp  # e_y
-                            phi_2x2 = layer_inci.phil_2x2s[:, :, jj]
-                            v = la.solve(phi_2x2, np.array([ex, ey]))
-                            ab[jj] = v[0]
-                            ab[jj + self.pr._num_g_ac] = v[1]
+                                # # original
+                                # ab[i] = -s * self.sin_phis[i] + p * self.sin_varthetas[i] * self.cos_phis[i]  # e_x
+                                # ab[i + self._num_g_ac] = s * self.cos_phis[i] + p * self.sin_varthetas[i] * self.sin_phis[i]  # e_y
 
-                            # todo: uniform anisotropic material, non-uniform material
+                                # # original, corrected
+                                # ab[jj] = -s * self.sin_phis[jj] + p * self.sin_varthetas[jj] * self.cos_phis[jj]  # e_x
+                                # ab[jj + self._num_g_ac] = s * self.cos_phis[jj] + p * self.sin_varthetas[jj] * self.sin_phis[jj]  # e_y
 
-                aibo[ii] = ab
+                                # with new calc that removed convergence problem at Wood
+                                ex = -s * sp + p * st * cp  # e_x
+                                ey = s * cp + p * st * sp  # e_y
+                                phi_2x2 = layer_inci.phil_2x2s[:, :, jj]
+                                v = la.solve(phi_2x2, np.array([ex, ey]))
+                                ab[jj] = v[0]
+                                ab[jj + self.pr._num_g_ac] = v[1]
+
+                    aibo.append(ab)
+        else:
+            warn("Haven't set excitation yet.", RuntimeWarning)
+
         self.ai, self.bo = aibo
         # print('_calc_ai_bo_3d', time.process_time() - t1)
 
@@ -807,8 +980,19 @@ class Inkstone:
 
                 sa = scp21 @ self.ai
                 sb = scin12 @ self.bo
+                # try:
                 al = sla.solve((I - (scp22 * f) @ (scin11 * f)), (sa + (scp22 * f) @ sb))
                 bl = sla.solve((I - (scin11 * f) @ (scp22 * f)), ((scin11 * f) @ sa + sb))
+                # except Exception as e:
+                #     warn('Singular matrix in calculating al and bl.')
+                #     print(la.cond((I - (scp22 * f) @ (scin11 * f))))
+                #     # print(la.cond((sa + (scp22 * f) @ sb)))
+                #     print(la.cond((I - (scin11 * f) @ (scp22 * f))))
+                #     # print(la.cond(((scin11 * f) @ sa + sb)))
+                #     al = sla.solve((I - (scp22 * f) @ (scin11 * f) + 1e-14 * I), (sa + (scp22 * f) @ sb))
+                #     bl = sla.solve((I - (scin11 * f) @ (scp22 * f) + 1e-14 * I), ((scin11 * f) @ sa + sb))
+                #     print(al.max())
+                #     print(bl.max())
 
                 al = al.ravel()
                 bl = bl.ravel()
@@ -1026,29 +1210,28 @@ class Inkstone:
             print('{:.6f}   _calc_csmr_layer'.format(time.process_time() - t1))
 
     def _determine_layers(self):
-        """Determine if a layer is the incident or the output layer."""
+        """Determine if a layer is the output layer or mid layer."""
         for idx, layer in enumerate(self.layers.values()):
-            if idx == 0:
+            # # inci layer is identified at [adding] time
+            # if idx == 0:
+            #     if layer.thickness != 0:
+            #         warn('You set the first layer (incident region) thickness to be nonzero. This thickness is ignored and set to 0, i.e. treated as infinity. If you meant there was an infinite vacuum before this layer, please explicitly add that using AddLayer().')
+            #         layer.thickness = 0.
+            #     layer.in_mid_out = 'in'
+            if idx == len(self.layers.values()) - 1:
                 if layer.thickness != 0:
-                    warn('You set the first layer (incident region) thickness to be nonzero. This thickness is ignored (i.e. treated as zero).')
-                layer.in_mid_out = 'in'
-            elif idx == len(self.layers.values()) - 1:
-                if layer.thickness != 0:
-                    warn('You set the last layer (output region) thickness to be nonzero. This thickness is ignored (i.e. treated as zero).')
+                    warn('You set the last layer (output region) thickness to be nonzero. This thickness is ignored and set to 0, i.e. treated as infinity. If you meant there was an infinite vacuum after this layer, please explicitly add that using AddLayer().')
+                    layer.thickness = 0.
                 layer.in_mid_out = 'out'
-            else:
+            elif idx != 0:
                 layer.in_mid_out = 'mid'
 
-        layer_inci: Layer = list(self.layers.values())[0]
-        if (not layer_inci.is_vac) and (layer_inci.is_isotropic):
-            self.pr.inci_is_iso_nonvac = True
-            self.pr.ind_inci = np.sqrt(self.materials[layer_inci.material_bg].epsi[0, 0] * self.materials[layer_inci.material_bg].mu[0, 0])
-        layer_out: Layer = list(self.layers.values())[-1]
-        if (not layer_out.is_vac) and (layer_out.is_isotropic):
-            self.pr.out_is_iso_nonvac = True
-            self.pr.ind_out = np.sqrt(self.materials[layer_out.material_bg].epsi[0, 0] * self.materials[layer_out.material_bg].mu[0, 0])
+        # li: Layer = list(self.layers.values())[0]
+        # li._set_pr_inci_out()
+        # lo: Layer = list(self.layers.values())[-1]
+        # lo._set_pr_inci_out()
 
-        # todo: when _in_mid_out changes, the layer's sm, al, bl, idx_sm_c_mod, idx_sm_ci_mod all may change.
+        # Note: _in_mid_out shouldn't change. If did, layer's sm, al, bl, idx_sm_c_mod, idx_sm_ci_mod all may change.
 
     def _determine_recalc(self):
         """decide the recalculation token of the subroutines in solver"""

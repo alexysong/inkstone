@@ -110,14 +110,15 @@ class Layer:
         self.al_bl: Optional[Tuple[np.ndarray, np.ndarray]] = None  # the field coefficients (al, bl).
 
         # --- additional variables and properties ---
-        self._material_bg: Optional[str] = None  # background material
-        self.material_bg: str = material_bg  # background material
-
         self._in_mid_out: str = 'mid'  # {'in', 'mid', 'out'}, if this layer is the incident, output, or a middle layer
 
         self._rad_cha: Optional[List[int]] = None
 
+        self._material_bg: Optional[str] = None  # background material
+        self.material_bg: str = material_bg  # background material
+
         self.set_layer(**kwargs)
+        # self._set_pr_inci_out()  # called in set_layer() - setting self.material_bg
 
     @property
     def material_bg(self):
@@ -138,10 +139,14 @@ class Layer:
                         self.is_dege = False
                         self.is_vac = False
                         nn = False
+                        if self.in_mid_out == 'in':
+                            self.pr.inci_is_vac = False
+                            self.pr.inci_is_iso_nonvac = False
+                            self.pr.ind_inci = None
                         break
 
             if nn:
-                mbg: Mtr = self.materials[val]
+                mbg: Mtr = self.materials[self._material_bg]
 
                 if mbg.is_isotropic:
                     self.is_isotropic = True
@@ -163,6 +168,8 @@ class Layer:
                 else:
                     self.is_vac = False
 
+            self._set_pr_inci_out()
+
     @property
     def in_mid_out(self):
         return self._in_mid_out
@@ -170,6 +177,40 @@ class Layer:
     @in_mid_out.setter
     def in_mid_out(self, val: str):
         self._in_mid_out = val
+        self._set_pr_inci_out()
+
+    def _set_pr_inci_out(self):
+        """set inci parameters in Params"""
+        if self.in_mid_out == 'in':
+            if self.is_vac:
+                self.pr.inci_is_vac = True
+                self.pr.inci_is_iso_nonvac = False
+                self.pr.ind_inci = 1.
+            elif self.is_isotropic:
+                self.pr.inci_is_vac = False
+                self.pr.inci_is_iso_nonvac = True
+                if self.materials and self.material_bg:
+                    mbg = self.materials[self.material_bg]
+                    self.pr.ind_inci = np.sqrt(mbg.epsi[0, 0] * mbg.mu[0, 0])
+            else:
+                self.pr.inci_is_vac = False
+                self.pr.inci_is_iso_nonvac = False
+                self.pr.ind_inci = None
+        if self.in_mid_out == 'out':
+            if self.is_vac:
+                self.pr.out_is_vac = True
+                self.pr.out_is_iso_nonvac = False
+                self.pr.ind_out = 1.
+            elif self.is_isotropic:
+                self.pr.out_is_vac = False
+                self.pr.out_is_iso_nonvac = True
+                if self.materials and self.material_bg:
+                    mbg = self.materials[self.material_bg]
+                    self.pr.ind_out = np.sqrt(mbg.epsi[0, 0] * mbg.mu[0, 0])
+            else:
+                self.pr.out_is_vac = False
+                self.pr.out_is_iso_nonvac = False
+                self.pr.ind_out = None
 
     @property
     def thickness(self):
@@ -241,6 +282,8 @@ class Layer:
             self.is_isotropic = False
             self.is_diagonal = False
             self.is_dege = False
+
+        self._set_pr_inci_out()
 
     def set_box(self,
                 box_name: str,
@@ -720,7 +763,7 @@ class Layer:
 
             # if (np.abs(mxy) + np.abs(myx) + np.abs(exy) + np.abs(eyx)) == 0. and (eyy/ezz == myy/mzz) and (exx/ezz == mxx/mzz):
             if self.is_dege:
-                # if False:  # this is for debugging
+            # if False:  # this is for debugging
                 # direct construction of eigen, no solving
 
                 # # Using identity as phil
@@ -738,8 +781,6 @@ class Layer:
                 # self.phil_2x2s = phil[rows, columns]
                 # ql = w.T.ravel()  # 1d array length 2num_g
                 # vh = -1j * q @ v / w[:, None, :]
-                # # vh = -1j * p @ v / w[:, None, :]
-                # # todo: q p
                 # psil = np.zeros((2*ng, 2*ng), dtype=complex)
                 # r1 = range(ng)
                 # r2 = range(ng, 2 * ng)
@@ -788,6 +829,7 @@ class Layer:
                 cphi = np.cos(self.pr._phi)
                 sphi = np.sin(self.pr._phi)
                 c1[:, ii] = np.array([[eyy * sphi], [-exx * cphi]], dtype=complex)
+                # c1[:, ii] = np.array([[sphi], [-cphi]], dtype=complex)
                 c2[:, ii] = np.array([[cphi], [sphi]], dtype=complex)
 
                 c1f[i_qlw] = o / qlh[i_qlw] / k_norm[i_qlw]
@@ -861,7 +903,6 @@ class Layer:
 
                 vh = np.zeros((self.pr.num_g, 2, 2), dtype=complex)
                 vh[i_wn0[0], :, i_wn0[1]] = -1j * (q[i_wn0[0], :, :] @ v[i_wn0[0], :, i_wn0[1]][:, :, None])[:, :, 0] / w[i_wn0[0], i_wn0[1], None]
-                # vh = -1j * q @ v / w[:, None, :]
 
                 if wis0.any():
                     w2h_, vh_ = la.eig(-qp)
@@ -1168,7 +1209,18 @@ class Layer:
                 sm = self.pr.sm0
             else:
                 # sm = s_1l(self.thickness, self.ql, *self.iml0)
+
+                # try:
                 sm = s_1l_rsp(self.thickness, self.ql, *self.imfl)
+                # except Exception:
+                #     print('layer name:' + self.name)
+                #     print('omega: {:g}'.format(self.pr.omega))
+                #     print('theta: {:g}'.format(self.pr.theta))
+                #     print('ql:')
+                #     print(self.ql)
+                #     print(self.pr.idx_g)
+                #     print(self.pr.ks)
+
                 # sm = s_1l_rsp_lrd(self.thickness, self.ql, *self.imfl, *self.imfl4)
         elif self.in_mid_out == 'in':
             # sm = s_1l_1212(*self.iml0)

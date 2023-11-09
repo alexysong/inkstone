@@ -45,7 +45,7 @@ class Params:
                             phi is the angle between the in-plane projection of k and the x axis. Rotating from kx axis phi degrees ccw around z axis to arrive at the kx of incident wave.
         """
 
-        self.gs: Optional[List[Tuple[float, float]]] = None  # list of g points for E and H fields. Added by k_inci to get the ks, i.e. k points for E and H
+        self.gs: Optional[List[Tuple[float, float]]] = None  # list of g points for E and H fields. Added by k_pa_inci to get the ks, i.e. k points for E and H
         self.idx_g: Optional[List[Tuple[int, int]]] = None  # list of g points indices
         self.idx_conv_mtx: Optional[np.ndarray] = None  # indexing array to for constructing convolution matrices.
         self.ks: Optional[List[Tuple[float, float]]] = None  # list of k points for E and H fields.
@@ -79,8 +79,10 @@ class Params:
 
         self.__num_g_actual: Optional[int] = None  # actual number of G points used.
         self._num_g_input: Optional[int] = None  # number of G points input by user
-        self._k_inci: Optional[Tuple[Tuple[float, float]], Tuple[float, float]] = None  # incident in-plane k
         self._omega: Optional[complex] = None
+        self._k_pa_inci: Optional[Tuple[Tuple[float, float]], Tuple[float, float]] = None  # incident in-plane k
+        self._kii: Optional[Union[float, complex]] = None
+        self._kio: Optional[Union[float, complex]] = None
         self._frequency: Optional[complex] = None
         self._recipr_vec: Optional[Tuple[Tuple[float, float], Tuple[float, float]]] = None
         self._latt_vec: Optional[Tuple[Tuple[float, float], Tuple[float, float]]] = None
@@ -103,17 +105,22 @@ class Params:
         self._p_amps = None
         self._s_amps_bk = None
         self._p_amps_bk = None
-        self.ai: Optional[np.ndarray] = None
-        self.bo: Optional[np.ndarray] = None
+        self._ai: Optional[np.ndarray] = None
+        self._bo: Optional[np.ndarray] = None
+        self.iesbe: bool = False
+        self.iesbtpsp: bool = False
+        self.iesbksp: bool = False
 
         # self.q0_contain_0: bool = False
 
         self.show_calc_time = show_calc_time
 
-        self._inci_is_iso_nonvac = False
-        self._ind_inci = 1.
-        self._out_is_iso_nonvac = False
-        self._ind_out = 1.
+        self._inci_is_vac: Optional[bool] = None  # these are automatically updated when adding first layer
+        self._inci_is_iso_nonvac: Optional[bool] = None
+        self._ind_inci: Optional[Union[float, complex]] = None
+        self._out_is_vac: Optional[bool] = None
+        self._out_is_iso_nonvac: Optional[bool] = None
+        self._ind_out: Optional[Union[float, complex]] = None
 
         # property initialization can change other attributes hence must be after initialization of other attributes.
         if latt_vec is not None:
@@ -128,6 +135,24 @@ class Params:
             self.theta = theta
         if phi is not None:
             self.phi = phi
+
+    @property
+    def ai(self):
+        warn("`ai` and `bo` are not stored in Params anymore. Please use `Inkstone.ai` and `Inkstone.bo` to retrieve them.")
+        return self._ai
+
+    @ai.setter
+    def ai(self, val):
+        self._ai = val
+
+    @property
+    def bo(self):
+        warn("`ai` and `bo` are not stored in Params anymore. Please use `Inkstone.ai` and `Inkstone.bo` to retrieve them.")
+        return self.bo
+
+    @bo.setter
+    def bo(self, val):
+        self._bo = val
 
     @property
     def latt_vec(self) -> Union[float, Tuple[Tuple[float, float], Tuple[float, float]]]:
@@ -229,21 +254,87 @@ class Params:
             self._frequency = val / np.pi / 2.
             # self.q0_contain_0 = False
             # self._calc_gs()  # recalculating gs because some g may be possibly removed in previous runs to remove Wood's anomaly.
-            self._calc_k_inci()
-            # self._calc_q0()  # called through _calc_k_inci - _calc_ks
-            # self._calc_P0Q0()  # called through _calc_k_inci - _calc_ks - _calc_Km
-            # self._calc_angles()  # called through _calc_k_inci - _calc_ks -
+            self._calc_kii()
+            self._calc_kio()
+            # self._calc_k_pa_inci()  # called through _calc_ki()
+            # self._calc_q0()  # called through _calc_ki() - _calc_k_pa_inci() or _calc__calc_theta_phi_from_k_pa() - _calc_ks.
+            # self._calc_P0Q0()  # called through _calc_ki() - _calc_k_pa_inci or _calc__calc_theta_phi_from_k_pa() - _calc_ks - _calc_Km.
+            # self._calc_angles()  # called through _calc_ki() - _calc_k_pa_inci  or _calc__calc_theta_phi_from_k_pa() - _calc_ks - _calc_Km.
 
     @property
-    def k_inci(self) -> Tuple[float, float]:
-        """kx and ky projection of the incident wave vector"""
-        return self._k_inci
+    def kii(self) -> Union[float, complex]:
+        return self._kii
 
-    @k_inci.setter
-    def k_inci(self, val: Tuple[float]):
-        """Directly setting incident in-plane kx and ky"""
-        self._k_inci = val
-        self._calc_ks()
+    @property
+    def kio(self) -> Union[float, complex]:
+        return self._kio
+
+    def _calc_kii(self):
+        """Calculate incident k in inci region"""
+        if self.omega is not None:
+            o = self.omega
+
+            if (self.inci_is_vac or self.inci_is_iso_nonvac) and (self.ind_inci is not None):
+                r = self.ind_inci
+                self._kii = o * r
+            else:
+                self._kii = None
+
+            if self.iesbtpsp:
+                self._calc_k_pa_inci()
+            elif self.iesbksp or self.iesbe:
+                self._calc_theta_phi_from_k_pa()
+
+    def _calc_kio(self):
+        """Calculate incident k in out region"""
+        if self.omega is not None:
+            o = self.omega
+
+            if (self.out_is_vac or self.out_is_iso_nonvac) and (self.ind_out is not None):
+                r = self.ind_out
+                self._kio = o * r
+            else:
+                self._kio = None
+
+    @property
+    def k_pa_inci(self) -> Tuple[float, float]:
+        """kx and ky projection of the incident wave vector"""
+        return self._k_pa_inci
+
+    @k_pa_inci.setter
+    def k_pa_inci(self, val: Tuple[float]):
+        """Directly setting incident in-plane kx and ky. This is external API. Setting theta and phi should not call this."""
+        if val is not None:
+            self._k_pa_inci = val
+            # kx = val[0]
+            # ky = val[1]
+
+            self._calc_theta_phi_from_k_pa()
+
+    def _calc_theta_phi_from_k_pa(self):
+        if self.k_pa_inci is not None:
+            kx, ky = self.k_pa_inci
+            if kx == 0. and ky == 0.:
+                self._theta = 0.
+                # self.theta = 0.
+                if self.phi is None:
+                    warn("Both kx and ky are zero, but phi is not specified. Now defaulting to phi = 0.", UserWarning)
+                    self._phi = 0.  # not setting property self.pr.phi to avoid double calling stuff like self.pr._calc_ks()
+                    # self.phi = 0.
+                # else:
+                #     warn("Both kx and ky are zero. In this case incident angle phi need to be set explicitly. Using the existing phi value.", UserWarning)
+                #     # self._phi = phi / 180. * np.pi
+                #     # self.phi = phi
+            else:
+                kn = np.sqrt(np.abs(kx) ** 2 + np.abs(ky) ** 2)
+                self._phi = np.arccos(kx / kn)
+                # self.phi = np.arccos(kx / kn) * 180. / np.pi
+                if self.kii is not None:
+                    self._theta = np.arcsin(kn / self.kii.real)
+                    # self.theta = np.arcsin(kn / self.kii.real) * 180. / np.pi
+
+            self._calc_ks()
+            # self._calc_angles()  # called through _calc_ks()
 
     @property
     def theta(self) -> Union[float, complex]:
@@ -258,11 +349,12 @@ class Params:
     def theta(self, val: Union[float, complex]):
         if val is not None:
             self._theta: float = val * np.pi / 180.
-            self._calc_k_inci()
-            self._calc_angles()
+            self._calc_k_pa_inci()
+            # self._calc_angles()  # called through _calc_k_pa_inci() - _calc_ks()
         else:
-            if self._theta is None:
-                self._theta = 0.
+            # if self._theta is None:
+            #     self._theta = 0.
+            self._theta = None
 
     @property
     def phi(self) -> float:
@@ -277,11 +369,12 @@ class Params:
     def phi(self, val: float):
         if val is not None:
             self._phi: float = val * np.pi / 180.
-            self._calc_k_inci()
-            self._calc_angles()
+            self._calc_k_pa_inci()
+            # self._calc_angles()  # called through _calc_k_pa_inci() -  _calc_ks()
         else:
-            if self._phi is None:
-                self._phi = 0.
+            # if self._phi is None:
+            #     self._phi = 0.
+            self._phi = None
 
     @property
     def rad_cha_0(self) -> List[int]:
@@ -338,25 +431,35 @@ class Params:
         p_amplitude_back
         order_back
         """
-        # Convert order and order_back to lists (can be empty list)
-        # todo: how do I know the user chosen order is in idx_g?
+        # Convert order and order_back to lists
         if order is None:
             if self._incident_orders is None:
-                self._incident_orders = [(0, 0)]
+                order = [(0, 0)]
+            else:
+                order = self._incident_orders
+        elif not hasattr(order, "__len__"):
+            order = [(order, 0)]
         elif type(order) is tuple:
             order = [order]
-            self._incident_orders = order
-        else:
-            self._incident_orders = order
+        for od in order:
+            if not (od in self.idx_g):
+                raise Exception('The incident order you specified is not within the order list. Possible solution is to reduce order or increase the number of G points.')
+        self._incident_orders = order
+        # considered allowing 1d several orders. But then ambiguity:is [0, 1] 2d order (0, 1) or is it two 1d orders 0 and 1?
 
         if order_back is None:
             if self._incident_orders_bk is None:
-                self._incident_orders_bk = [(0, 0)]
+                order_back = [(0, 0)]
+            else:
+                order_back = self._incident_orders_bk
+        elif not hasattr(order_back, "__len__"):
+            order_back = [(order, 0)]
         elif type(order_back) is tuple:
             order_back = [order_back]
-            self._incident_orders_bk = order_back
-        else:
-            self._incident_orders_bk = order_back
+        for od in order_back:
+            if not (od in self.idx_g):
+                raise Exception('The incident order you specified is not within the order list. Possible solution is to reduce order or increase the number of G points.')
+        self._incident_orders_bk = order_back
 
         # convert s and p amplitudes to lists (can be empty list)
         amp = []
@@ -384,14 +487,37 @@ class Params:
         # self._calc_ai_bo_3d()
 
     @property
+    def inci_is_vac(self) -> bool:
+        return self._inci_is_vac
+
+    @inci_is_vac.setter
+    def inci_is_vac(self, val: bool):
+        if val != self._inci_is_vac:
+            self._inci_is_vac = val
+            self._calc_kii()
+            # self._calc_k_pa_inci()  # called through _calc_ki()
+
+    @property
+    def out_is_vac(self) -> bool:
+        return self._out_is_vac
+
+    @out_is_vac.setter
+    def out_is_vac(self, val: bool):
+        if val != self._out_is_vac:
+            self._out_is_vac = val
+            self._calc_kio()
+
+    @property
     def inci_is_iso_nonvac(self) -> bool:
         """if inci region is isotropic non-vacuum"""
         return self._inci_is_iso_nonvac
 
     @inci_is_iso_nonvac.setter
-    def inci_is_iso_nonvac(self, val):
-        self._inci_is_iso_nonvac = val
-        self._calc_k_inci()
+    def inci_is_iso_nonvac(self, val: bool):
+        if val != self._inci_is_iso_nonvac:
+            self._inci_is_iso_nonvac = val
+            self._calc_kii()
+            # self._calc_k_pa_inci()  # called through _calc_ki()
 
     @property
     def ind_inci(self) -> float:
@@ -400,8 +526,10 @@ class Params:
 
     @ind_inci.setter
     def ind_inci(self, val):
-        self._ind_inci = val
-        self._calc_k_inci()
+        if val != self._ind_inci:
+            self._ind_inci = val
+            self._calc_kii()
+            # self._calc_k_pa_inci()  # called through _calc_ki()
 
     @property
     def out_is_iso_nonvac(self) -> bool:
@@ -409,9 +537,10 @@ class Params:
         return self._out_is_iso_nonvac
 
     @out_is_iso_nonvac.setter
-    def out_is_iso_nonvac(self, val):
-        self._out_is_iso_nonvac = val
-        self._calc_k_inci()
+    def out_is_iso_nonvac(self, val: bool):
+        if val != self._out_is_iso_nonvac:
+            self._out_is_iso_nonvac = val
+            self._calc_kio()
 
     @property
     def ind_out(self) -> float:
@@ -420,24 +549,22 @@ class Params:
 
     @ind_out.setter
     def ind_out(self, val):
-        self._ind_out = val
-        self._calc_k_inci()
+        if val != self._ind_out:
+            self._ind_out = val
+            self._calc_kio()
 
-    def _calc_k_inci(self):
+    def _calc_k_pa_inci(self):
         """calculate incident kx and ky"""
-        if (self.theta is not None) and (self.phi is not None) and (self.omega is not None):
-            if self.inci_is_iso_nonvac:
-                k = self.omega.real * self.ind_inci  # todo: what if ind_inci complex?
-            else:
-                k = self.omega.real
-            # todo: for complex freq, should here be np.abs(self.omega) or self.omega.real?
-            # todo: using self.omega (hence kx ky complex) also gives answers, but the physical meaning is different
-            kx = k * np.cos(np.pi/2 - self._theta) * np.cos(self._phi)
-            ky = k * np.cos(np.pi/2 - self._theta) * np.sin(self._phi)
-            self._k_inci: Tuple[float, float] = (kx, ky)
-            self.k_inci = (kx, ky)
+        if (self._theta is not None) and (self._phi is not None) and (self.kii is not None):
+            kx = self.kii.real * np.cos(np.pi/2 - self._theta) * np.cos(self._phi)
+            ky = self.kii.real * np.cos(np.pi/2 - self._theta) * np.sin(self._phi)
+            # This is where it determines that the (kx, ky) of the structure is determined by the incident region's refractive index, theta and phi, not the output region.
 
-            # self._calc_ks()  # called in `k_inci` setter
+            self._k_pa_inci = (kx, ky)
+
+            self._calc_ks()  # called in `k_pa_inci` setter
+
+            # todo: complex kx ky also gives answers, but the physical meaning is different
 
     def _calc_gs(self):
         """ calculate E and H Fourier components g points """
@@ -511,10 +638,10 @@ class Params:
         self._calc_conv_mtx_idx()
 
     def _calc_ks(self):
-        if self.gs and self.k_inci:
-            self.ks = [(g[0]+self.k_inci[0], g[1] + self.k_inci[1]) for g in self.gs]
-            self._calc_q0()
+        if self.gs and (self.k_pa_inci is not None):
+            self.ks = [(g[0] + self.k_pa_inci[0], g[1] + self.k_pa_inci[1]) for g in self.gs]
             self._calc_Km()
+            self._calc_q0()
             self._calc_ks_ep_mu()
             self._calc_angles()
 
@@ -647,8 +774,8 @@ class Params:
             #                     [np.diag(P21), np.diag(P22)]])
 
             # self._calc_psi0()
-            self._calc_phi0_psi0()
-            self._calc_phif_psif()
+            # self._calc_phi0_psi0()  # logically, should call this, however, the only place calling _calc_P0Q0() is _calc_Km(), which is only called at _calc_ks(). There, after _calc_Km(), _calc_q0() is called, which calls this.
+            # self._calc_phif_psif()
 
     def _calc_phi0_psi0(self):
         if (self.Q0_val is not None) and (self.q0 is not None) and (self._num_g_ac is not None):
@@ -659,7 +786,8 @@ class Params:
             # Ky = self.Ky.copy()
             # k_norm = np.sqrt(np.conj(Kx) * Kx + np.conj(Ky) * Ky)
 
-            # # Use [ky, -kx] etc. as eigen
+
+            # # Wood stable as eigen
             # Tx = Kx  # term with x subscript
             # Ty = Ky
             #
@@ -710,8 +838,11 @@ class Params:
             q0h = self.q0_half
             ng = self._num_g_ac
             o = self.omega
-            Kx = self.Kx.copy()
-            Ky = self.Ky.copy()
+            ksa = np.array(self.ks)
+            Kx = ksa[:, 0]
+            Ky = ksa[:, 1]
+            # Kx = self.Kx.copy()
+            # Ky = self.Ky.copy()
             k_norm = np.sqrt(np.conj(Kx) * Kx + np.conj(Ky) * Ky)
 
             # skc = 0.05
@@ -1063,9 +1194,9 @@ class Params:
     def _calc_angles(self):
         """
         calculate cos(vartheta), sin(vartheta), cos(phi), sin(phi) for all relevant orders, where vartheta = pi/2-theta
-        This is used for setting incidence in high orders.
+        Used in calculating ai bo. Recording these cos and sin allow for high-order incidence.
         """
-        if self.ks:
+        if self.ks and self.num_g and (self._theta is not None) and (self._phi is not None) and (self.kii is not None):
             # t1 = time.process_time()
 
             idxa = np.array(self.idx_g)
@@ -1084,35 +1215,29 @@ class Params:
             cphi[ii] = np.cos(self._phi)
             sphi[ii] = np.sin(self._phi)
 
-            if self.inci_is_iso_nonvac:
-                k = self.omega.real * self.ind_inci
-            else:
-                k = self.omega.real
-            cthe = k_pa / k + 0j  # this is always positive
-            # todo: when omega complex, k_parallel is still calc as real
+            cthe = k_pa / self.kii.real + 0j  # this is always positive
+            # when omega complex, k_parallel is still calc as real
             sthe = np.sqrt(1 - cthe**2 + 0j)
             cthe[ii] = np.cos(np.pi/2 - self._theta)
             sthe[ii] = np.sin(np.pi/2 - self._theta)
-
-            if self.out_is_iso_nonvac:
-                k = self.omega.real * self.ind_out
-            else:
-                k = self.omega.real
-            cthe_bk = k_pa / k + 0j  # this is always positive
-            # todo: when omega complex, k_parallel is still calc as real
-            sthe_bk = np.sqrt(1 - cthe_bk**2 + 0j)
-            cthe_bk[ii] = np.cos(np.pi/2 - self._theta)
-            sthe_bk[ii] = np.sin(np.pi/2 - self._theta)
+            # todo: theta could be None (e.g. setting Excitation By Eigen)
 
             self.cos_phis = list(cphi)
             self.sin_phis = list(sphi)
-            self.cos_phis_bk = self.cos_phis.copy()
-            self.sin_phis_bk = self.sin_phis.copy()
             self.cos_varthetas = list(cthe)
             self.sin_varthetas = list(sthe)
-            self.cos_varthetas_bk = list(cthe)
-            self.sin_varthetas_bk = list(sthe)
 
+            if self.kio is not None:
+                cthe_bk = k_pa / self.kio.real + 0j  # this is always positive
+                # todo: self.kio is updated in solving stage as which layer is output is determined then. But all `Params` data should be calculated at setting structure stage.
+                # when omega complex, k_parallel is still calc as real
+                sthe_bk = np.sqrt(1 - cthe_bk ** 2 + 0j)
+                cthe_bk[ii] = np.cos(np.pi / 2 - self._theta)  # incorrect, out region could have different refractive index
+                sthe_bk[ii] = np.sin(np.pi / 2 - self._theta)
+                self.cos_phis_bk = self.cos_phis.copy()
+                self.sin_phis_bk = self.sin_phis.copy()
+                self.cos_varthetas_bk = list(cthe)
+                self.sin_varthetas_bk = list(sthe)
 
             # print('_calc_angles', time.process_time()-t1)
         # self._calc_ai_bo_3d()

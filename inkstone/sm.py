@@ -4,7 +4,7 @@ import numpy as np
 import numpy.linalg as la
 import scipy.linalg as sla
 # import scipy.sparse as sps
-# import warnings
+from warnings import warn
 from .rsp import rsp, rsp_sa21Tlu, rsp_sb12Tlu
 
 
@@ -93,7 +93,17 @@ def s_1l_rsp(thickness: float,
     a_bab = a - bab
     a_babf = a_bab * f
     a_bfabf = a - b * f @ ab * f
+    # try:
     term = sla.solve(a_bfabf.T, a_babf.T).T
+    # except Exception as e:
+    #     if (ql == 0.).any():
+    #         warn('Singular matrix encountered. Layer eigen propagation constant detected.', RuntimeWarning)
+    #         print(la.cond(a_bfabf))
+    #         print(la.cond(a_babf))
+    #         term = sla.solve((a_bfabf+1e-14 * np.eye(len(ql))).T, (a_babf+1e-14*np.eye(len(ql))).T).T
+    #         print(la.cond(term))
+    #     else:
+    #         return e
 
     s11 = ba - term @ bfa
     s12 = term
