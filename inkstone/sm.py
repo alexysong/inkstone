@@ -31,18 +31,30 @@ def s_1l(thickness, ql, al0, bl0):
 
     a = al0
     b = bl0
-    alu = sla.lu_factor(a)
+    # alu = sla.lu_factor(a)
+    aTlu = sla.lu_factor(a.T)
+    ba_ = (sla.solve(a.T, b.T)).T
 
     fl = np.exp(1j * ql * thickness)
 
-    a_fbafb = a - fl[:, None] * b @ sla.lu_solve(alu, (fl[:, None] * b))
+    # a_fbafb = a - fl[:, None] * b @ sla.lu_solve(alu, (fl[:, None] * b))
+    a_fbafb = a - fl[:, None] * ba_ @ (fl[:, None] * b)
     a_fbafb_lu = sla.lu_factor(a_fbafb)
 
-    fbafa_b = (fl[:, None] * b @ sla.lu_solve(alu, fl[:, None] * a) - b)
-    fa_bab = (fl[:, None] * (a - b @ sla.lu_solve(alu, b)))
+    # fbafa_b = (fl[:, None] * b @ sla.lu_solve(alu, fl[:, None] * a) - b)
+    fbafa_b = fl[:, None] * ba_ @ (fl[:, None] * a) - b
+    # fa_bab = (fl[:, None] * (a - b @ sla.lu_solve(alu, b)))
+    fa_bab = (fl[:, None] * (a - ba_ @ b))
 
     s11 = sla.lu_solve(a_fbafb_lu, fbafa_b)
     s12 = sla.lu_solve(a_fbafb_lu, fa_bab)
+
+    # # debugging
+    # d = fl - 1.
+    # db = d[:, None] * b
+    # dbab = d[:, None] * ba_ @ b
+    # badb = ba_ @ (d[:, None] * b)
+    # dbadb = d[:, None] * ba_ @ ((d[:, None] * b))
 
     s22 = s11
     s21 = s12

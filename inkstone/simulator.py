@@ -1508,7 +1508,7 @@ class Inkstone:
                             xy: Union[Tuple[float, float], List[Tuple[float, float]]],
                             z: Union[float, List[float], np.ndarray, Tuple[float]] = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
-        Calculate fields at the list of (x, y) points defiend by `xy` in each z plane in the `z` list.
+        Calculate fields at the list of (x, y) points defined by `xy` in each z plane in the `z` list.
 
         This is the most versatile possible API for calculating the physical fields at different locations that is still efficient by using numpy array operations.
 
