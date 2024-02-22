@@ -371,7 +371,7 @@ class Layer:
                         r = np.array(pt1) - np.array(bx2.shp.center)
                         a = bx2.shp.angle * np.pi / 180.
                         r1 = np.array([[np.cos(a), np.sin(a)], [-np.sin(a), np.cos(a)]]) @ r
-                        if (r1[0] < bx2.shp.side_lengths[0] / 2.) and (r1[1] < bx2.shp.side_lengths[1] / 2.):
+                        if (np.abs(r1[0]) < bx2.shp.side_lengths[0] / 2.) and (np.abs(r1[1]) < bx2.shp.side_lengths[1] / 2.):
                             bx1.outside = bx2
                             break
                     elif bx2.shp.shape == 'parallelogram':
