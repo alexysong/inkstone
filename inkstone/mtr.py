@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from typing import Tuple, Union, Optional
-import numpy as np
+from GenericBackend import genericBackend as gb
 # import numpy.linalg as la
 # from warnings import warn
 
@@ -9,16 +9,18 @@ import numpy as np
 class Mtr:
     # material need to have a name such that user can access it by its name
     def __init__(self,
-                 epsi: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], np.ndarray],
-                 mu: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], np.ndarray],
-                 name=None):
+                 epsi: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], any],
+                 mu: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], any],
+                 name=None,
+                 gb=gb):
         """
         Material.
         """
-        self._epsi: Optional[np.ndarray] = None
-        self._mu: Optional[np.ndarray] = None
-        self._epsi_inv: Optional[np.ndarray] = None
-        self._mu_inv: Optional[np.ndarray] = None
+        self.gb = gb
+        self._epsi: Optional[any] = None
+        self._mu: Optional[any] = None
+        self._epsi_inv: Optional[any] = None
+        self._mu_inv: Optional[any] = None
 
         self._ep_is_vac = True
         self._mu_is_vac = True
@@ -38,6 +40,7 @@ class Mtr:
         self.mu = mu
 
         self.name = name
+        
 
     @property
     def ep_is_diagonal(self) -> bool:
@@ -102,13 +105,13 @@ class Mtr:
         self._check_vac()
 
     @property
-    def epsi(self) -> np.ndarray:
+    def epsi(self) -> any:
         return self._epsi
 
     @epsi.setter
     def epsi(self, val):
-        if (type(val) is float) or (type(val) is int) or (type(val) is complex) or (type(val) is np.float64) or (type(val) is np.complex128):
-            ep = np.eye(3, dtype=complex) * val
+        if type(val) in [float, int, complex, self.gb.float64, self.gb.complex128]:
+            ep = self.gb.eye(3, dtype=self.gb.complex128) * val
             self._epsi = ep + 0j
             self.ep_is_diagonal = True
             self.ep_is_isotropic = True
@@ -116,8 +119,8 @@ class Mtr:
                 self.ep_is_vac = True
             else:
                 self.ep_is_vac = False
-        elif np.array(val).ndim == 1 and np.array(val).size == 3:
-            ep = np.diag(val) + 0j
+        elif self.gb.parseData(val).ndim == 1 and self.gb.getSize(self.gb.parseData(val)) == 3:
+            ep = self.gb.diag(val) + 0j
             self._epsi = ep + 0j
             self.ep_is_diagonal = True
             if check_iso(ep):
@@ -128,7 +131,7 @@ class Mtr:
                 self.ep_is_vac = True
             else:
                 self.ep_is_vac = False
-        elif (type(val) is not np.ndarray) or val.shape != (3, 3):
+        elif (type(val) is not any) or val.shape != (3, 3):
             raise ValueError('data format for epsilon is incorrect.')
         else:
             ep = val
@@ -154,19 +157,19 @@ class Mtr:
         adbc = v[0, 0] * v[1, 1] - v[0, 1] * v[1, 0]
         if adbc == 0 or v[2, 2] == 0:
             raise Exception('Singular permittivity tensor.')
-        ei = np.array([[v[1, 1] / adbc, -v[0, 1] / adbc, 0],
+        ei = self.gb.parseData([[v[1, 1] / adbc, -v[0, 1] / adbc, 0],
                        [-v[1, 0] / adbc, v[0, 0] / adbc, 0],
-                       [0, 0, 1 / v[2, 2]]], dtype=complex)
+                       [0, 0, 1 / v[2, 2]]], dtype=self.gb.complex128)
         self._epsi_inv = ei
 
     @property
-    def mu(self) -> np.ndarray:
+    def mu(self) -> any:
         return self._mu
 
     @mu.setter
     def mu(self, val):
-        if (type(val) is float) or (type(val) is int) or (type(val) is complex) or (type(val) is np.float64) or (type(val) is np.complex128):
-            mu = np.eye(3, dtype=complex) * val
+        if type(val) in [float, int, complex, self.gb.float64, self.gb.complex128]:
+            mu = self.gb.eye(3, dtype=self.gb.complex128) * val
             self._mu = mu + 0j
             self.mu_is_diagonal = True
             self.mu_is_isotropic = True
@@ -174,8 +177,8 @@ class Mtr:
                 self.mu_is_vac = True
             else:
                 self.mu_is_vac = False
-        elif np.array(val).ndim == 1 and np.array(val).size == 3:
-            mu = np.diag(val) + 0j
+        elif self.gb.parseData(val).ndim == 1 and self.gb.getSize(self.gb.parseData(val)) == 3:
+            mu = self.gb.diag(val) + 0j
             self._mu = mu + 0j
             self.mu_is_diagonal = True
             if check_iso(mu):
@@ -186,7 +189,7 @@ class Mtr:
                 self.mu_is_vac = True
             else:
                 self.mu_is_vac = False
-        elif (type(val) is not np.ndarray) or val.shape != (3, 3):
+        elif (type(val) is not any) or val.shape != (3, 3):
             raise ValueError('data format for mu is incorrect.')
         else:
             mu = val
@@ -212,17 +215,17 @@ class Mtr:
         adbc = v[0, 0] * v[1, 1] - v[0, 1] * v[1, 0]
         if adbc == 0 or v[2, 2] == 0:
             raise Exception('Singular permittivity tensor.')
-        mi = np.array([[v[1, 1] / adbc, -v[0, 1] / adbc, 0],
+        mi = self.gb.parseData([[v[1, 1] / adbc, -v[0, 1] / adbc, 0],
                        [-v[1, 0] / adbc, v[0, 0] / adbc, 0],
-                       [0, 0, 1 / v[2, 2]]], dtype=complex)
+                       [0, 0, 1 / v[2, 2]]], dtype=self.gb.complex128)
         self._mu_inv = mi
 
     @property
-    def epsi_inv(self) -> np.ndarray:
+    def epsi_inv(self) -> any:
         return self._epsi_inv
 
     @property
-    def mu_inv(self) -> np.ndarray:
+    def mu_inv(self) -> any:
         return self._mu_inv
 
     def _check_isotropic(self):

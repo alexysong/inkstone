@@ -14,7 +14,8 @@ A circular hole of radius 0.2 in each unit cell.
      ◯ ◯ ◯
         ⋮
 """
-
+import sys
+sys.path.append("C:/Users/w-a-c/Desktop/inkstone")
 import numpy as np
 from inkstone import Inkstone
 
@@ -53,4 +54,5 @@ from matplotlib import pyplot as plt
 plt.plot(freq, transmission)
 plt.xlabel('frequency')
 plt.ylabel('transmission')
+plt.show()
 

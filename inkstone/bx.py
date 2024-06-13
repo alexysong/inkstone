@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-
-import numpy as np
+from GenericBackend import genericBackend as gb
 # import numpy.linalg as la
 from inkstone.shps import Rect, Para, Disk, Elli, Poly, OneD
 from warnings import warn
@@ -11,7 +10,7 @@ from inkstone.mtr import Mtr
 class Bx:
     # Bx doesn't know what lattice it is in
 
-    def __init__(self, mtr, shp, name=None, outside=None, **kwargs):
+    def __init__(self, mtr, shp, name=None, outside=None,gb=gb, **kwargs):
         """
         A box.
         The box has a name, its `mtr`, its `shp`.
@@ -69,7 +68,7 @@ class Bx:
         # After you set the ks here, Bx doesn't know if outside ks has changed. If it has, then you need to do ft(ks) to give the new ks.
         self.shp.ks = val
 
-    def ft(self, ks=None, **kw_gibbs) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def ft(self, ks=None, **kw_gibbs) -> Tuple[any, any, any, any]:
         """
         Return the Fourier transform of the shape. The FT of a shape is understood as a function that is 1 inside and 0 outside.
         You can choose whether to have Gibbs correction for the returned FT coefficients.
@@ -93,7 +92,7 @@ class Bx:
 
         return self.epsi_ft, self.epsi_inv_ft, self.mu_ft, self.mu_inv_ft
 
-    def _calc_ft(self, **kw_gibbs) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def _calc_ft(self, **kw_gibbs) -> Tuple[any, any, any, any]:
         """
         Calculate the Fourier transform of the box.
 
@@ -106,7 +105,7 @@ class Bx:
 
         """
         # t0 = time.process_time()
-        _ft = np.array(self.shp.ft(**kw_gibbs), dtype=complex)
+        _ft = gb.parseData(self.shp.ft(**kw_gibbs), dtype=gb.complex128)
         # print(time.process_time()-t0)
 
         # no way of knowing if its material or that of the outer box changed
@@ -121,10 +120,10 @@ class Bx:
             mu_out = self.outside.mtr.mu
             mu_out_inv = self.outside.mtr.mu_inv
         else:
-            epsi_out = np.eye(3, dtype=complex)
-            epsi_out_inv = np.eye(3, dtype=complex)
-            mu_out = np.eye(3, dtype=complex)
-            mu_out_inv = np.eye(3, dtype=complex)
+            epsi_out = gb.eye(3, dtype=gb.complex128)
+            epsi_out_inv = gb.eye(3, dtype=gb.complex128)
+            mu_out = gb.eye(3, dtype=gb.complex128)
+            mu_out_inv = gb.eye(3, dtype=gb.complex128)
         epsi = epsi - epsi_out  # shouldn't do epsi -= epsi_out, which would be in-place change, which will change epsi of the material.
         epsi_inv = epsi_inv - epsi_out_inv
         mu = mu_inv - mu_out

@@ -14,7 +14,8 @@ A circular hole of radius 0.2 in each unit cell.
      ◯ ◯ ◯
         ⋮
 """
-
+import sys
+sys.path.append("C:/Users/w-a-c/Desktop/inkstone")
 import numpy as np
 from inkstone import Inkstone
 
@@ -48,3 +49,4 @@ plt.pcolormesh(np.linspace(-0.5, 0.5, 101),
 plt.xlabel('x')
 plt.ylabel('z')
 plt.colorbar()
+plt.show()

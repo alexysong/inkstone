@@ -11,7 +11,8 @@ Each rod has side length 0.55.
 ...  |   |   |   |  ...  (side view)
       ¯¯¯     ¯¯¯
 """
-
+import sys
+sys.path.append("C:/Users/w-a-c/Desktop/inkstone")
 from inkstone import Inkstone
 import numpy as np
 
@@ -53,3 +54,4 @@ plt.figure()
 plt.plot(freq, T)
 plt.xlabel('frequency')
 plt.ylabel('transmission')
+plt.show()

@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
-
-import numpy as np
-import numpy.linalg as la
 # import scipy.sparse as sps
 import scipy.linalg as sla
 from warnings import warn
 from collections import OrderedDict
 from typing import Tuple, Optional, List, Dict, Union
 import time
+from GenericBackend import genericBackend as gb
 
 from inkstone.rsp import rsp, rsp_sa12lu, rsp_sb21lu
 from inkstone.params import Params
@@ -26,6 +24,7 @@ class Inkstone:
                  frequency: Union[float, complex] = None,
                  theta: float = None,
                  phi: float = None,
+                 gb = gb
                  ):
         """
 
@@ -51,10 +50,10 @@ class Inkstone:
         # this is not needed
         # self._inci_changed: bool = True  # if incidence changed
 
-        self.ai: Optional[np.ndarray] = None  # incident wave amplitudes from the incident region.
-        self.bo: Optional[np.ndarray] = None  # incident wave amplitudes from the output region
-        self.ao: Optional[np.ndarray] = None  # transmitted wave amplitudes in the output region
-        self.bi: Optional[np.ndarray] = None  # reflected wave amplitudes in the incident region
+        self.ai: Optional[any] = None  # incident wave amplitudes from the incident region.
+        self.bo: Optional[any] = None  # incident wave amplitudes from the output region
+        self.ao: Optional[any] = None  # transmitted wave amplitudes in the output region
+        self.bi: Optional[any] = None  # reflected wave amplitudes in the incident region
         self._need_recalc_bi_ao: bool = True
 
         # thickness of all layers, and cumulative thickness
@@ -66,9 +65,11 @@ class Inkstone:
 
         self.layers: OrderedDict[str, Layer] = OrderedDict()  # all layers
 
-        self.sm: Optional[Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]] = None
-        self.csms: List[List[Optional[Tuple[int, int, Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]]]] = []  # the cumulative scattering matrices.
-        self.csmsr: List[Optional[Tuple[int, int, Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]]] = []  # the cumulative scattering matrices reversed.
+        self.sm: Optional[Tuple[any, any, any, any]] = None
+        self.csms: List[List[Optional[Tuple[int, int, Tuple[any, any, any, any]]]]] = []  # the cumulative scattering matrices.
+        self.csmsr: List[Optional[Tuple[int, int, Tuple[any, any, any, any]]]] = []  # the cumulative scattering matrices reversed.
+        
+        self.gb = gb
 
     @property
     def lattice(self) -> Union[float, Tuple[Tuple[float, float], Tuple[float, float]]]:
@@ -138,6 +139,8 @@ class Inkstone:
     @theta.setter
     def theta(self, val):
         if (val is not None) and (val != self.pr.theta):
+            if val is not self.gb.raw_type:
+                val = self.gb.parseData(val)
             self.pr.theta = val
             for layer_name, layer in self.layers.items():
                 layer.if_mod = True
@@ -191,8 +194,8 @@ class Inkstone:
 
     def AddMaterial(self,
                     name: str,
-                    epsilon: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], np.ndarray],
-                    mu: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], np.ndarray] = 1.
+                    epsilon: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], any],
+                    mu: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], any] = 1.
                     ):
         """
         Add materials to structure.
@@ -211,8 +214,8 @@ class Inkstone:
 
     def SetMaterial(self,
                     name: str,
-                    epsi: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], np.ndarray] = None,
-                    mu: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], np.ndarray] = None
+                    epsi: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], any] = None,
+                    mu: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], any] = None
                     ):
         """
         Update material parameters.
@@ -329,11 +332,11 @@ class Inkstone:
     def ReconstructLayer(self,
                          name: str,
                          nx: int = None,
-                         ny: int = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+                         ny: int = None) -> Tuple[any, any, any, any]:
         """
         Reconstruct layer permittivity and permeability profile
 
-        Returns xx, yy, epsilon, mu. xx and yy are the results of `np.meshgrid`. The shape of epsilon and mu are (ny, nx, 3, 3), where the last two axis is the tensor at the spatial locations.
+        Returns xx, yy, epsilon, mu. xx and yy are the results of `self.gb.meshgrid`. The shape of epsilon and mu are (ny, nx, 3, 3), where the last two axis is the tensor at the spatial locations.
 
         Use `matplotlib.pyplot.pcolormesh` to plot the reconstruction. For example to plot the (0, 0) element of the permittivity profile,
 
@@ -714,13 +717,13 @@ class Inkstone:
                 if _n is not None:
                     if not hasattr(_n, "__len__"):
                         _n = [_n]
-                    _n = np.array(_n)
+                    _n = self.gb.parseData(_n)
 
                     if _a is None:
                         raise Exception('You input eigen number but not its amplitude.')
                     elif not hasattr(_a, "__len__"):
                         _a = [_a]
-                    _a = np.array(_a)
+                    _a = self.gb.parseData(_a)
 
                     if len(_a) != len(_n):
                         raise Exception('The length of the amplitudes and the eigen numbers are not the same.')
@@ -749,13 +752,13 @@ class Inkstone:
         if li.is_isotropic:
             warn('Uniform isotropic medium. You can use `SetExcitation()` which works with theta, phi, s and p wave amplitudes.', UserWarning)
             # Note: should not reinvent the wheel. Could just call SetExcitation() from here, but then possible confusion in self.pr.iesbe and self.pr.iesbtpsp.
-            kn = np.sqrt(np.abs(kx) ** 2 + np.abs(ky) ** 2)
+            kn = self.gb.sqrt(self.gb.abs(kx) ** 2 + self.gb.abs(ky) ** 2)
             if kn != 0.:
-                self.pr._phi = np.arccos(kx / kn)  # not setting property self.pr.phi to avoid double calling stuff like self.pr._calc_ks()
+                self.pr._phi = self.gb.arccos(kx / kn)  # not setting property self.pr.phi to avoid double calling stuff like self.pr._calc_ks()
             else:
                 warn("At normal incidence, phi is uncertain and default to 0.")
                 self.pr._phi = 0.
-            self.pr._theta = np.arcsin(kn / self.pr.kii.real)
+            self.pr._theta = self.gb.arcsin(kn / self.pr.kii.real)
             # problem: in this case, not sure which eigen is s and p, when user sets ai, user doesn't know the eigen which is not solved yet.
             # logically, whether or not isotropic, should delete theta phi. However, uniform layer's eigen choice depend on theta phi (1.  s and p happen to give Wood stability 2 eigen choosing s and p is user friendly, and ai bo simple).
             # if kx=ky=0, ambiguity in phi still. In the code, the internally chosen eigen decides the effective phi. It could even be the two degenerate eigen are chosen to be not orthonormal, hence phi not defined. But then again as of [202310] The eigens in uniform isotropic is chosen by s and p using cos(phi) and sin(phi)
@@ -767,7 +770,7 @@ class Inkstone:
 
         aibo = []
         for z, n in zip([a, ab], [en, enb]):
-            i = np.zeros(2*self.pr.num_g, dtype=complex)
+            i = self.gb.zeros(2*self.pr.num_g, dtype=self.gb.complex128)
             i[n] = z
             aibo.append(i)
             # todo: is this done?
@@ -797,7 +800,6 @@ class Inkstone:
         o = self.pr.omega
 
         layer_inci: Layer = list(self.layers.values())[0]
-
         aibo = []
         if self.pr.iesbe:
             pass
@@ -806,7 +808,7 @@ class Inkstone:
 
             for ii, (sa, pa, od, sphi, cphi, sthe, cthe) in enumerate([[self.pr._s_amps, self.pr._p_amps, self.pr._incident_orders, self.pr.sin_phis, self.pr.cos_phis, self.pr.sin_varthetas, self.pr.cos_varthetas], [self.pr._s_amps_bk, self.pr._p_amps_bk, self.pr._incident_orders_bk, self.pr.sin_phis_bk, self.pr.cos_phis_bk, self.pr.sin_varthetas_bk, self.pr.cos_varthetas_bk]]):
                 if self.pr._num_g_ac:
-                    ab = np.zeros(2 * self.pr._num_g_ac) + 0j
+                    ab = self.gb.zeros(2 * self.pr._num_g_ac) + 0j
                     if (sa or pa) and od and self.pr.idx_g and \
                             sphi and cphi and sthe and cthe:
                         # find the index of the input orders in the g list
@@ -838,8 +840,8 @@ class Inkstone:
                                 # with new calc that removed convergence problem at Wood
                                 ex = -s * sp + p * st * cp  # e_x
                                 ey = s * cp + p * st * sp  # e_y
-                                phi_2x2 = layer_inci.phil_2x2s[:, :, jj]
-                                v = la.solve(phi_2x2, np.array([ex, ey]))
+                                phi_2x2 = self.gb.castType(layer_inci.phil_2x2s[:, :, jj],self.gb.complex128)
+                                v = self.gb.la.solve(phi_2x2, [ex, ey])
                                 ab[jj] = v[0]
                                 ab[jj + self.pr._num_g_ac] = v[1]
 
@@ -887,7 +889,7 @@ class Inkstone:
                 #
                 # al0 = layer.iml0[0]
                 # bl0 = layer.iml0[1]
-                # I = np.diag(np.ones(2 * self.pr.num_g, dtype=complex))  # identity
+                # I = self.gb.diag(self.gb.ones(2 * self.pr.num_g, dtype=self.gb.complex128))  # identity
                 # # csm
                 # sc11, sc12, sc21, sc22 = csm
                 # # csm of previous layer
@@ -927,7 +929,7 @@ class Inkstone:
 
                 # with fic material, no use of al0, bl0, using a0l and b0l instead
                 # works with either vac or fic gap layers
-                I = np.diag(np.ones(2 * self.pr.num_g, dtype=complex))  # identity
+                I = self.gb.diag(self.gb.ones(2 * self.pr.num_g, dtype=self.gb.complex128))  # identity
                 # csm of previous layer
                 scp11, scp12, scp21, scp22 = csmp
                 # csmr of next layer
@@ -936,14 +938,14 @@ class Inkstone:
                 a, b = layer.imfl
                 # ia = la.inv(a)
                 aTlu = sla.lu_factor(a.T)
-                aTlu2 = (aTlu[0].copy(), aTlu[1].copy())
+                aTlu2 = (self.gb.clone(aTlu[0]), self.gb.clone(aTlu[1]))
                 a1 = aTlu2[0]
-                a1[np.triu_indices(a1.shape[0])] *= 0.5
+                a1[self.gb.triu_indices(a1.shape[0])] *= 0.5
 
                 alu = sla.lu_factor(a)
                 alu2 = (alu[0].copy(), alu[1].copy())
                 a1 = alu2[0]
-                a1[np.triu_indices(a1.shape[0])] *= 0.5
+                a1[self.gb.triu_indices(a1.shape[0])] *= 0.5
 
                 ab = sla.lu_solve(alu, b)
 
@@ -958,7 +960,7 @@ class Inkstone:
 
                 ql = layer.ql
                 thickness = layer.thickness
-                f = np.exp(1j * ql * thickness)
+                f = self.gb.exp(1j * ql * thickness)
 
                 sr11 = sl22
                 sr12 = sl21
@@ -1294,7 +1296,7 @@ class Inkstone:
 
     def _calc_field_fs_layer_fb(self,
                                 layer: str,
-                                z: Union[float, List[float], np.ndarray, Tuple[float]] = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+                                z: Union[float, List[float], any, Tuple[float]] = None) -> Tuple[any, any, any, any, any, any, any, any, any, any, any, any]:
         """
         Calculate e and h, the Fourier components in a given layer at given z points. return the forward and backward components separately.
 
@@ -1307,16 +1309,16 @@ class Inkstone:
 
         Returns
         -------
-        exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb  :   np.ndarray
+        exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb  :   any
             shape (num_g, N) where N is the length of zs. forward and backward field coefficients.
 
         """
         if z is None:
-            za = np.array([0.])
+            za = self.gb.parseData([0.])
         elif hasattr(z, "__len__"):
-            za = np.array(z)
+            za = self.gb.parseData(z)
         else:
-            za = np.array([z])
+            za = self.gb.parseData([z])
 
         t = self.layers[layer].thickness
         if self.layers[layer].in_mid_out == 'in':
@@ -1334,10 +1336,10 @@ class Inkstone:
         qla = self.layers[layer].ql[:, None]  # 1-column 2d array of length 2num_g
         d = self.layers[layer].thickness
 
-        ef = phil * al @ np.exp(1j * qla * za)  # todo: for incident/output region, z too negative and high order ql cause overflow. this is the wave exponential decaying towards the slab
-        eb = phil * bl @ np.exp(1j * qla * (d - za))
-        hf = psil * al @ np.exp(1j * qla * za)
-        hb = -psil * bl @ np.exp(1j * qla * (d - za))
+        ef = phil * al @ self.gb.exp(1j * qla * za)  # todo: for incident/output region, z too negative and high order ql cause overflow. this is the wave exponential decaying towards the slab
+        eb = phil * bl @ self.gb.exp(1j * qla * (d - za))
+        hf = psil * al @ self.gb.exp(1j * qla * za)
+        hb = -psil * bl @ self.gb.exp(1j * qla * (d - za))
         exf, exb, hxf, hxb = [a[:self.pr.num_g, :] for a in [ef, eb, hf, hb]]
         eyf, eyb, hyf, hyb = [a[self.pr.num_g:, :] for a in [ef, eb, hf, hb]]
         Kx = self.pr.Kx
@@ -1351,7 +1353,7 @@ class Inkstone:
 
     def GetAmplitudesByOrder(self,
                       layer: str,
-                      z: Union[float, List[float], np.ndarray, Tuple[float]] = None,
+                      z: Union[float, List[float], any, Tuple[float]] = None,
                       order: Union[int, List[int], Tuple[int, int], List[Tuple[int, int]]] = None):
         """
         Get the electric and magnetic fields by Fourier order in a given layer at a given z.
@@ -1381,7 +1383,7 @@ class Inkstone:
             order = [order]
         elif type(order[0]) is int:
             order = [(o, 0) for o in order]
-        idx = np.array([self.pr.idx_g.index(o) for o in order])
+        idx = self.gb.parseData([self.pr.idx_g.index(o) for o in order])
 
         result = [f[idx] for f in [exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb]]
 
@@ -1390,7 +1392,7 @@ class Inkstone:
     def GetLayerFieldsListPoints(self,
                                  layer: str,
                                  xy: Union[Tuple[float, float], List[Tuple[float, float]]],
-                                 z: Union[float, List[float], np.ndarray, Tuple[float]] = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+                                 z: Union[float, List[float], any, Tuple[float]] = None) -> Tuple[any, any, any, any, any, any]:
         """
         Calculate fields at the list of (x, y) points defined in `xy` in each z plane in the `z` list.
 
@@ -1424,18 +1426,18 @@ class Inkstone:
         exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)  # each has shape (num_g, len(z))
         ex, ey, ez, hx, hy, hz = [a + b for a, b in [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
 
-        xa, ya = np.hsplit(np.array(xy), 2)  # 2d array with one column
+        xa, ya = self.gb.hsplit(self.gb.parseData(xy), 2)  # 2d array with one column
 
-        kxa, kya = np.hsplit(np.array(self.pr.ks), 2)  # 2d array with one column
+        kxa, kya = self.gb.hsplit(self.gb.parseData(self.pr.ks), 2)  # 2d array with one column
 
         phase = xa * kxa.T + ya * kya.T  # shape (len(xy), numg)
 
-        Ex, Ey, Ez = [(np.exp(1j * phase) @ e) for e in [ex, ey, ez]]  # shape (len(xy), len(z))
+        Ex, Ey, Ez = [(self.gb.exp(1j * phase) @ e) for e in [ex, ey, ez]]  # shape (len(xy), len(z))
 
-        Hx, Hy, Hz = [(-1j * np.exp(1j * phase) @ h) for h in [hx, hy, hz]]  # shape (len(xy), len(z))
+        Hx, Hy, Hz = [(-1j * self.gb.exp(1j * phase) @ h) for h in [hx, hy, hz]]  # shape (len(xy), len(z))
 
         # else:
-        #     Ex, Ey, Ez, Hx, Hy, Hz = [np.nan*np.zeros((len(xy), len(z))) for i in range(6)]
+        #     Ex, Ey, Ez, Hx, Hy, Hz = [self.gb.nan*self.gb.zeros((len(xy), len(z))) for i in range(6)]
 
         return Ex, Ey, Ez, Hx, Hy, Hz
 
@@ -1450,10 +1452,10 @@ class Inkstone:
                        zmin: float = None,
                        zmax: float = None,
                        nz: int = None,
-                       x: Union[float, List[float], np.ndarray, Tuple[float]] = None,
-                       y: Union[float, List[float], np.ndarray, Tuple[float]] = None,
-                       z: Union[float, List[float], np.ndarray, Tuple[float]] = None,
-                       ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+                       x: Union[float, List[float], any, Tuple[float]] = None,
+                       y: Union[float, List[float], any, Tuple[float]] = None,
+                       z: Union[float, List[float], any, Tuple[float]] = None,
+                       ) -> Tuple[any, any, any, any, any, any]:
         """
         Get fields at spatial locations (x, y, z) in a layer.
 
@@ -1483,19 +1485,19 @@ class Inkstone:
                                      ['x', 'y', 'z']):
             if c is not None:
                 if hasattr(c, '__len__'):
-                    c = np.array(c)
+                    c = self.gb.parseData(c)
                 else:
-                    c = np.array([c])
+                    c = self.gb.parseData([c])
                 u = c
             elif min is None or max is None or n is None:
                 warn(s + " points to get fields not defined properly. Default to 0.")
                 u = 0.
             else:
-                u = np.linspace(min, max, n)
+                u = self.gb.linspace(min, max, n)
             uu.append(u)
         x, y, z = uu
 
-        xx, yy = np.meshgrid(x, y)
+        xx, yy = self.gb.meshgrid(x, y)
         xy = list(zip(xx.ravel(), yy.ravel()))
 
         fields = self.GetLayerFieldsListPoints(layer, xy, z)
@@ -1506,7 +1508,7 @@ class Inkstone:
 
     def GetFieldsListPoints(self,
                             xy: Union[Tuple[float, float], List[Tuple[float, float]]],
-                            z: Union[float, List[float], np.ndarray, Tuple[float]] = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+                            z: Union[float, List[float], any, Tuple[float]] = None) -> Tuple[any, any, any, any, any, any]:
         """
         Calculate fields at the list of (x, y) points defined by `xy` in each z plane in the `z` list.
 
@@ -1530,11 +1532,11 @@ class Inkstone:
         ll = list(self.layers.keys())
 
         if hasattr(z, "__len__"):
-            za = np.array(z)
+            za = self.gb.parseData(z)
         else:
-            za = np.array([z])
+            za = self.gb.parseData([z])
 
-        Fields = [np.zeros((len(xy), len(za)), dtype=complex) for i in range(6)]
+        Fields = [self.gb.zeros((len(xy), len(za)), dtype=self.gb.complex128) for i in range(6)]
 
         z_interfaces = self.thicknesses_c[:-1]  # -1 is output with thickness 0
 
@@ -1565,10 +1567,10 @@ class Inkstone:
                   zmin: float = None,
                   zmax: float = None,
                   nz: int = None,
-                  x: Union[float, List[float], np.ndarray, Tuple[float]] = None,
-                  y: Union[float, List[float], np.ndarray, Tuple[float]] = None,
-                  z: Union[float, List[float], np.ndarray, Tuple[float]] = None,
-                  ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+                  x: Union[float, List[float], any, Tuple[float]] = None,
+                  y: Union[float, List[float], any, Tuple[float]] = None,
+                  z: Union[float, List[float], any, Tuple[float]] = None,
+                  ) -> Tuple[any, any, any, any, any, any]:
         """
         Calculate fields on a 3D grid.
 
@@ -1593,19 +1595,19 @@ class Inkstone:
                                      ['x', 'y', 'z']):
             if c is not None:
                 if hasattr(c, '__len__'):
-                    c = np.array(c)
+                    c = self.gb.parseData(c)
                 else:
-                    c = np.array([c])
+                    c = self.gb.parseData([c])
                 u = c
             elif min is None or max is None or n is None:
                 warn(s + " points to get fields not defined properly. Default to 0.")
                 u = 0.
             else:
-                u = np.linspace(min, max, n)
+                u = self.gb.linspace(min, max, n)
             uu.append(u)
 
         x, y, z = uu
-        xx, yy = np.meshgrid(x, y)
+        xx, yy = self.gb.meshgrid(x, y)
         xy = list(zip(xx.ravel(), yy.ravel()))
 
         fields = self.GetFieldsListPoints(xy, z)
@@ -1617,7 +1619,7 @@ class Inkstone:
     def GetPowerFlux(self,
                      layer: str,
                      z: Union[float, List[float]] = None
-                     ) -> Tuple[Union[float, np.ndarray], Union[float, np.ndarray]]:
+                     ) -> Tuple[Union[float, any], Union[float, any]]:
         """
         get the power flux in z direction in a layer at the given `z` points.
 
@@ -1645,10 +1647,10 @@ class Inkstone:
         exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)
         ex, ey, ez, hx, hy, hz = [a + b for a, b in [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
 
-        sf = -1.j / 4. * ((np.einsum('i...,i...', ex.conj(), hyf) - np.einsum('i...,i...', ey.conj(), hxf))
-                          - (np.einsum('i...,i...', hy.conj(), exf) - np.einsum('i...,i...', hx.conj(), eyf)))  # 1d array of length len(z)
-        sb = -1.j / 4. * ((np.einsum('i...,i...', ex.conj(), hyb) - np.einsum('i...,i...', ey.conj(), hxb))
-                          - (np.einsum('i...,i...', hy.conj(), exb) - np.einsum('i...,i...', hx.conj(), eyb)))
+        sf = -1.j / 4. * ((self.gb.einsum('i...,i...', ex.conj(), hyf) - self.gb.einsum('i...,i...', ey.conj(), hxf))
+                          - (self.gb.einsum('i...,i...', hy.conj(), exf) - self.gb.einsum('i...,i...', hx.conj(), eyf)))  # 1d array of length len(z)
+        sb = -1.j / 4. * ((self.gb.einsum('i...,i...', ex.conj(), hyb) - self.gb.einsum('i...,i...', ey.conj(), hxb))
+                          - (self.gb.einsum('i...,i...', hy.conj(), exb) - self.gb.einsum('i...,i...', hx.conj(), eyb)))
 
         if sf.size == 1:
             sf = sf[0].real
@@ -1669,7 +1671,7 @@ class Inkstone:
     def GetPowerFluxByOrder(self,
                             layer: str,
                             order: Union[int, List[int], Tuple[int, int], List[Tuple[int, int]]],
-                            z: Union[float, List[float]] = None) -> Tuple[np.ndarray, np.ndarray]:
+                            z: Union[float, List[float]] = None) -> Tuple[any, any]:
         """
         Get the power flux of given orders defined by `order` in z direction in a layer at the given `z` points.
 
@@ -1710,7 +1712,7 @@ class Inkstone:
             order = [(o, 0) for o in order]
         else:
             raise('Incorrect datatype for input argument `order`.', RuntimeError)
-        idx = np.array([self.pr.idx_g.index(o) for o in order])
+        idx = self.gb.parseData([self.pr.idx_g.index(o) for o in order])
 
         exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)
 
@@ -1743,8 +1745,7 @@ class Inkstone:
                    channels_in: List[Tuple[int, int]] = None,
                    channels_out: List[Tuple[int, int]] = None,
                    channels_exclude: List[Tuple[int, int]] = None
-                   ) -> [Tuple[Union[float, complex], float],
-                         Tuple[List[Tuple]]]:
+                   ) :
         """
         Get the scattering matrix of the entire structure.
 
@@ -1779,7 +1780,7 @@ class Inkstone:
         self.solve()
         sm_b = self.sm
 
-        sm = np.block([[sm_b[0], sm_b[1]],
+        sm = self.gb.block([[sm_b[0], sm_b[1]],
                        [sm_b[2], sm_b[3]]])
 
         rci = []
@@ -1914,3 +1915,4 @@ class Inkstone:
             the sign and the natural log of the determinant of the scattering matrix.
         """
         return self.GetSMatrixDet(radiation_channels_only=True)
+    
