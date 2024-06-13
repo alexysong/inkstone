@@ -467,7 +467,7 @@ class Layer:
             self.eixxcm, self.eixycm, self.eiyxcm, self.eiyycm, self.eizzcm, \
             self.muxxcm, self.muxycm, self.muyxcm, self.muyycm, self.muzzcm, \
             self.mixxcm, self.mixycm, self.miyxcm, self.miyycm, self.mizzcm, \
-                = [self.gb.diag(self.gb.full(self.pr.num_g, em[i, j], dtype=self.gb.complex128)) for em in [epsi_bg, epsi_bg_inv, mu_bg, mu_bg_inv] for i, j in [(0, 0), (0, 1), (1, 0), (1, 1), (2, 2)]]
+                = [self.gb.diag(self.gb.full([self.pr.num_g], em[i, j].item(), dtype=self.gb.complex128)) for em in [epsi_bg, epsi_bg_inv, mu_bg, mu_bg_inv] for i, j in [(0, 0), (0, 1), (1, 0), (1, 1), (2, 2)]]
 
         if self.pr.show_calc_time:
             print("{:.6f}   _cons_ep_mu_cm_3d".format(time.process_time() - t1) + ", layer "+self.name)

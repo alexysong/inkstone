@@ -82,7 +82,7 @@ class Bx:
         -------
 
         """
-        if ks:
+        if ks is not None:
             self.ks = ks
         ep, ei, mu, mi = self._calc_ft(**kw_gibbs)
         self.epsi_ft = ep

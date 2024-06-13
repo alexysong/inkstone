@@ -701,13 +701,14 @@ class Params:
             b1n, b2n = [self.gb.la.norm(b) for b in [b1, b2]]
             # if one of them is infinity, this is a 1D structure. set it to 0 such that they don't appear in ks_ep_mu
             if b1n == float('inf'):
-                b1 = (0, 0)
+                b1 = self.gb.parseData([0, 0])
             if b2n == float('inf'):
-                b2 = (0, 0)
+                b2 = self.gb.parseData([0, 0])
 
             kx = xx * b1[0] + yy * b2[0]
             ky = xx * b1[1] + yy * b2[1]
-            self.ks_ep_mu = list(zip(kx.ravel(), ky.ravel()))  # each element is (kx, ky) tuple.
+            self.ks_ep_mu = list(zip(kx.ravel(), ky.ravel()))# each element is (kx, ky) tuple.
+            self.ks_ep_mu = gb.concat(self.ks_ep_mu)
             self.ka_ep_mu = (kx, ky)
 
             # print(t2 - t1)
@@ -877,13 +878,14 @@ class Params:
 
             # c1[:, i_knz] = self.gb.inputParser([[1.], [0.]])
             # c2[:, i_knz] = -1j / o * self.gb.inputParser([Kx[i_knz] * Ky[i_knz] / q0h[i_knz], (-self.gb.square(Kx[i_knz]) - self.gb.square(q0h[i_knz])) / q0h[i_knz]])  # should not be |Kx|^2
-            c1[:, i_kez] = self.gb.parseData([[1.], [0.]], dtype=self.gb.complex128)
-            c2[:, i_kez] = self.gb.parseData([[0.], [1.]], dtype=self.gb.complex128)
+            c1[:, i_kez] = self.gb.parseData([[1.], [0.]])
+            c2[:, i_kez] = self.gb.parseData([[0.], [1.]])
             cphi = self.gb.cos(self._phi)
             sphi = self.gb.sin(self._phi)
-            c1[:, ii] = self.gb.parseData([[sphi], [-cphi]], dtype=self.gb.complex128)
-            c2[:, ii] = self.gb.parseData([[cphi], [sphi]], dtype=self.gb.complex128)
+            c1[:, ii] = self.gb.concat([[sphi], [-cphi]])
+            c2[:, ii] = self.gb.concat([[cphi], [sphi]])
 
+            k_norm = self.gb.castType(k_norm, self.gb.complex128) #compatible dtype with c1f,c2f assignment below
             c1f[i_qlw] = o / q0h[i_qlw] / k_norm[i_qlw]
             c2f[i_qlw] = 1j / k_norm[i_qlw]
 
@@ -899,13 +901,16 @@ class Params:
             c1f[ii] = 1.
             c2f[ii] = 1j * q0h[ii] / o
 
+            c1 = self.gb.castType(c1,self.gb.complex128)
+            c2 = self.gb.castType(c2,self.gb.complex128)
+            
             c1 *= c1f
             c2 *= c2f
 
             r1 = range(ng)
             r2 = range(ng, 2 * ng)
             phi0 = self.gb.zeros((2*ng, 2*ng), dtype=self.gb.complex128)
-            psi0 = phi0.copy()
+            psi0 = self.gb.clone(phi0)
             phi0[r1, r1] = c1[0, :]
             phi0[r2, r1] = c1[1, :]
             phi0[r1, r2] = c2[0, :]
@@ -915,7 +920,7 @@ class Params:
             psi0[r1, r2] = c1[0, :]
             psi0[r2, r2] = c1[1, :]
 
-            self.phi0_2x2s = self.gb.moveaxis(self.gb.parseData([c1, c2]), 0, 1)
+            self.phi0_2x2s = self.gb.moveaxis(self.gb.concat([c1, c2]), 0, 1)
 
             # # debugging,  check if phi is eigen and consistent with psi
             # psi00 = -1j * self.P0 @ phi0 / self.q0
@@ -1212,7 +1217,7 @@ class Params:
         calculate cos(vartheta), sin(vartheta), cos(phi), sin(phi) for all relevant orders, where vartheta = pi/2-theta
         Used in calculating ai bo. Recording these cos and sin allow for high-order incidence.
         """
-        if self.ks and self.num_g and (self._theta is not None) and (self._phi is not None) and (self.kii is not None):
+        if None not in [self.ks,self.num_g,self._theta,self._phi,self.kii]:
             # t1 = time.process_time()
 
             idxa = self.gb.parseData(self.idx_g)
@@ -1222,10 +1227,10 @@ class Params:
             ib = (k_pa != 0.)
             ii = (idxa[:, 0] == 0) & (idxa[:, 1] == 0)
 
-            cphi = self.gb.zeros(self._num_g_ac, complex)
-            sphi = self.gb.zeros(self._num_g_ac, complex)
-            cphi[ib] = ksa[ib, 0] / k_pa[ib]
-            sphi[ib] = ksa[ib, 1] / k_pa[ib]
+            cphi = self.gb.zeros(self._num_g_ac, dtype=self.gb.complex128)
+            sphi = self.gb.zeros(self._num_g_ac, dtype=self.gb.complex128)
+            cphi[ib] = self.gb.castType(ksa[ib, 0] / k_pa[ib], self.gb.complex128)
+            sphi[ib] = self.gb.castType(ksa[ib, 1] / k_pa[ib], self.gb.complex128)
             cphi[i0] = 1.
             sphi[i0] = 0.
             cphi[ii] = self.gb.cos(self._phi)

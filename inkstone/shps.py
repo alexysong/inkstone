@@ -158,7 +158,7 @@ class OneD(Shp):
 
     @ks.setter
     def ks(self, val: List[Union[float, Tuple[float, float]]]):
-        if val:
+        if val is not None:
             if type(val[0]) is tuple:
                 for v in val:
                     if v[0] != 0:
