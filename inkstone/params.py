@@ -708,7 +708,7 @@ class Params:
             kx = xx * b1[0] + yy * b2[0]
             ky = xx * b1[1] + yy * b2[1]
             self.ks_ep_mu = list(zip(kx.ravel(), ky.ravel()))# each element is (kx, ky) tuple.
-            self.ks_ep_mu = gb.concat(self.ks_ep_mu)
+            self.ks_ep_mu = gb.parseList(self.ks_ep_mu)
             self.ka_ep_mu = (kx, ky)
 
             # print(t2 - t1)
@@ -745,7 +745,7 @@ class Params:
 
             self.q0_0 = self.gb.where(self.gb.abs(q0) == 0.)[0]
 
-            self.q0 = self.gb.concatenate([q0, q0])
+            self.q0 = self.gb.parseList([q0, q0])
             self.q0_half = q0
             # print('_calc_q0', time.process_time() - t1)
 
@@ -871,8 +871,8 @@ class Params:
             idxa = self.gb.parseData(self.idx_g)
             ii = (idxa[:, 0] == 0) & (idxa[:, 1] == 0)
 
-            c1 = self.gb.concat([Ky, -Kx])
-            c2 = self.gb.concat([Kx, Ky])
+            c1 = self.gb.parseList([Ky, -Kx])
+            c2 = self.gb.parseList([Kx, Ky])
             c1f = self.gb.ones(ng, dtype=self.gb.complex128)
             c2f = self.gb.clone(c1f)
 
@@ -882,8 +882,8 @@ class Params:
             c2[:, i_kez] = self.gb.parseData([[0.], [1.]])
             cphi = self.gb.cos(self._phi)
             sphi = self.gb.sin(self._phi)
-            c1[:, ii] = self.gb.concat([[sphi], [-cphi]])
-            c2[:, ii] = self.gb.concat([[cphi], [sphi]])
+            c1[:, ii] = self.gb.parseList([[sphi], [-cphi]])
+            c2[:, ii] = self.gb.parseList([[cphi], [sphi]])
 
             k_norm = self.gb.castType(k_norm, self.gb.complex128) #compatible dtype with c1f,c2f assignment below
             c1f[i_qlw] = o / q0h[i_qlw] / k_norm[i_qlw]
@@ -920,7 +920,7 @@ class Params:
             psi0[r1, r2] = c1[0, :]
             psi0[r2, r2] = c1[1, :]
 
-            self.phi0_2x2s = self.gb.moveaxis(self.gb.concat([c1, c2]), 0, 1)
+            self.phi0_2x2s = self.gb.moveaxis(self.gb.parseList([c1, c2]), 0, 1)
 
             # # debugging,  check if phi is eigen and consistent with psi
             # psi00 = -1j * self.P0 @ phi0 / self.q0

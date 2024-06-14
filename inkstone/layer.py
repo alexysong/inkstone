@@ -794,7 +794,7 @@ class Layer:
 
                 # construct phil and psil that is Wood-stable
                 w2 = o**2 * exx * myy - myy/mzz * Ky * Ky - exx / ezz * Kx * Kx
-                w2 = self.gb.concatenate([w2, w2])
+                w2 = self.gb.parseList([w2, w2])
                 self._rad_cha = self.gb.where(w2.real > 0)[0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
                 w = self.gb.sqrt(w2 + 0j)
 
@@ -1132,7 +1132,7 @@ class Layer:
         self.psil[:self.pr.num_g, self.pr.num_g:] = _psil[1]
         self.psil[self.pr.num_g:, :self.pr.num_g] = _phil[0]
 
-        self.ql = self.gb.concatenate(_ql)
+        self.ql = self.gb.parseList(_ql)
         self._rad_cha = _rc[0] + [a+self.pr.num_g for a in _rc[1]]
 
         if self.pr.show_calc_time:
