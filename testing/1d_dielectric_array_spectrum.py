@@ -12,7 +12,8 @@ Each rod has side length 0.55.
       ¯¯¯     ¯¯¯
 """
 import sys
-sys.path.append("C:/Users/w-a-c/Desktop/inkstone")
+sys.path.append("../")
+sys.path.append("../inkstone")
 from inkstone import Inkstone
 import numpy as np
 
@@ -43,6 +44,8 @@ for f in freq:
     T.append(s.GetPowerFlux('out')[0] / i)
     print("frequency: {:g}".format(f))
 
+print(R)
+
 #%% plotting
 from matplotlib import pyplot as plt
 
@@ -54,4 +57,4 @@ plt.figure()
 plt.plot(freq, T)
 plt.xlabel('frequency')
 plt.ylabel('transmission')
-plt.show()
+# plt.show()

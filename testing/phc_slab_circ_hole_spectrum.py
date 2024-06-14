@@ -15,7 +15,8 @@ A circular hole of radius 0.2 in each unit cell.
         ⋮
 """
 import sys
-sys.path.append("C:/Users/w-a-c/Desktop/inkstone")
+sys.path.append("../")
+sys.path.append("../inkstone")
 import numpy as np
 from inkstone import Inkstone
 
@@ -46,6 +47,7 @@ for i in freq:
     flux_out.append(s.GetPowerFlux('out'))
 
 incident = np.array([a[0] for a in flux_in])
+print(incident)
 reflection = -np.array([a[1] for a in flux_in]) / incident
 transmission = np.array([a[0] for a in flux_out]) / incident
 
