@@ -316,7 +316,7 @@ class Layer:
 
         bx_areas = self.gb.parseData([a.shp.area for a in bxs])
         idx = self.gb.argsort(bx_areas)
-        bx_names = [a.name for a in bxs]
+        bx_names = self.gb.parseData([a.name for a in bxs])
         bx_name_sorted = bx_names[idx]
         if type(bx_name_sorted) is str:
             bx_name_sorted = [bx_name_sorted]

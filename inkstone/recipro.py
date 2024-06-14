@@ -36,8 +36,8 @@ def recipro(a1, a2, gb=gb):
             ar = gb.abs(gb.cross(a1, a2))  # area
             coef = 2 * gb.pi / ar
             
-            b1 = gb.parseData(coef * a2[1], -coef * a2[0])
-            b2 = gb.parseData(-coef * a1[1], coef * a1[0])
+            b1 = (coef * a2[1], -coef * a2[0])
+            b2 = (-coef * a1[1], coef * a1[0])
     return b1,b2
 
 
