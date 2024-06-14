@@ -708,7 +708,7 @@ class Params:
             kx = xx * b1[0] + yy * b2[0]
             ky = xx * b1[1] + yy * b2[1]
             self.ks_ep_mu = list(zip(kx.ravel(), ky.ravel()))# each element is (kx, ky) tuple.
-            self.ks_ep_mu = gb.concat(self.ks_ep_mu)
+            # self.ks_ep_mu = gb.concat(self.ks_ep_mu)
             self.ka_ep_mu = (kx, ky)
 
             # print(t2 - t1)
@@ -717,7 +717,9 @@ class Params:
             # print('_calc_ks_ep_mu', time.process_time()-t1)
 
     def _calc_q0(self):
-        if None not in [self._num_g_ac,self.omega,self.ks]:
+        if not [x for x in [self._num_g_ac,self.omega,self.ks] if x is None]: 
+            # this if condition doesn't account for ks, etc. empty lists or zero depending on type
+            # (see https://stackoverflow.com/questions/20809417/what-does-if-var-mean-in-python)
             # t1 = time.process_time()
             k_parallel = self.gb.la.norm(self.ks, axis=-1)
             q02 = self.gb.ones(self._num_g_ac) * self.gb.square(self.omega) - self.gb.square(k_parallel) + 0j
@@ -871,8 +873,8 @@ class Params:
             idxa = self.gb.parseData(self.idx_g)
             ii = (idxa[:, 0] == 0) & (idxa[:, 1] == 0)
 
-            c1 = self.gb.concat([Ky, -Kx])
-            c2 = self.gb.concat([Kx, Ky])
+            c1 = self.gb.parseData([Ky, -Kx], dtype=gb.complex128)
+            c2 = self.gb.parseData([Kx, Ky], dtype=gb.complex128)
             c1f = self.gb.ones(ng, dtype=self.gb.complex128)
             c2f = self.gb.clone(c1f)
 
@@ -882,8 +884,8 @@ class Params:
             c2[:, i_kez] = self.gb.parseData([[0.], [1.]])
             cphi = self.gb.cos(self._phi)
             sphi = self.gb.sin(self._phi)
-            c1[:, ii] = self.gb.concat([[sphi], [-cphi]])
-            c2[:, ii] = self.gb.concat([[cphi], [sphi]])
+            c1[:, ii] = self.gb.parseData([[sphi], [-cphi]])
+            c2[:, ii] = self.gb.parseData([[cphi], [sphi]])
 
             k_norm = self.gb.castType(k_norm, self.gb.complex128) #compatible dtype with c1f,c2f assignment below
             c1f[i_qlw] = o / q0h[i_qlw] / k_norm[i_qlw]
@@ -920,7 +922,7 @@ class Params:
             psi0[r1, r2] = c1[0, :]
             psi0[r2, r2] = c1[1, :]
 
-            self.phi0_2x2s = self.gb.moveaxis(self.gb.concat([c1, c2]), 0, 1)
+            self.phi0_2x2s = self.gb.moveaxis(self.gb.parseData([c1, c2]), 0, 1)
 
             # # debugging,  check if phi is eigen and consistent with psi
             # psi00 = -1j * self.P0 @ phi0 / self.q0
@@ -1217,7 +1219,7 @@ class Params:
         calculate cos(vartheta), sin(vartheta), cos(phi), sin(phi) for all relevant orders, where vartheta = pi/2-theta
         Used in calculating ai bo. Recording these cos and sin allow for high-order incidence.
         """
-        if None not in [self.ks,self.num_g,self._theta,self._phi,self.kii]:
+        if not [x for x in [self.ks,self.num_g,self._theta,self._phi,self.kii] if x is not None]:
             # t1 = time.process_time()
 
             idxa = self.gb.parseData(self.idx_g)
