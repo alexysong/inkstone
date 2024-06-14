@@ -1,8 +1,11 @@
 #TODO: all numbers should be torch.tensor
 
 import torch
+
 import numpy as np
+
 import autograd.numpy as anp
+
 from warnings import warn
 
 
@@ -150,7 +153,7 @@ class GenericBackend:
             case _:
                 raise NotImplementedError
         
-    def inputParser(self, i: any, dtype = None):
+    def parseData(self, i: any, dtype = None):
         o = i
         if type(i) is self.raw_type:
             dtype = i.dtype
@@ -274,12 +277,8 @@ class GenericBackend:
         match self.backend:
             case "torch":
                 return i.clone() if keep_grad else i.detach().clone()
-            case "autograd":
-                anp.copy()
-                return i.copy()
-            case "numpy":#copy.deepcoy
-                np.copy()
-                return i.copy()
+            case "autograd" | "numpy":
+                return np.copy(i, order='C', subok=True)
             case _:
                 raise NotImplementedError
             
