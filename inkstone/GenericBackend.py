@@ -171,8 +171,9 @@ class GenericBackend:
                 elif type(o) == complex:
                     dtype = self.complex128
                 else:
-                    print(o)
-                    print(f"unrecognised type {dtype}, set to float")
+                    # print(o)
+                    # print(type(o))
+                    # print(f"unrecognised type {dtype}, set to float")
                     dtype = type(o)
         
         match self.backend:
@@ -392,6 +393,13 @@ class GenericBackend:
                 return anp.block(arr)
             case "numpy":
                 return np.block(arr)
+            case _:
+                raise NotImplementedError
+            
+    def checkAny(self, i):
+        match self.backend:
+            case "torch" | "autograd" | "numpy":
+                return i.any()
             case _:
                 raise NotImplementedError
         

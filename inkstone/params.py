@@ -261,8 +261,8 @@ class Params:
     @omega.setter
     def omega(self, val: Union[float, complex]):
         if val is not None:
-            self._omega = self.gb.parseData(val, dtype=self.gb.complex128)
-            self._frequency = self.gb.parseData(val / self.gb.pi / 2.)
+            self._omega = val
+            self._frequency = val / self.gb.pi / 2.
             # self.q0_contain_0 = False
             # self._calc_gs()  # recalculating gs because some g may be possibly removed in previous runs to remove Wood's anomaly.
             self._calc_kii()
@@ -326,7 +326,7 @@ class Params:
         if self.k_pa_inci is not None:
             kx, ky = self.k_pa_inci
             if kx == 0. and ky == 0.:
-                self._theta = self.gb.dataParser(0.)
+                self._theta = 0.
                 # self.theta = 0.
                 if self.phi is None:
                     warn("Both kx and ky are zero, but phi is not specified. Now defaulting to phi = 0.", UserWarning)
@@ -717,7 +717,7 @@ class Params:
             # print('_calc_ks_ep_mu', time.process_time()-t1)
 
     def _calc_q0(self):
-        if not [x for x in [self._num_g_ac,self.omega,self.ks] if x is None]: 
+        if self._num_g_ac and (self.omega is not None) and gb.checkAny(self.ks):
             # this if condition doesn't account for ks, etc. empty lists or zero depending on type
             # (see https://stackoverflow.com/questions/20809417/what-does-if-var-mean-in-python)
             # t1 = time.process_time()
@@ -1219,7 +1219,7 @@ class Params:
         calculate cos(vartheta), sin(vartheta), cos(phi), sin(phi) for all relevant orders, where vartheta = pi/2-theta
         Used in calculating ai bo. Recording these cos and sin allow for high-order incidence.
         """
-        if not [x for x in [self.ks,self.num_g,self._theta,self._phi,self.kii] if x is not None]:
+        if gb.checkAny(self.ks) and self.num_g and (self._theta is not None) and (self._phi is not None) and (self.kii is not None):
             # t1 = time.process_time()
 
             idxa = self.gb.parseData(self.idx_g)
