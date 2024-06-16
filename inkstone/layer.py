@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import numpy as np
 
 # import scipy.sparse as sps
 import scipy.fft as fft
@@ -314,14 +315,11 @@ class Layer:
 
         bxs = list(self.patterns.values())
 
-        bx_areas = self.gb.parseData([a.shp.area for a in bxs])
-        idx = self.gb.argsort(bx_areas)
-        bx_names = self.gb.parseData([a.name for a in bxs])
+        bx_areas = np.array([a.shp.area for a in bxs])
+        idx = np.argsort(bx_areas)
+        bx_names = np.array([a.name for a in bxs])
         bx_name_sorted = bx_names[idx]
-        if type(bx_name_sorted) is str:
-            bx_name_sorted = [bx_name_sorted]
-        else:
-            print(type(bx_name_sorted))
+        
         # a fictional bx with background material of this layer.
         bxf = Bx(self.materials[self.material_bg], 'polygon', name='the cell', vertices=[(0, 0), (1, 0), (0, 1)])
 
