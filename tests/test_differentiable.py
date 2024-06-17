@@ -1,5 +1,9 @@
 import torch # import before numpy to avoid OMP error 15
 import numpy as np
+import numpy.linalg as nla
+
+import scipy as sp
+import scipy.linalg as sla
 
 import autograd.numpy as anp
 from autograd import grad as grada, holomorphic_grad as holomorphic_grada
@@ -51,7 +55,6 @@ def test_dot_method_error():
     """
     x = np.ones(5,dtype=np.float64)
     y = 2*np.ones(5)
-    H = np.array([[1,2,3],[4,5,6]])
     try:
         auto_diff_result = grada(objective_functions.dot_product)(x,y)
         pass_condition = False
@@ -64,15 +67,29 @@ def test_reshape_method():
     """
     Test if .method() notation is differentiable by autograd, using .reshape()
     """
-    H = np.array([[1,2,3],[4,5,6]],dtype=np.float64)
+    A = np.array([[1,2,3],[4,5,6]],dtype=np.float64)
     try:
-        auto_diff_result = grada(objective_functions.reshape_2x3_to_3x2)(H)
+        auto_diff_result = grada(objective_functions.reshape_2x3_to_3x2)(A)
         pass_condition = True
     except AttributeError:
         pass_condition = False
     
     assert pass_condition
 
+def test_sla_lu_solve():
+    """
+    Test if sla.lu_solve is differentiable by autograd
+    """
+    A = np.array([[2, 5, 8, 7], [5, 2, 2, 8], [7, 5, 6, 6], [5, 4, 4, 8]], dtype=np.float64)
+    b = np.array([1, 1, 1, 1], dtype=np.float64)
+    
+    try:
+        auto_diff_result = grada(objective_functions.sum_of_lu_solve)(A,b)
+        pass_condition = False
+    except ValueError:
+        pass_condition = True
+    
+    assert pass_condition
 
 
 # TORCH ################################################################################################
