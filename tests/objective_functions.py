@@ -1,15 +1,15 @@
 import numpy as np
-import autograd.numpy as npa
+import autograd.numpy as anp
 
 import torch
 
 def eigen(H):
     """Objective function to return product of eigenvalues of H + product of eigenvector components"""
-    w,v = npa.linalg.eig(H)
-    return npa.prod(w) + npa.prod(npa.abs(v))
+    w,v = anp.linalg.eig(H)
+    return anp.prod(w) + anp.prod(anp.abs(v))
 
 def scaled_sum(x):
-    return np.pi*npa.sum(x)
+    return np.pi*anp.sum(x)
 
 def scaled_sum_torch(x):
     return np.pi*torch.sum(x)
