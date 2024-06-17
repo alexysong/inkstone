@@ -17,6 +17,8 @@ A circular hole of radius 0.2 in each unit cell.
 import sys
 sys.path.append("../")
 sys.path.append("../inkstone")
+import GenericBackend
+GenericBackend.switchTo("autograd")
 import numpy as np
 from inkstone import Inkstone
 

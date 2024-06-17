@@ -14,6 +14,8 @@ Each rod has side length 0.55.
 import sys
 sys.path.append("../")
 sys.path.append("../inkstone")
+import GenericBackend
+GenericBackend.switchTo("autograd")
 from inkstone import Inkstone
 import numpy as np
 
