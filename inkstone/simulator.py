@@ -6,13 +6,14 @@ from collections import OrderedDict
 from typing import Tuple, Optional, List, Dict, Union
 import time
 from GenericBackend import genericBackend as gb
+# import GenericBackend 
+# gb = GenericBackend.genericBackend
 
 from inkstone.rsp import rsp, rsp_sa12lu, rsp_sb21lu
 from inkstone.params import Params
 from inkstone.mtr import Mtr
 from inkstone.layer import Layer
 from inkstone.layer_copy import LayerCopy
-
 
 class Inkstone:
     # todo: more tests of magneto-optics and gyro-magnetic
@@ -1871,7 +1872,7 @@ class Inkstone:
         sm, idx = self.GetSMatrix(radiation_channels_only=radiation_channels_only, channels=channels, channels_in=channels_in, channels_out=channels_out, channels_exclude=channels_exclude)
 
         if sm.any():
-            dets = la.slogdet(sm)
+            dets = gb.la.slogdet(sm)
         else:
             dets = float('nan')
 
