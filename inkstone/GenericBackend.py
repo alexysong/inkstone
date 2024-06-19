@@ -471,6 +471,82 @@ class GenericBackend:
                 return i.any()
             case _:
                 raise NotImplementedError
+            
+    def indexAssign(self, a, idx, b):
+        """
+        For numpy, use index assignment. For differentiation libraries, replace with differentiable version
+        """
+        match self.backend:
+            # TODO: fast and robust alternative to index assignment for torch and autograd
+            case "torch":
+                a[idx] = b # temporary so torch still works when not differentiating
+                return a
+            case "autograd":
+                a[idx] = b # temporary so autograd still works when not differentiating
+                return a
+            case "jax":
+                # NOTE: jax.arrays are immutable, so you must reassign a = indexAssign(...) when using this function
+                return a.at[idx].set(b)
+            case "numpy":
+                a[idx] = b
+                return a
+            case _:
+                raise NotImplementedError
+            
+    def inPlaceAdd(self, a, b):
+        """
+        For numpy, add in-place. For differentiation libraries, replace with differentiable not-in-place version
+        """
+        match self.backend:
+            case "torch" | "autograd" | "jax":
+                return a + b
+            case "numpy":
+                a += b
+                return a
+            case _:
+                raise NotImplementedError
+    
+    def inPlaceMultiply(self, a, b):
+        """
+        For numpy, multiply in-place. For differentiation libraries, replace with differentiable not-in-place version
+        """
+        match self.backend:
+            case "torch" | "autograd" | "jax":
+                return a*b
+            case "numpy":
+                a *= b
+                return a
+            case _:
+                raise NotImplementedError
+    
+    def assignAndMultiply(self, a, idx, b):
+        """
+        For numpy, multiply in-place with index assignment. For differentiation libraries, replace with differentiable not-in-place version
+        """
+        match self.backend:
+            case "torch" | "autograd":
+                a[idx] *= b
+                return a
+            case "jax":
+                return a.at[idx].multiply(b)
+            case "numpy":
+                a[idx] *= b
+                return a
+            case _:
+                raise NotImplementedError
+            
+    def inPlaceDivide(self, a, b):
+        """
+        For numpy, add in-place. For differentiation libraries, replace with differentiable not-in-place version
+        """
+        match self.backend:
+            case "torch" | "autograd" | "jax":
+                return a/b
+            case "numpy":
+                a /= b
+                return a
+            case _:
+                raise NotImplementedError
         
             
 global genericBackend
