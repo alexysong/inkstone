@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
+from GenericBackend import genericBackend as gb
 
-import numpy as np
 
-
-def ft_1d_sq(width, ks, center=0.):
+def ft_1d_sq(width, ks, center=0. , gb=gb):
 
     """
     Calculate the Fourier transform of a 1d square function.
@@ -27,10 +26,12 @@ def ft_1d_sq(width, ks, center=0.):
     s           :   list[complex]
                     1D array, Fourier series coefficients at the corresponding points
     """
+    if width <= 0:
+       raise ValueError("No zero or negative width")
 
-    ksa = np.array(ks)
+    ksa = gb.parseData(ks)
 
-    s = np.exp(-1j * center * ksa) * width * np.sinc(ksa * width / 2. / np.pi)
+    s = gb.exp(-1j * center * ksa) * width * gb.sinc(ksa * width / 2. / gb.pi)
     # note numpy sinc(x) definition is sin(pi x) / (pi x)
 
     return s.tolist()

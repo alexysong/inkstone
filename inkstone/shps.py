@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
+from GenericBackend import genericBackend as gb
 from warnings import warn
 import copy
 from typing import List, Union, Tuple, Optional
@@ -22,6 +22,7 @@ class Shp:
     def __init__(self,
                  shp: str,
                  ks: List[Union[float, Tuple[float, float]]] =None,
+                 gb=gb,
                  **kw_gibbs):
         """
         Basic shape.
@@ -46,6 +47,8 @@ class Shp:
 
         self.ks = ks  # list of k points to calculate Fourier series
         self.use_gibbs_correction(**kw_gibbs)
+        
+        self.gb = gb
 
     @property
     def ks(self) -> List[Union[float, Tuple[float, float]]]:
@@ -92,7 +95,7 @@ class Shp:
         self.use_gibbs_correction(**kw_gibbs)
         if self._if_gibbs_corr:
             s = gibbs_corr(self.ks, **self._kw_gibbs)
-        ft = (np.array(self._ft, dtype=complex) * np.array(s, dtype=complex)).tolist()
+        ft = (self.gb.parseData(self._ft, dtype=self.gb.complex128) * self.gb.parseData(s, dtype=self.gb.complex128)).tolist()
         self._ft = ft
         return self._ft
 
@@ -155,7 +158,7 @@ class OneD(Shp):
 
     @ks.setter
     def ks(self, val: List[Union[float, Tuple[float, float]]]):
-        if val:
+        if val is not None:
             if type(val[0]) is tuple:
                 for v in val:
                     if v[0] != 0:
@@ -352,7 +355,7 @@ class Elli(Shp):
     def half_lengths(self, val):
         # assume when setting side lengths it must have been changed. no `If` which is slow.
         self._half_lengths = val
-        self.area = np.pi * val[0] * val[1]
+        self.area = self.gb.pi * val[0] * val[1]
 
     @property
     def center(self):
@@ -408,7 +411,7 @@ class Disk(Shp):
     def radius(self, val):
         # assume when setting side lengths it must have been changed. no `If` which is slow.
         self._radius = val
-        self.area = np.pi * val ** 2
+        self.area = self.gb.pi * val ** 2
 
     @property
     def center(self):

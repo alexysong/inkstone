@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
 from typing import List, Tuple, Union
-import numpy as np
-
+from GenericBackend import genericBackend as gb
 
 def pt_in_poly(vts: List[Tuple[float, float]],
-               pt: Union[np.ndarray, Tuple[float, float]]) -> bool:
+               pt: Union[any, Tuple[float, float]],gb=gb) -> bool:
     """
     Determine if a point is in a polygon
 

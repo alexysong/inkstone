@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
-from numpy import linalg as la
+from GenericBackend import genericBackend as gb
 from typing import List, Union, Tuple, Optional
 from warnings import warn
 
@@ -10,8 +9,8 @@ def gibbs_corr(ks: List[Union[float, Tuple[float, float], Tuple[float, float, fl
                m: Optional[float] = None,
                method: str = 'Gaussian',
                order: float = 1.,
-               factor: float = 1.
-               ) -> List[Union[float, Tuple[float, float], Tuple[float, float, float]]]:
+               factor: float = 1.,
+               gb=gb) -> List[Union[float, Tuple[float, float], Tuple[float, float, float]]]:
     """
     Calculate the correction factor to mitigate Gibbs phenomenon.
     options are either Lanczos or Gaussian.
@@ -32,24 +31,25 @@ def gibbs_corr(ks: List[Union[float, Tuple[float, float], Tuple[float, float, fl
 
     if len(ks) == 1 and (m is None):
         warn('Only one k point is given, with no m specified, can not calculate the correction factor.', UserWarning)
-        s = np.array([1])
+        s = gb.parseData([1])
     else:
         if m == 0.:
             raise Exception('m can not be zero')
 
-        ksa = np.array(ks)
+        ksa = gb.parseData(ks)
 
         # calculate the norms of the k's
         if ksa.ndim == 1:
-            kn = np.abs(ksa)
+            kn = gb.abs(ksa)
         else:
-            ax = tuple(i for i in np.arange(ksa.ndim)[1:])  # e.g. for 3d k, ksa is 4d, and this gives (1, 2, 3)
-            kn = la.norm(ksa, axis=ax)  # k norm
+            ax = tuple(i for i in gb.arange(ksa.ndim)[1:])  # e.g. for 3d k, ksa is 4d, and this gives (1, 2, 3)
+            kn = gb.la.norm(ksa, axis=ax)  # k norm
 
         # calculate m if not given
         if m is None:
-            knp = np.partition(kn, -2)
-            m = kn.max() + (knp[-1] - knp[-2])
+            #knp = np.partition(kn, -2) #purpose?
+            knp = gb.sort(kn)
+            m = kn.max() + (knp[-1] - knp[-2])#TODO: undefined order, how specify? topk(largest=False)
             if method == 'Gaussian':
                 m *= 0.7
 
@@ -57,9 +57,9 @@ def gibbs_corr(ks: List[Union[float, Tuple[float, float], Tuple[float, float, fl
         ma = kn / m
 
         if method == 'Lanczos':
-            s = (np.sinc(ma)) ** order
+            s = (gb.sinc(ma)) ** order
         else:
-            s = np.exp(-ma**2)
+            s = gb.exp(-ma**2)
 
     return s.tolist()
 

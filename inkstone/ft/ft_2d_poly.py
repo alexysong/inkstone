@@ -7,8 +7,7 @@ Reference:
 K. McInturff and P.S. Simon, "The Fourier transform of linearly varying functions with polygonal support", IEEE Trans. Ann. Prop.  39, 1441 (1991)
 """
 
-import numpy as np
-import numpy.linalg as la
+from GenericBackend import genericBackend as gb
 from scipy.special import jn
 from inkstone.ft.poly_area import poly_area
 
@@ -33,32 +32,32 @@ def ft_2d_poly_1(vertices, ks):
 
     """
     # convert to array
-    ksa = np.array(ks)  # each row is a [kx, ky]
+    ksa = gb.parseData(ks)  # each row is a [kx, ky]
 
-    ks_nm = la.norm(ksa, axis=-1)
+    ks_nm = gb.la.norm(ksa, axis=-1)
     coef = -1j / ks_nm ** 2
 
     # convert tuples to numpy arrays
-    verti = np.array(vertices)
+    verti = gb.parseData(vertices)
 
     # generate a shifted array of vertices of [r2, r3, ..., rn, r1], if originally [r1, r2, ..., rn]
-    verti_roll = np.roll(verti, -1, axis=0)
+    verti_roll = gb.roll(verti, -1, axis=0)
 
     rnc = (verti + verti_roll) / 2.
 
     ln = verti_roll - verti
 
-    cross = np.cross(ln[:, None, :], ksa[None, :, :])
+    cross = gb.cross(ln[:, None, :], ksa[None, :, :])
     # Say ln.shape is mx2, ksa is nx2, this gives mxn shape
 
-    term1 = cross * (np.exp(-1j * rnc @ ksa.T)) * jn(0, ln @ ksa.T / 2.)
+    term1 = cross * (gb.exp(-1j * rnc @ ksa.T)) * jn(0, ln @ ksa.T / 2.)
 
-    s = coef * np.sum(term1, axis=0)
+    s = coef * gb.sum(term1, axis=0)
 
     return s.tolist()
 
 
-def ft_2d_poly(vertices, ks):
+def ft_2d_poly(vertices, ks,gb=gb):
     """
     Calculate the Fourier transform of a function with value 1 inside a polygon shape and 0 outside.
 
@@ -78,16 +77,16 @@ def ft_2d_poly(vertices, ks):
     -----
     For k == (0, 0) and k != (0, 0), call different subroutine.
     """
-    ksa = np.array(ks)  # convert to array
-    ks_nm = la.norm(ksa, axis=-1)  # calculate the norm of each k vector
-    idx_0 = np.where(ks_nm == 0)[0]  # index to where k is (0, 0)
-    idx_i = np.where(ks_nm != 0)[0]  # index to where k is not (0, 0)
-    ksa1 = np.delete(ksa, idx_0, axis=0)  # new ks array that doesn't contain (0, 0)
+    ksa = gb.parseData(ks)  # convert to array
+    ks_nm = gb.la.norm(ksa, axis=-1)  # calculate the norm of each k vector
+    idx_0 = gb.where(ks_nm == 0)[0]  # index to where k is (0, 0)
+    idx_i = gb.where(ks_nm != 0)[0]  # index to where k is not (0, 0)
+    ksa1 = gb.delete(ksa, idx_0, axis=0)  # new ks array that doesn't contain (0, 0)
 
-    s1 = np.array(ft_2d_poly_1(vertices, ksa1))
+    s1 = gb.parseData(ft_2d_poly_1(vertices, ksa1))
     a = poly_area(vertices)
 
-    s = 1j * np.zeros(ks_nm.size)
+    s = 1j * gb.zeros(ks_nm.size)
     s[idx_i] = s1
     s[idx_0] = a
 

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
+from GenericBackend import genericBackend as gb
 # from numpy import linalg as la
 
 
-def g_pts_1d(num_g, b):
+def g_pts_1d(num_g, b,gb=gb):
     """
     given number of lattice points and one 2D lattice vector, return the list of lattice points and the index of lattice points.
 
@@ -23,8 +23,6 @@ def g_pts_1d(num_g, b):
                     the indices of the k points, i.e. k = idx * b
 
     """
-
-    b = np.array(b)
 
     imax = int(num_g / 2)
 

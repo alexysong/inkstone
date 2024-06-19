@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
+from GenericBackend import genericBackend as gb
 from inkstone.ft.ft_1d_sq import ft_1d_sq
 
 
-def ft_2d_para(a, b, ks, center=(0, 0), shear_angle=90., rotate_angle=0.):
+def ft_2d_para(a, b, ks, center=(0, 0), shear_angle=90., rotate_angle=0.,gb=gb):
     """
     Calculate the fourier transform of a function that is 1 in side a parallelogram and 0 outside.
 
@@ -30,20 +30,20 @@ def ft_2d_para(a, b, ks, center=(0, 0), shear_angle=90., rotate_angle=0.):
                         1d array
     """
 
-    ia = np.pi * shear_angle / 180.
-    b1 = np.sin(ia) * b
-    m = np.tan(np.pi/2 - ia)
+    ia = gb.pi * shear_angle / 180.
+    b1 = gb.sin(ia) * b
+    m = gb.tan(gb.pi/2 - ia)
 
-    shear = np.array([[1, m],
+    shear = gb.inpurParser([[1, m],
                       [0, 1]])
 
-    ksa = np.array(ks)  # Nx2 array
+    ksa = gb.inpurParser(ks)  # Nx2 array
 
-    cen = np.array(center)
+    cen = gb.inpurParser(center)
 
-    ang = np.pi * rotate_angle / 180.
+    ang = gb.pi * rotate_angle / 180.
 
-    rot = np.array([[np.cos(ang), -np.sin(ang)], [np.sin(ang), np.cos(ang)]])
+    rot = gb.inpurParser([[gb.cos(ang), -gb.sin(ang)], [gb.sin(ang), gb.cos(ang)]])
 
     A = rot @ shear
 
@@ -52,7 +52,7 @@ def ft_2d_para(a, b, ks, center=(0, 0), shear_angle=90., rotate_angle=0.):
     sx = ft_1d_sq(a, aksa[:, 0])
     sy = ft_1d_sq(b1, aksa[:, 1])
 
-    s = np.exp(-1j * cen @ ksa.T) * sx * sy
+    s = gb.exp(-1j * cen @ ksa.T) * sx * sy
 
     return s.tolist()
 

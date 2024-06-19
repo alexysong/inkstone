@@ -2,15 +2,15 @@
 
 from typing import Tuple, Optional, List
 import time
-import numpy as np
 from inkstone.layer import Layer
 from inkstone.sm import s_1l, s_1l_1212, s_1l_1221, s_1l_rsp
 from warnings import warn
+from GenericBackend import genericBackend as gb
 
 
 class LayerCopy:
 
-    def __init__(self, name: str, layer: Layer, thickness: float):
+    def __init__(self, name: str, layer: Layer, thickness: float,gb=gb):
         """
         A dummy layer for layer copies
 
@@ -26,10 +26,10 @@ class LayerCopy:
         self.layer = layer
         self.original_layer_name = layer.name
         self.pr = self.layer.pr
-        self._al_bl: Optional[Tuple[np.ndarray, np.ndarray]] = None
+        self._al_bl: Optional[Tuple[any, any]] = None
         self._in_mid_out: str = 'mid'  # {'in', 'mid', 'out'}, if this layer is the incident, output, or a middle layer
 
-        self.sm: Optional[Tuple[np.ndarray, np.ndarray]] = None
+        self.sm: Optional[Tuple[any, any]] = None
         self._if_t_change = True
         self.if_mod = True  # simulator is responsible for triggering if_mod for all
         self.need_recalc_al_bl = True
@@ -96,11 +96,11 @@ class LayerCopy:
         return self.layer.mizzcm
 
     @property
-    def al_bl(self) -> Optional[Tuple[np.ndarray, np.ndarray]] :
+    def al_bl(self) -> Optional[Tuple[any, any]] :
         return self._al_bl
 
     @al_bl.setter
-    def al_bl(self, val: Tuple[np.ndarray, np.ndarray]):
+    def al_bl(self, val: Tuple[any, any]):
         self._al_bl = val
 
     @property
@@ -173,7 +173,7 @@ class LayerCopy:
                 self.pr.inci_is_iso_nonvac = True
                 if self.materials and self.material_bg:
                     mbg = self.materials[self.material_bg]
-                    self.pr.ind_inci = np.sqrt(mbg.epsi[0, 0] * mbg.mu[0, 0])
+                    self.pr.ind_inci = gb.sqrt(mbg.epsi[0, 0] * mbg.mu[0, 0])
             else:
                 self.pr.inci_is_vac = False
                 self.pr.inci_is_iso_nonvac = False
@@ -188,7 +188,7 @@ class LayerCopy:
                 self.pr.out_is_iso_nonvac = True
                 if self.materials and self.material_bg:
                     mbg = self.materials[self.material_bg]
-                    self.pr.ind_out = np.sqrt(mbg.epsi[0, 0] * mbg.mu[0, 0])
+                    self.pr.ind_out = gb.sqrt(mbg.epsi[0, 0] * mbg.mu[0, 0])
             else:
                 self.pr.out_is_vac = False
                 self.pr.out_is_iso_nonvac = False
@@ -200,7 +200,7 @@ class LayerCopy:
 
     def reconstruct(self,
                     n1: int = None,
-                    n2: int = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+                    n2: int = None) -> Tuple[any, any, any, any]:
         warn('You are requesting the reconstruction of a copy layer: "{:s}". The reconstruction of the original layer "{:s}" is returned.'.format(self.name, self.original_layer_name))
         return self.layer.reconstruct(n1=n1, n2=n2)
 

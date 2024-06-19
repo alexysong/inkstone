@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
-import numpy.linalg as la
+from GenericBackend import genericBackend as gb
 import scipy.linalg as sla
 import time
 # import scipy.sparse as sps
 # import warnings
 
 
-def rsp(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
+def rsp(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22,gb=gb):
     """
     Take the Redheffer star product (rsp) of two scattering matrices.
 
@@ -33,8 +32,8 @@ def rsp(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
     time1 = time.process_time()
 
     # identity matrix
-    # idt = np.diag(np.ones(sa11.shape[0]))
-    idt = np.eye(sa11.shape[0], dtype=complex)
+    # idt = gb.diag(gb.ones(sa11.shape[0]))
+    idt = gb.eye(sa11.shape[0], dtype=gb.complex128)
 
     # UTEP CEM (correct)
     # (bi, ao) = S (ai, bo), i, o means left 'input' region and right 'output' region, a means right going, b means left going
@@ -75,25 +74,25 @@ def rsp_sa21Tlu(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
 
     Parameters
     ----------
-    sa11    :   np.ndarray
-    sa12    :   np.ndarray
-    sa21    :   Tuple[np.ndarray, np.ndarray]
+    sa11    :   any
+    sa12    :   any
+    sa21    :   Tuple[any, any]
                 Assuming sa21 = A^-1, then this is the LU decomposition factor of A^T.
-    sa22    :   np.ndarray
-    sb11    :   np.ndarray
-    sb12    :   np.ndarray
-    sb21    :   np.ndarray
-    sb22    :   np.ndarray
+    sa22    :   any
+    sb11    :   any
+    sb12    :   any
+    sb21    :   any
+    sb22    :   any
 
     Returns
     -------
-    s11     :   np.ndarray
-    s12     :   np.ndarray
-    s21     :   np.ndarray
-    s22     :   np.ndarray
+    s11     :   any
+    s12     :   any
+    s21     :   any
+    s22     :   any
 
     """
-    idt = np.eye(sa11.shape[0], dtype=complex)
+    idt = gb.eye(sa11.shape[0], dtype=gb.complex128)
 
     t1 = idt - sb11 @ sa22
     t2 = idt - sa22 @ sb11
@@ -114,25 +113,25 @@ def rsp_sa12lu(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
 
     Parameters
     ----------
-    sa11    :   np.ndarray
-    sa12    :   Tuple[np.ndarray, np.ndarray]
+    sa11    :   any
+    sa12    :   Tuple[any, any]
                 Assuming sa12 = A^-1, then this is the LU decomposition factor of A.
-    sa21    :   np.ndarray
-    sa22    :   np.ndarray
-    sb11    :   np.ndarray
-    sb12    :   np.ndarray
-    sb21    :   np.ndarray
-    sb22    :   np.ndarray
+    sa21    :   any
+    sa22    :   any
+    sb11    :   any
+    sb12    :   any
+    sb21    :   any
+    sb22    :   any
 
     Returns
     -------
-    s11     :   np.ndarray
-    s12     :   np.ndarray
-    s21     :   np.ndarray
-    s22     :   np.ndarray
+    s11     :   any
+    s12     :   any
+    s21     :   any
+    s22     :   any
 
     """
-    idt = np.eye(sa11.shape[0], dtype=complex)
+    idt = gb.eye(sa11.shape[0], dtype=gb.complex128)
 
     t1 = idt - sb11 @ sa22
     t2 = idt - sa22 @ sb11
@@ -153,25 +152,25 @@ def rsp_sb12Tlu(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
 
     Parameters
     ----------
-    sa11    :   np.ndarray
-    sa12    :   np.ndarray
-    sa21    :   np.ndarray
-    sa22    :   np.ndarray
-    sb11    :   np.ndarray
-    sb12    :   Tuple[np.ndarray, np.ndarray]
+    sa11    :   any
+    sa12    :   any
+    sa21    :   any
+    sa22    :   any
+    sb11    :   any
+    sb12    :   Tuple[any, any]
                 assuming sb12 = A^-1, then this is the LU decomposition of A^T.
-    sb21    :   np.ndarray
-    sb22    :   np.ndarray
+    sb21    :   any
+    sb22    :   any
 
     Returns
     -------
-    s11     :   np.ndarray
-    s12     :   np.ndarray
-    s21     :   np.ndarray
-    s22     :   np.ndarray
+    s11     :   any
+    s12     :   any
+    s21     :   any
+    s22     :   any
 
     """
-    idt = np.eye(sa11.shape[0], dtype=complex)
+    idt = gb.eye(sa11.shape[0], dtype=gb.complex128)
 
     t1 = idt - sb11 @ sa22
     t2 = idt - sa22 @ sb11
@@ -192,25 +191,25 @@ def rsp_sb21lu(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
 
     Parameters
     ----------
-    sa11    :   np.ndarray
-    sa12    :   np.ndarray
-    sa21    :   np.ndarray
-    sa22    :   np.ndarray
-    sb11    :   np.ndarray
-    sb12    :   np.ndarray
-    sb21    :   Tuple[np.ndarray, np.ndarray]
+    sa11    :   any
+    sa12    :   any
+    sa21    :   any
+    sa22    :   any
+    sb11    :   any
+    sb12    :   any
+    sb21    :   Tuple[any, any]
                 assuming sb12 = A^-1, then this is the LU decomposition of A.
-    sb22    :   np.ndarray
+    sb22    :   any
 
     Returns
     -------
-    s11     :   np.ndarray
-    s12     :   np.ndarray
-    s21     :   np.ndarray
-    s22     :   np.ndarray
+    s11     :   any
+    s12     :   any
+    s21     :   any
+    s22     :   any
 
     """
-    idt = np.eye(sa11.shape[0], dtype=complex)
+    idt = gb.eye(sa11.shape[0], dtype=gb.complex128)
 
     t1 = idt - sb11 @ sa22
     t2 = idt - sa22 @ sb11
@@ -231,26 +230,26 @@ def rsp_sa12lu_sb21lu(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
 
     Parameters
     ----------
-    sa11    :   np.ndarray
-    sa12    :   Tuple[np.ndarray, np.ndarray]
+    sa11    :   any
+    sa12    :   Tuple[any, any]
                 assuming sa12 = A^-1, then this is the LU decomposition of A.
-    sa21    :   np.ndarray
-    sa22    :   np.ndarray
-    sb11    :   np.ndarray
-    sb12    :   np.ndarray
-    sb21    :   Tuple[np.ndarray, np.ndarray]
+    sa21    :   any
+    sa22    :   any
+    sb11    :   any
+    sb12    :   any
+    sb21    :   Tuple[any, any]
                 assuming sb12 = A^-1, then this is the LU decomposition of A.
-    sb22    :   np.ndarray
+    sb22    :   any
 
     Returns
     -------
-    s11     :   np.ndarray
-    s12     :   np.ndarray
-    s21     :   np.ndarray
-    s22     :   np.ndarray
+    s11     :   any
+    s12     :   any
+    s21     :   any
+    s22     :   any
 
     """
-    idt = np.eye(sa11.shape[0], dtype=complex)
+    idt = gb.eye(sa11.shape[0], dtype=gb.complex128)
 
     t1 = idt - sb11 @ sa22
     t2 = idt - sa22 @ sb11
@@ -273,26 +272,26 @@ def rsp_sa21Tlu_sb21lu(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
 
     Parameters
     ----------
-    sa11    :   np.ndarray
-    sa12    :   np.ndarray
-    sa21    :   Tuple[np.ndarray, np.ndarray]
+    sa11    :   any
+    sa12    :   any
+    sa21    :   Tuple[any, any]
                 assuming sa12 = A^-1, then this is the LU decomposition of A^T.
-    sa22    :   np.ndarray
-    sb11    :   np.ndarray
-    sb12    :   np.ndarray
-    sb21    :   Tuple[np.ndarray, np.ndarray]
+    sa22    :   any
+    sb11    :   any
+    sb12    :   any
+    sb21    :   Tuple[any, any]
                 assuming sb12 = A^-1, then this is the LU decomposition of A.
-    sb22    :   np.ndarray
+    sb22    :   any
 
     Returns
     -------
-    s11     :   np.ndarray
-    s12     :   np.ndarray
-    s21     :   np.ndarray
-    s22     :   np.ndarray
+    s11     :   any
+    s12     :   any
+    s21     :   any
+    s22     :   any
 
     """
-    idt = np.eye(sa11.shape[0], dtype=complex)
+    idt = gb.eye(sa11.shape[0], dtype=gb.complex128)
 
     t1 = idt - sb11 @ sa22
     t2 = idt - sa22 @ sb11
@@ -315,26 +314,26 @@ def rsp_sa12lu_sb12Tlu(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
 
     Parameters
     ----------
-    sa11    :   np.ndarray
-    sa12    :   Tuple[np.ndarray, np.ndarray]
+    sa11    :   any
+    sa12    :   Tuple[any, any]
                 assuming sa12 = A^-1, then this is the LU decomposition of A.
-    sa21    :   np.ndarray
-    sa22    :   np.ndarray
-    sb11    :   np.ndarray
-    sb12    :   Tuple[np.ndarray, np.ndarray]
+    sa21    :   any
+    sa22    :   any
+    sb11    :   any
+    sb12    :   Tuple[any, any]
                 assuming sb12 = A^-1, then this is the LU decomposition of A.T
-    sb21    :   np.ndarray
-    sb22    :   np.ndarray
+    sb21    :   any
+    sb22    :   any
 
     Returns
     -------
-    s11     :   np.ndarray
-    s12     :   np.ndarray
-    s21     :   np.ndarray
-    s22     :   np.ndarray
+    s11     :   any
+    s12     :   any
+    s21     :   any
+    s22     :   any
 
     """
-    idt = np.eye(sa11.shape[0], dtype=complex)
+    idt = gb.eye(sa11.shape[0], dtype=gb.complex128)
 
     t1 = idt - sb11 @ sa22
     t2 = idt - sa22 @ sb11

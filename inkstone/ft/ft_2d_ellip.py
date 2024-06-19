@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
-import numpy.linalg as la
+from GenericBackend import genericBackend as gb
 from scipy.special import jn
 
 
-def ft_2d_ellip(a, b, ks, center=None, angle=0.):
+def ft_2d_ellip(a, b, ks, center=None, angle=0.,gb=gb):
     """
     Calculate the fourier transform of a function with value 1 inside a ellipse and 0 outside.
 
@@ -29,27 +28,27 @@ def ft_2d_ellip(a, b, ks, center=None, angle=0.):
 
     """
 
-    ang = angle / 180. * np.pi
-    stretch = np.array([[a, 0], [0, b]])
-    rotate = np.array([[np.cos(ang), -np.sin(ang)], [np.sin(ang), np.cos(ang)]])
+    ang = angle / 180. * gb.pi
+    stretch = gb.parseData([[a, 0], [0, b]])
+    rotate = gb.parseData([[gb.cos(ang), -gb.sin(ang)], [gb.sin(ang), gb.cos(ang)]])
     aff = rotate @ stretch
 
-    ksa = np.array(ks)  # nx2 shape
+    ksa = gb.parseData(ks)  # nx2 shape
     aksa = (aff.T @ ksa.T).T
-    aks_nm = np.linalg.norm(aksa, axis=-1)  # 1d array of n. The norm of each k vector
-    idx_0 = np.where(aks_nm == 0)[0]  # index to where k is (0, 0)
-    idx_i = np.where(aks_nm != 0)[0]  # index to where k is not (0, 0)
-    aks_nm1 = np.delete(aks_nm, idx_0)
+    aks_nm = gb.linalg.norm(aksa, axis=-1)  # 1d array of n. The norm of each k vector
+    idx_0 = gb.where(aks_nm == 0)[0]  # index to where k is (0, 0)
+    idx_i = gb.where(aks_nm != 0)[0]  # index to where k is not (0, 0)
+    aks_nm1 = gb.delete(aks_nm, idx_0)
 
-    ksa1 = np.delete(ksa, idx_0, axis=0)  # new ks array that doesn't contain (0, 0)
+    ksa1 = gb.delete(ksa, idx_0, axis=0)  # new ks array that doesn't contain (0, 0)
 
     if center is None:
         center = (0, 0)
-    cent = np.array(center)
+    cent = gb.parseData(center)
 
-    s = 1j * np.zeros(aks_nm.size)
-    s[idx_i] = np.abs(la.det(aff)) * 2 * np.pi * jn(1, aks_nm1) / aks_nm1 * np.exp(-1j * cent @ ksa1.T)
-    s[idx_0] = np.pi * a * b
+    s = 1j * gb.zeros(aks_nm.size)
+    s[idx_i] = gb.abs(gb.la.det(aff)) * 2 * gb.pi * jn(1, aks_nm1) / aks_nm1 * gb.exp(-1j * cent @ ksa1.T)
+    s[idx_0] = gb.pi * a * b
 
     return s.tolist()
 
