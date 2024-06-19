@@ -45,9 +45,7 @@ def test_pi():
     
     abs_error = np.abs(auto_diff_result-symbolic_result)
     abs_finite_diff_error = np.abs(auto_diff_result-finite_diff_result)
-    pass_condition = np.max(abs_error)<default_abs_tol and np.max(abs_finite_diff_error)<default_abs_tol 
-    
-    assert pass_condition
+    assert np.max(abs_error)<default_abs_tol and np.max(abs_finite_diff_error)<default_abs_tol 
 
 def test_dot_method_error():
     """
@@ -57,11 +55,9 @@ def test_dot_method_error():
     y = 2*np.ones(5)
     try:
         auto_diff_result = grada(objective_functions.dot_product)(x,y)
-        pass_condition = False
+        assert False
     except AttributeError:
-        pass_condition = True
-    
-    assert pass_condition
+        assert True
 
 def test_reshape_method():
     """
@@ -70,11 +66,9 @@ def test_reshape_method():
     A = np.array([[1,2,3],[4,5,6]],dtype=np.float64)
     try:
         auto_diff_result = grada(objective_functions.reshape_2x3_to_3x2)(A)
-        pass_condition = True
+        assert True
     except AttributeError:
-        pass_condition = False
-    
-    assert pass_condition
+        assert False
 
 def test_sla_lu_solve():
     """
@@ -85,11 +79,10 @@ def test_sla_lu_solve():
     
     try:
         auto_diff_result = grada(objective_functions.sum_of_lu_solve)(A,b)
-        pass_condition = False
+        assert False
     except ValueError:
-        pass_condition = True
-    
-    assert pass_condition
+        assert True
+
 
 
 # TORCH ################################################################################################
@@ -109,9 +102,7 @@ def test_float_torch():
     
     abs_error = np.abs(auto_diff_result-symbolic_result)
     abs_finite_diff_error = np.abs(auto_diff_result-finite_diff_result)
-    pass_condition = np.max(abs_error)<default_abs_tol and np.max(abs_finite_diff_error)<1e-6 
-    
-    assert pass_condition
+    assert np.max(abs_error)<default_abs_tol and np.max(abs_finite_diff_error)<1e-6 
 
 def test_np_torch():
     """
@@ -127,6 +118,4 @@ def test_np_torch():
     symbolic_result = symbolic_result.detach().numpy()
     
     abs_error = np.abs(auto_diff_result-symbolic_result)
-    pass_condition = np.max(abs_error)<default_abs_tol
-    
-    assert pass_condition
+    assert np.max(abs_error)<default_abs_tol
