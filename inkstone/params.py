@@ -717,7 +717,8 @@ class Params:
             # print('_calc_ks_ep_mu', time.process_time()-t1)
 
     def _calc_q0(self):
-        if None not in [self._num_g_ac,self.omega,self.ks]:
+        if all(isinstance(v, self.gb.raw_type) 
+               or v is not None for v in [self._num_g_ac,self.omega,self.ks]):
             # t1 = time.process_time()
             k_parallel = self.gb.la.norm(self.ks, axis=-1)
             q02 = self.gb.ones(self._num_g_ac) * self.gb.square(self.omega) - self.gb.square(k_parallel) + 0j
@@ -1217,7 +1218,8 @@ class Params:
         calculate cos(vartheta), sin(vartheta), cos(phi), sin(phi) for all relevant orders, where vartheta = pi/2-theta
         Used in calculating ai bo. Recording these cos and sin allow for high-order incidence.
         """
-        if None not in [self.ks,self.num_g,self._theta,self._phi,self.kii]:
+        if all(isinstance(v,self.gb.raw_type) or v is not None
+            for v in [self.ks,self.num_g,self._theta,self._phi,self.kii]):
             # t1 = time.process_time()
 
             idxa = self.gb.parseData(self.idx_g)

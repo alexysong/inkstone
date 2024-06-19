@@ -315,9 +315,9 @@ class Layer:
         bxs = list(self.patterns.values())
 
         bx_areas = self.gb.parseData([a.shp.area for a in bxs])
-        idx = self.gb.argsort(bx_areas)
+        idx = self.gb.argsort(bx_areas).tolist()
         bx_names = [a.name for a in bxs]
-        bx_name_sorted = bx_names[idx]
+        bx_name_sorted = [bx_names[i] for i in idx]
         if type(bx_name_sorted) is str:
             bx_name_sorted = [bx_name_sorted]
         else:
