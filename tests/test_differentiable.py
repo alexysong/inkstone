@@ -1,5 +1,9 @@
 import torch # import before numpy to avoid OMP error 15
 import numpy as np
+import numpy.linalg as nla
+
+import scipy as sp
+import scipy.linalg as sla
 
 import autograd.numpy as anp
 from autograd import grad as grada, holomorphic_grad as holomorphic_grada
@@ -41,9 +45,7 @@ def test_pi():
     
     abs_error = np.abs(auto_diff_result-symbolic_result)
     abs_finite_diff_error = np.abs(auto_diff_result-finite_diff_result)
-    pass_condition = np.max(abs_error)<default_abs_tol and np.max(abs_finite_diff_error)<default_abs_tol 
-    
-    assert pass_condition
+    assert np.max(abs_error)<default_abs_tol and np.max(abs_finite_diff_error)<default_abs_tol 
 
 def test_dot_method_error():
     """
@@ -51,27 +53,35 @@ def test_dot_method_error():
     """
     x = np.ones(5,dtype=np.float64)
     y = 2*np.ones(5)
-    H = np.array([[1,2,3],[4,5,6]])
     try:
         auto_diff_result = grada(objective_functions.dot_product)(x,y)
-        pass_condition = False
+        assert False
     except AttributeError:
-        pass_condition = True
-    
-    assert pass_condition
+        assert True
 
 def test_reshape_method():
     """
     Test if .method() notation is differentiable by autograd, using .reshape()
     """
-    H = np.array([[1,2,3],[4,5,6]],dtype=np.float64)
+    A = np.array([[1,2,3],[4,5,6]],dtype=np.float64)
     try:
-        auto_diff_result = grada(objective_functions.reshape_2x3_to_3x2)(H)
-        pass_condition = True
+        auto_diff_result = grada(objective_functions.reshape_2x3_to_3x2)(A)
+        assert True
     except AttributeError:
-        pass_condition = False
+        assert False
+
+def test_sla_lu_solve():
+    """
+    Test if sla.lu_solve is differentiable by autograd
+    """
+    A = np.array([[2, 5, 8, 7], [5, 2, 2, 8], [7, 5, 6, 6], [5, 4, 4, 8]], dtype=np.float64)
+    b = np.array([1, 1, 1, 1], dtype=np.float64)
     
-    assert pass_condition
+    try:
+        auto_diff_result = grada(objective_functions.sum_of_lu_solve)(A,b)
+        assert False
+    except ValueError:
+        assert True
 
 
 
@@ -92,9 +102,7 @@ def test_float_torch():
     
     abs_error = np.abs(auto_diff_result-symbolic_result)
     abs_finite_diff_error = np.abs(auto_diff_result-finite_diff_result)
-    pass_condition = np.max(abs_error)<default_abs_tol and np.max(abs_finite_diff_error)<1e-6 
-    
-    assert pass_condition
+    assert np.max(abs_error)<default_abs_tol and np.max(abs_finite_diff_error)<1e-6 
 
 def test_np_torch():
     """
@@ -110,6 +118,4 @@ def test_np_torch():
     symbolic_result = symbolic_result.detach().numpy()
     
     abs_error = np.abs(auto_diff_result-symbolic_result)
-    pass_condition = np.max(abs_error)<default_abs_tol
-    
-    assert pass_condition
+    assert np.max(abs_error)<default_abs_tol

@@ -6,6 +6,11 @@ import numpy as np
 
 import autograd.numpy as anp
 
+import jax
+import jaxlib
+jax.config.update("jax_enable_x64", True)
+import jax.numpy as jnp
+
 from warnings import warn
 
 
@@ -108,6 +113,46 @@ class GenericBackend:
                 self.int32 = np.int32
                 self.complex128 = np.complex128
                 self.eye = anp.eye
+            
+            case "jax":
+                self.raw_type = jaxlib.xla_extension.ArrayImpl
+                
+                self.abs = jnp.abs
+                self.sqrt = jnp.sqrt
+                self.arange = jnp.arange
+                self.ceil = jnp.ceil
+                self.where = jnp.where
+                self.la = jnp.linalg
+                self.diag = jnp.diag
+                self.sin = jnp.sin
+                self.cos = jnp.cos
+                self.arccos = jnp.arccos
+                self.arcsin = jnp.arcsin
+                self.ones = jnp.ones
+                self.square = jnp.square
+                self.concatenate = jnp.concatenate
+                self.conj = jnp.conj
+                self.exp = jnp.exp
+                self.sinc = jnp.sinc
+                self.zeros = jnp.zeros
+                self.tan = jnp.tan
+                self.roll = jnp.roll
+                self.sum = jnp.sum
+                self.dot = jnp.dot
+                self.hsplit = jnp.hsplit
+                self.repeat = jnp.repeat
+                self.reshape = jnp.reshape
+                self.moveaxis = jnp.moveaxis
+                self.full = jnp.full
+                self.logical_not = jnp.logical_not
+                self.maximum = jnp.maximum
+                self.einsum = jnp.einsum
+                
+                self.pi = np.pi
+                self.float64 = jnp.float64
+                self.int32 = jnp.int32
+                self.complex128 = jnp.complex128
+                self.eye = jnp.eye
 
             case "numpy":
                 self.raw_type = np.ndarray
@@ -116,7 +161,6 @@ class GenericBackend:
                 self.sqrt = np.sqrt
                 self.arange = np.arange
                 self.ceil = np.ceil
-               # self.meshgrid = np.meshgrid
                 self.where = np.where
                 self.la = np.linalg
                 self.diag = np.diag
@@ -183,6 +227,8 @@ class GenericBackend:
                 return torch.tensor(i, dtype=dtype)
             case "autograd":
                 return anp.array(i, dtype=dtype)
+            case "jax":
+                return jnp.array(i, dtype=dtype)
             case "numpy":
                 return np.array(i, dtype=dtype)
             case _:
@@ -196,6 +242,8 @@ class GenericBackend:
                 return torch.meshgrid(a,b, indexing='xy')
             case "autograd":
                 return anp.meshgrid(a,b)
+            case "jax":
+                return jnp.meshgrid(a,b)
             case "numpy":
                 return np.meshgrid(a,b)
             case _:
@@ -206,6 +254,9 @@ class GenericBackend:
             case "torch":
                 return i.to(typ)
             case "autograd":
+                # potentially no astype methods or methods allowed in autograd
+                return i.astype(typ)
+            case "jax":
                 # potentially no astype methods or methods allowed in autograd
                 return i.astype(typ)
             case "numpy":
@@ -223,6 +274,8 @@ class GenericBackend:
                                     torch.tensor((b[0],b[1],0), dtype=torch.float64), dim=-1)[-1]
             case "autograd":
                 return anp.cross(a,b)
+            case "jax":
+                return jnp.cross(a,b)
             case "numpy":
                 return np.cross(a,b)
             case _:
@@ -237,6 +290,8 @@ class GenericBackend:
                                         torch.tensor([a2[0], a2[1], 0.0], dtype=torch.float64))[-1]
             case "autograd":
                 return anp.linalg.cross(a1,a2)
+            case "jax":
+                return jnp.linalg.cross(a1,a2)
             case "numpy":
                 return np.linalg.cross(a1,a2)
             case _:
@@ -248,9 +303,7 @@ class GenericBackend:
                 #np.prod(i.size(),dtype=np.int32) 
                 #torch.Size is different from torch.tensor 
                 return torch.prod(torch.tensor(list(i.size())),dtype=torch.int32)
-            case "autograd":
-                return i.size
-            case "numpy":
+            case "autograd" | "jax" | "numpy":
                 return i.size
             case _:
                 raise NotImplementedError
@@ -269,6 +322,8 @@ class GenericBackend:
                 return x.__getitem__(indices)
             case "autograd":
                 return anp.delete(x,idx, axis=axis)
+            case "jax":
+                return jnp.delete(x,idx, axis=axis)
             case "numpy":
                 return np.delete(x,idx, axis=axis)
             case _:
@@ -278,7 +333,7 @@ class GenericBackend:
         match self.backend:
             case "torch":
                 return i.clone() if keep_grad else i.detach().clone()
-            case "autograd" | "numpy":
+            case "autograd" | "jax" | "numpy":
                 return np.copy(i, order='C', subok=True)
             case _:
                 raise NotImplementedError
@@ -295,6 +350,10 @@ class GenericBackend:
                 if not col:
                     col = row
                 return anp.triu_indices(row,offset,col)
+            case "jax":#a: input, b: axis, c: algorithm, d: order of comparing
+                if not col:
+                    col = row
+                return jnp.triu_indices(row,offset,col)
             case "numpy":#a: input, b: axis, c: algorithm, d: order of comparing
                 if not col:
                     col = row
@@ -312,6 +371,8 @@ class GenericBackend:
                 return torch.argsort(a,b,c,d)
             case "autograd":
                 return anp.argsort(a,b,c,d)
+            case "jax":
+                return jnp.argsort(a,b,c,d)
             case "numpy":
                 return np.argsort(a,b,c,d)
             case _:
@@ -323,6 +384,8 @@ class GenericBackend:
                 return torch.sort(i,dim,des)
             case "autograd":
                 return anp.sort(i,dim,sort_alg)
+            case "jax":
+                return jnp.sort(i,dim,sort_alg)
             case "numpy":
                 return np.sort(i,dim,sort_alg)
             case _:
@@ -334,6 +397,8 @@ class GenericBackend:
                 return torch.linspace(start,end,num,requires_grad=required_grad)
             case "autograd":
                 return anp.linspace(start,end,num)
+            case "jax":
+                return jnp.linspace(start,end,num)
             case "numpy":
                 return np.linspace(start,end,num)
             case _:
@@ -345,6 +410,8 @@ class GenericBackend:
  #               return torch.topk(i,kth,dim)
 #            case "autograd":
   #              return anp.partition(i,kth,dim)
+#            case "jax":
+  #              return jnp.partition(i,kth,dim)
 #            case "numpy":
   #              return np.partition(i,kth,dim)
         
@@ -391,6 +458,8 @@ class GenericBackend:
                     return torch.cat(output,1)
             case "autograd":
                 return anp.block(arr)
+            case "jax":
+                return jnp.block(arr)
             case "numpy":
                 return np.block(arr)
             case _:
@@ -398,8 +467,84 @@ class GenericBackend:
             
     def checkAny(self, i):
         match self.backend:
-            case "torch" | "autograd" | "numpy":
+            case "torch" | "autograd" | "jax" | "numpy":
                 return i.any()
+            case _:
+                raise NotImplementedError
+            
+    def indexAssign(self, a, idx, b):
+        """
+        For numpy, use index assignment. For differentiation libraries, replace with differentiable version
+        """
+        match self.backend:
+            # TODO: fast and robust alternative to index assignment for torch and autograd
+            case "torch":
+                a[idx] = b # temporary so torch still works when not differentiating
+                return a
+            case "autograd":
+                a[idx] = b # temporary so autograd still works when not differentiating
+                return a
+            case "jax":
+                # NOTE: jax.arrays are immutable, so you must reassign a = indexAssign(...) when using this function
+                return a.at[idx].set(b)
+            case "numpy":
+                a[idx] = b
+                return a
+            case _:
+                raise NotImplementedError
+            
+    def inPlaceAdd(self, a, b):
+        """
+        For numpy, add in-place. For differentiation libraries, replace with differentiable not-in-place version
+        """
+        match self.backend:
+            case "torch" | "autograd" | "jax":
+                return a + b
+            case "numpy":
+                a += b
+                return a
+            case _:
+                raise NotImplementedError
+    
+    def inPlaceMultiply(self, a, b):
+        """
+        For numpy, multiply in-place. For differentiation libraries, replace with differentiable not-in-place version
+        """
+        match self.backend:
+            case "torch" | "autograd" | "jax":
+                return a*b
+            case "numpy":
+                a *= b
+                return a
+            case _:
+                raise NotImplementedError
+    
+    def assignAndMultiply(self, a, idx, b):
+        """
+        For numpy, multiply in-place with index assignment. For differentiation libraries, replace with differentiable not-in-place version
+        """
+        match self.backend:
+            case "torch" | "autograd":
+                a[idx] *= b
+                return a
+            case "jax":
+                return a.at[idx].multiply(b)
+            case "numpy":
+                a[idx] *= b
+                return a
+            case _:
+                raise NotImplementedError
+            
+    def inPlaceDivide(self, a, b):
+        """
+        For numpy, add in-place. For differentiation libraries, replace with differentiable not-in-place version
+        """
+        match self.backend:
+            case "torch" | "autograd" | "jax":
+                return a/b
+            case "numpy":
+                a /= b
+                return a
             case _:
                 raise NotImplementedError
         

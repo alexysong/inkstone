@@ -718,8 +718,6 @@ class Params:
 
     def _calc_q0(self):
         if self._num_g_ac and (self.omega is not None) and gb.checkAny(self.ks):
-            # this if condition doesn't account for ks, etc. empty lists or zero depending on type
-            # (see https://stackoverflow.com/questions/20809417/what-does-if-var-mean-in-python)
             # t1 = time.process_time()
             k_parallel = self.gb.la.norm(self.ks, axis=-1)
             q02 = self.gb.ones(self._num_g_ac) * self.gb.square(self.omega) - self.gb.square(k_parallel) + 0j
@@ -727,22 +725,22 @@ class Params:
             q0 = self.gb.sqrt(q02)
             if self.omega.imag < 0:
                 if self.ccnif == "physical":
-                    q0[(q02.real < 0) * (q0.imag < 0)] *= -1
+                    q0 = gb.assignAndMultiply(q0, (q02.real<0)*(q0.imag<0), -1)
                 elif self.ccnif == "ac":
-                    q0[(q02.real < 0) * (q0.imag > 0)] *= -1
+                    q0 = gb.assignAndMultiply(q0, (q02.real<0)*(q0.imag>0), -1)
                 else:
                     warn("ccnif not recognized. Default to 'physical'.")
-                    q0[(q02.real < 0) * (q0.imag < 0)] *= -1
+                    q0 = gb.assignAndMultiply(q0, (q02.real<0)*(q0.imag<0), -1)
             elif self.omega.imag > 0:
                 if self.ccpif == "ac":
-                    q0[(q02.real < 0) * (q0.imag < 0)] *= -1
+                    q0 = gb.assignAndMultiply(q0, (q02.real<0)*(q0.imag<0), -1)
                 elif self.ccpif == "physical":
-                    q0[(q02.real < 0) * (q0.imag > 0)] *= -1
+                    q0 = gb.assignAndMultiply(q0, (q02.real<0)*(q0.imag>0), -1)
                 else:
                     warn("ccpif not recognized. Default to 'ac'.")
-                    q0[(q02.real < 0) * (q0.imag < 0)] *= -1
+                    q0 = gb.assignAndMultiply(q0, (q02.real<0)*(q0.imag<0), -1)
             else:
-                q0[q0.imag < 0] *= -1
+                q0 = gb.assignAndMultiply(q0, q0.imag<0, -1)
             # todo: what to do at q02.real == 0 case (Woods)?
 
             self.q0_0 = self.gb.where(self.gb.abs(q0) == 0.)[0]
@@ -956,15 +954,15 @@ class Params:
             phif = self.gb.eye(2 * ng, 2 * ng, dtype=self.gb.complex128)
             psif = self.gb.zeros((2 * ng, 2 * ng), dtype=self.gb.complex128)
 
-            r1 = range(ng)
-            r2 = range(ng, 2 * ng)
+            r1 = gb.arange(ng)
+            r2 = gb.arange(ng, 2 * ng)
 
             # attention! phif is assumed to be identity in interface calculations. if need to change the form, you need to change coding there, not just changing phif here.
             # phif[r2, r2] = -1.
 
             # attention! If need to change this form, note in interface matrix calculations this form is assumed to speed up things. Need to change coding there, not just changing psif here.
-            psif[r2, r1] = 1.j
-            psif[r1, r2] = -1.j
+            psif = gb.indexAssign(psif, (r2,r1), 1.j)
+            psif = gb.indexAssign(psif, (r1,r2), -1.j)
 
             self.phif = phif
             self.psif = psif

@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.linalg as sla
 import autograd.numpy as anp
 
 import torch
@@ -20,6 +21,11 @@ def scaled_sum_torch_np(x):
 def dot_product(x,y):
     return x.dot(y)
 
-def reshape_2x3_to_3x2(H):
-    H_3x2 = H.reshape((3,2))
-    return H_3x2[0,1]*H_3x2[1,1]
+def reshape_2x3_to_3x2(A):
+    A_3x2 = A.reshape((3,2))
+    return A_3x2[0,1]*A_3x2[1,1]
+
+def sum_of_lu_solve(A,b):
+    lu, piv = sla.lu_factor(A)
+    x = sla.lu_solve((lu, piv), b)
+    return np.sum(x)
