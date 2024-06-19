@@ -47,8 +47,8 @@ def rsp(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22,gb=gb):
 
     t1 = idt - sb11 @ sa22
     t2 = idt - sa22 @ sb11
-    p1 = sla.solve(t1.T, sa12.T).T
-    p2 = sla.solve(t2.T, sb21.T).T
+    p1 = gb.solve(t1.T, sa12.T).T
+    p2 = gb.solve(t2.T, sb21.T).T
 
     s11 = sa11 + p1 @ sb11 @ sa21
     s12 = p1 @ sb12
@@ -96,12 +96,12 @@ def rsp_sa21Tlu(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
 
     t1 = idt - sb11 @ sa22
     t2 = idt - sa22 @ sb11
-    p1 = sla.solve(t1.T, sa12.T).T
-    p2 = sla.solve(t2.T, sb21.T).T
+    p1 = gb.solve(t1.T, sa12.T).T
+    p2 = gb.solve(t2.T, sb21.T).T
 
-    s11 = sa11 + p1 @ sla.lu_solve(sa21, sb11.T).T
+    s11 = sa11 + p1 @ gb.lu_solve(sa21, sb11.T).T
     s12 = p1 @ sb12
-    s21 = sla.lu_solve(sa21, p2.T).T
+    s21 = gb.lu_solve(sa21, p2.T).T
     s22 = sb22 + p2 @ sa22 @ sb12
 
     return s11, s12, s21, s22
@@ -136,10 +136,10 @@ def rsp_sa12lu(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
     t1 = idt - sb11 @ sa22
     t2 = idt - sa22 @ sb11
 
-    p2 = sla.solve(t2.T, sb21.T).T
+    p2 = gb.solve(t2.T, sb21.T).T
 
-    s11 = sa11 + sla.lu_solve(sa12, (sla.solve(t1, sb11) @ sa21))
-    s12 = sla.lu_solve(sa12, (sla.solve(t1, sb12)))
+    s11 = sa11 + gb.lu_solve(sa12, (gb.solve(t1, sb11) @ sa21))
+    s12 = gb.lu_solve(sa12, (gb.solve(t1, sb12)))
     s21 = p2 @ sa21
     s22 = sb22 + p2 @ sa22 @ sb12
 
@@ -174,13 +174,13 @@ def rsp_sb12Tlu(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
 
     t1 = idt - sb11 @ sa22
     t2 = idt - sa22 @ sb11
-    p1 = sla.solve(t1.T, sa12.T).T
-    p2 = sla.solve(t2.T, sb21.T).T
+    p1 = gb.solve(t1.T, sa12.T).T
+    p2 = gb.solve(t2.T, sb21.T).T
 
     s11 = sa11 + p1 @ sb11 @ sa21
-    s12 = sla.lu_solve(sb12, p1.T).T
+    s12 = gb.lu_solve(sb12, p1.T).T
     s21 = p2 @ sa21
-    s22 = sb22 + p2 @ sla.lu_solve(sb12, sa22.T).T
+    s22 = sb22 + p2 @ gb.lu_solve(sb12, sa22.T).T
 
     return s11, s12, s21, s22
 
@@ -213,13 +213,13 @@ def rsp_sb21lu(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
 
     t1 = idt - sb11 @ sa22
     t2 = idt - sa22 @ sb11
-    p1 = sla.solve(t1.T, sa12.T).T
-    # p2 = sla.solve(t2.T, sb21.T).T
+    p1 = gb.solve(t1.T, sa12.T).T
+    # p2 = gb.solve(t2.T, sb21.T).T
 
     s11 = sa11 + p1 @ sb11 @ sa21
     s12 = p1 @ sb12
-    s21 = sla.lu_solve(sb21, sla.solve(t2, sa21))
-    s22 = sb22 + sla.lu_solve(sb21, sla.solve(t2, sa22) @ sb12)
+    s21 = gb.lu_solve(sb21, gb.solve(t2, sa21))
+    s22 = sb22 + gb.lu_solve(sb21, gb.solve(t2, sa22) @ sb12)
 
     return s11, s12, s21, s22
 
@@ -253,13 +253,13 @@ def rsp_sa12lu_sb21lu(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
 
     t1 = idt - sb11 @ sa22
     t2 = idt - sa22 @ sb11
-    # p1 = sla.solve(t1.T, sa12.T).T
-    # p2 = sla.solve(t2.T, sb21.T).T
+    # p1 = gb.solve(t1.T, sa12.T).T
+    # p2 = gb.solve(t2.T, sb21.T).T
 
-    s11 = sa11 + sla.lu_solve(sa12, sla.solve(t1, sb11)) @ sa21
-    s12 = sla.lu_solve(sa12, sla.solve(t1, sb12))
-    s21 = sla.lu_solve(sb21, sla.solve(t2, sa21))
-    s22 = sb22 + sla.lu_solve(sb21, sla.solve(t2, sa22) @ sb12)
+    s11 = sa11 + gb.lu_solve(sa12, gb.solve(t1, sb11)) @ sa21
+    s12 = gb.lu_solve(sa12, gb.solve(t1, sb12))
+    s21 = gb.lu_solve(sb21, gb.solve(t2, sa21))
+    s22 = sb22 + gb.lu_solve(sb21, gb.solve(t2, sa22) @ sb12)
 
     return s11, s12, s21, s22
 
@@ -295,13 +295,13 @@ def rsp_sa21Tlu_sb21lu(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
 
     t1 = idt - sb11 @ sa22
     t2 = idt - sa22 @ sb11
-    # p1 = sla.solve(t1.T, sa12.T).T
-    # p2 = sla.solve(t2.T, sb21.T).T
+    # p1 = gb.solve(t1.T, sa12.T).T
+    # p2 = gb.solve(t2.T, sb21.T).T
 
-    s11 = sa11 + sa12 @ sla.lu_solve(sa21, sla.solve(t1, sb11).T).T
-    s12 = sa12 @ sla.solve(t1, sb12)
-    s21 = sla.lu_solve(sb21, sla.solve(t2, sla.lu_solve(sa21, idt).T))
-    s22 = sb22 + sla.lu_solve(sb21, sla.solve(t2, sa22) @ sb12)
+    s11 = sa11 + sa12 @ gb.lu_solve(sa21, gb.solve(t1, sb11).T).T
+    s12 = sa12 @ gb.solve(t1, sb12)
+    s21 = gb.lu_solve(sb21, gb.solve(t2, gb.lu_solve(sa21, idt).T))
+    s22 = sb22 + gb.lu_solve(sb21, gb.solve(t2, sa22) @ sb12)
 
     return s11, s12, s21, s22
 
@@ -337,13 +337,13 @@ def rsp_sa12lu_sb12Tlu(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
 
     t1 = idt - sb11 @ sa22
     t2 = idt - sa22 @ sb11
-    # p1 = sla.solve(t1.T, sa12.T).T
-    # p2 = sla.solve(t2.T, sb21.T).T
+    # p1 = gb.solve(t1.T, sa12.T).T
+    # p2 = gb.solve(t2.T, sb21.T).T
 
-    s11 = sa11 + sla.lu_solve(sa12, sla.solve(t1, sb11)) @ sa21
-    s12 = sla.lu_solve(sa12, sla.solve(t1, sla.lu_solve(sb12, idt).T))
-    s21 = sb21 @ sla.solve(t2, sa21)
-    s22 = sb22 + sb21 @ sla.lu_solve(sb12, sla.solve(t2, sa22).T).T
+    s11 = sa11 + gb.lu_solve(sa12, gb.solve(t1, sb11)) @ sa21
+    s12 = gb.lu_solve(sa12, gb.solve(t1, gb.lu_solve(sb12, idt).T))
+    s21 = sb21 @ gb.solve(t2, sa21)
+    s22 = sb22 + sb21 @ gb.lu_solve(sb12, gb.solve(t2, sa22).T).T
 
     return s11, s12, s21, s22
 

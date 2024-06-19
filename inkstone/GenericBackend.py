@@ -2,6 +2,8 @@
 
 import torch
 import numpy as np
+import scipy.linalg as sla
+import scipy.fft as sfft
 from warnings import warn
 
 
@@ -57,6 +59,12 @@ class GenericBackend:
                 self.logical_not = torch.logical_not
                 self.maximum = torch.maximum
                 self.einsum = torch.einsum
+                self.lu_factor = torch.linalg.lu_factor
+               # self.lu_solve = torch.linalg.lu_solve
+                self.norm = torch.norm
+                self.fft = torch.fft
+                self.slogdet = torch.slogdet
+                self.solve = torch.linalg.solve
                 
                 self.pi = torch.pi
                 self.float64 = torch.float64 #default float precision
@@ -99,6 +107,13 @@ class GenericBackend:
                 self.logical_not = np.logical_not
                 self.maximum = np.maximum
                 self.einsum = np.einsum
+                self.lu_factor = sla.lu_factor
+                self.lu_solve = sla.lu_solve
+                self.norm = sla.norm
+                self.fft = sfft
+                self.solve = sla.solve
+                
+                self.slogdet = np.linalg.slogdet
                 
                 self.pi = np.pi
                 self.float64 = np.float64
@@ -110,7 +125,7 @@ class GenericBackend:
         
     def parseData(self, i: any, dtype = None):
         if(type(i) is self.raw_type):
-            print(i)
+           # print(i)
             return i
         o = i
         depth = 0
@@ -203,8 +218,7 @@ class GenericBackend:
                 return np.cross(a,b)
             case _:
                 raise NotImplementedError
-        
-        
+
         
     def laCross(self,a1,a2):
         match self.backend:
@@ -268,7 +282,14 @@ class GenericBackend:
             case _:
                 raise NotImplementedError
     
-    
+ #   def lu_solve(self,p,q):
+        match self.backend:
+            case 'torch':
+                return torch.linalg.lu_solve(p.LU,p.pivots,q)
+            case 'numpy':
+                return sla.lu_solve((p.LU,p.pivots),q)
+            case _:
+                raise NotImplementedError
     
     def argsort(self, ipt, dim=-1, c=None, d=None):
         if c or d:
@@ -306,7 +327,15 @@ class GenericBackend:
  #               return torch.topk(i,kth,dim)
 #            case "numpy":
   #              return np.partition(i,kth,dim)
-        
+  
+    def hardConvert(self, i): #don't know array_namespace in _helper.py
+        match self.backend:
+            case 'torch':
+                return torch.from_numpy(i)
+            case 'numpy':
+                return i
+            case _:
+                raise NotImplementedError
     
     def block(self,arr):
         match self.backend:
@@ -353,6 +382,7 @@ genericBackend = GenericBackend("numpy")
 def switchTo(backend):
     global genericBackend
     genericBackend = GenericBackend(backend)
+    print(genericBackend.backend)
     
 def getLsDepth(ls):
     if type(ls) is list:
@@ -363,6 +393,7 @@ def getLsDepth(ls):
             tmp = tmp[0]
         return depth
     raise ValueError("Not a list")
+
 if __name__ == '__main__':
     switchTo("torch")
 

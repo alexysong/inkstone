@@ -89,8 +89,8 @@ class Shp:
         """
         if ks:
             self.ks: List = ks
-
-        self._ft = self._calc_ft()
+        a = self._calc_ft()
+        self._ft = [x[0] for x in self._calc_ft()]
         s = 1
         self.use_gibbs_correction(**kw_gibbs)
         if self._if_gibbs_corr:

@@ -6,7 +6,6 @@ sys.path.append("C:/Users/w-a-c/Desktop/inkstone")
 ###----------------
 
 from scipy import sparse as sps
-import scipy.linalg as sla
 # import scipy.fft as fft
 from typing import Tuple, List, Union, Optional, Set
 # import time
@@ -745,8 +744,9 @@ class Params:
             # todo: what to do at q02.real == 0 case (Woods)?
 
             self.q0_0 = self.gb.where(self.gb.abs(q0) == 0.)[0]
-
-            self.q0 = self.gb.parseList([q0, q0])
+            print(q0.shape)
+            self.q0 = self.gb.concatenate([q0, q0])
+            print(self.q0.shape)
             self.q0_half = q0
             # print('_calc_q0', time.process_time() - t1)
 

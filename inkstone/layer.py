@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 # import scipy.sparse as sps
-import scipy.fft as fft
-import scipy.linalg as sla
 from warnings import warn
 from collections import OrderedDict
 from typing import Optional, Set, Union, Tuple, Dict, List
@@ -424,7 +422,7 @@ class Layer:
         ep, ei, mu, mi = [t[None, :, :] * d[:, None, None] for t in [epsi_bg, epsi_bg_inv, mu_bg, mu_bg_inv]]   # each is complex ((2mmax+1)x(2nmax+1), 3, 3) shape
 
         for bx in self.patterns.values():
-            eb, eib, mb, mib = [gb.parseData(f, dtype=gb.complex128) / self.pr.uc_area for f in bx.ft(self.pr.ks_ep_mu)]
+            eb, eib, mb, mib = [gb.parseList(f) / self.pr.uc_area for f in bx.ft(self.pr.ks_ep_mu)]
             ep += eb
             ei += eib
             mu += mb
@@ -447,10 +445,10 @@ class Layer:
 
         if self.patterns:
             idx = self.pr.idx_conv_mtx
-            ems = [fft.ifftshift(self.epsi_fs.swapaxes(0, 1), axes=(0, 1)),
-                   fft.ifftshift(self.epsi_inv_fs.swapaxes(0, 1), axes=(0, 1)),
-                   fft.ifftshift(self.mu_fs.swapaxes(0, 1), axes=(0, 1)),
-                   fft.ifftshift(self.mu_inv_fs.swapaxes(0, 1), axes=(0, 1))]
+            ems = [gb.fft.ifftshift(self.epsi_fs.swapaxes(0, 1), (0, 1)),
+                   gb.fft.ifftshift(self.epsi_inv_fs.swapaxes(0, 1), (0, 1)),
+                   gb.fft.ifftshift(self.mu_fs.swapaxes(0, 1), (0, 1)),
+                   gb.fft.ifftshift(self.mu_inv_fs.swapaxes(0, 1), (0, 1))]
             self.epxxcm, self.epxycm, self.epyxcm, self.epyycm, self.epzzcm, \
             self.eixxcm, self.eixycm, self.eiyxcm, self.eiyycm, self.eizzcm, \
             self.muxxcm, self.muxycm, self.muyxcm, self.muyycm, self.muzzcm, \
@@ -515,7 +513,7 @@ class Layer:
             self._calc_ep_mu_fs_3d()
         self.epsi_fs_used, self.epsi_inv_fs_used, self.mu_fs_used, self.mu_inv_fs_used = \
             [[em[j, i, :, :] for i, j in self.pr.idx_g_ep_mu_used]
-             for em in [fft.ifftshift(self.epsi_fs, axes=(0, 1)), fft.ifftshift(self.epsi_inv_fs, axes=(0, 1)), fft.ifftshift(self.mu_fs, axes=(0, 1)), fft.ifftshift(self.mu_inv_fs, axes=(0, 1))]]
+             for em in [gb.fft.ifftshift(self.epsi_fs, axes=(0, 1)), gb.fft.ifftshift(self.epsi_inv_fs, axes=(0, 1)), gb.fft.ifftshift(self.mu_fs, axes=(0, 1)), gb.fft.ifftshift(self.mu_inv_fs, axes=(0, 1))]]
 
         eu = self.epsi_fs_used
         ea = self.gb.parseData(eu, dtype=gb.complex128)
@@ -626,8 +624,8 @@ class Layer:
                                                      [0.]])
 
         # normalize such that the larger norm of v and vh's each column is 1
-        vn = sla.norm(v, axis=0)
-        vhn = sla.norm(vh, axis=0)
+        vn = gb.norm(v, axis=0)
+        vhn = gb.norm(vh, axis=0)
         nm = self.gb.maximum(vn, vhn)
         v /= nm
         vh /= nm
@@ -927,8 +925,8 @@ class Layer:
                             # the column of v is already correct
                             vh[i_wis0[0][ii], :, i_wis0[1][ii]] = self.gb.parseData([0., 0.])
 
-                vn = sla.norm(gb.moveaxis(v, 1, 2).reshape(self.pr.num_g*2, 2), axis=1).reshape(self.pr.num_g, 2)[:, None, :]
-                vhn = sla.norm(gb.moveaxis(vh, 1, 2).reshape(self.pr.num_g * 2, 2), axis=1).reshape(self.pr.num_g, 2)[:, None, :]
+                vn = gb.norm(gb.moveaxis(v, 1, 2).reshape(self.pr.num_g*2, 2), axis=1).reshape(self.pr.num_g, 2)[:, None, :]
+                vhn = gb.norm(gb.moveaxis(vh, 1, 2).reshape(self.pr.num_g * 2, 2), axis=1).reshape(self.pr.num_g, 2)[:, None, :]
                 nm = self.gb.maximum(vn, vhn)
                 v /= nm
                 vh /= nm
@@ -1021,11 +1019,11 @@ class Layer:
         Ky = self.pr.Ky
 
         # TM is p, Ex-Hy-Ez
-        Ppilu = sla.lu_factor(-1./o*eixx)  # i means inverted
+        Ppilu = gb.lu_factor(-1./o*eixx)  # i means inverted
         Qp = o * muyy - 1. / o * Kx[:, None] * eizz * Kx
 
         # TE is s, Hx-Ey-Hz
-        Psilu = sla.lu_factor(-1./o * mixx)
+        Psilu = gb.lu_factor(-1./o * mixx)
         Qs = o * epyy - 1. / o * Kx[:, None] * mizz * Kx
 
         return Ppilu, Qp, Psilu, Qs
@@ -1080,7 +1078,7 @@ class Layer:
             # psil = -1j * Q @ phil * ql_inv
             # # psil = 1j * gb.la.inv(P) @ phil @ gb.diag(self.ql)
 
-            w2, v = self.gb.la.eig(- sla.lu_solve(P, Q))
+            w2, v = self.gb.la.eig(- self.gb.lu_solve(P, Q))
             rc = self.gb.where(w2.real > 0)[0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
             w = self.gb.sqrt(w2 + 0j)
 
@@ -1097,8 +1095,9 @@ class Layer:
             # where w is 0, vh's column is 0
 
             # normalize such that the larger norm of v and vh's each column is 1
-            vn = sla.norm(v, axis=0)
-            vhn = sla.norm(vh, axis=0)
+            
+            vn = gb.norm(v, axis = 0)
+            vhn = gb.norm(vh,axis=0)
             nm = self.gb.maximum(vn, vhn)
             v /= nm
             vh /= nm
@@ -1132,7 +1131,7 @@ class Layer:
         self.psil[:self.pr.num_g, self.pr.num_g:] = _psil[1]
         self.psil[self.pr.num_g:, :self.pr.num_g] = _phil[0]
 
-        self.ql = self.gb.parseList(_ql)
+        self.ql = self.gb.concatenate(_ql)
         self._rad_cha = _rc[0] + [a+self.pr.num_g for a in _rc[1]]
 
         if self.pr.show_calc_time:
