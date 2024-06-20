@@ -18,7 +18,7 @@ import sys
 sys.path.append("../")
 sys.path.append("../inkstone")
 import GenericBackend
-GenericBackend.switchTo("autograd")
+GenericBackend.switchTo("jax")
 import numpy as np
 from inkstone import Inkstone
 

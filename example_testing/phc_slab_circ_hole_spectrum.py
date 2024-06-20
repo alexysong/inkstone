@@ -18,7 +18,7 @@ import sys
 sys.path.append("../")
 sys.path.append("../inkstone")
 import GenericBackend
-GenericBackend.switchTo("autograd")
+GenericBackend.switchTo("jax")
 import numpy as np
 from inkstone import Inkstone
 
@@ -49,7 +49,6 @@ for i in freq:
     flux_out.append(s.GetPowerFlux('out'))
 
 incident = np.array([a[0] for a in flux_in])
-print(incident)
 reflection = -np.array([a[1] for a in flux_in]) / incident
 transmission = np.array([a[0] for a in flux_out]) / incident
 
