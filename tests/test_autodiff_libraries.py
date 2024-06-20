@@ -52,7 +52,17 @@ def test_jax_at_multidim():
     data = data.at[idx].set(30)
     
     assert (data[idx] == 30).all()
-        
+
+def test_jax_immutable():
+    """
+    Test that jax's arrays are immutable
+    """
+    data = jnp.ones((3,5,10)) 
+    data_copy = data
+    data_copy = jnp.sum(data_copy)
+
+    assert (data == jnp.ones((3,5,10))).all()
+
 
 
 # METHODS WITH THE SAME NAME ################################################################################################
