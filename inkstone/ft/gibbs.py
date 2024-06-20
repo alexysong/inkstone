@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import numpy as np
 from GenericBackend import genericBackend as gb
 from typing import List, Union, Tuple, Optional
 from warnings import warn
@@ -42,7 +43,7 @@ def gibbs_corr(ks: List[Union[float, Tuple[float, float], Tuple[float, float, fl
         if ksa.ndim == 1:
             kn = gb.abs(ksa)
         else:
-            ax = tuple(i for i in gb.arange(ksa.ndim)[1:])  # e.g. for 3d k, ksa is 4d, and this gives (1, 2, 3)
+            ax = tuple(i for i in np.arange(ksa.ndim)[1:])  # e.g. for 3d k, ksa is 4d, and this gives (1, 2, 3)
             kn = gb.la.norm(ksa, axis=ax)  # k norm
 
         # calculate m if not given
