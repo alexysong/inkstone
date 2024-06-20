@@ -198,27 +198,27 @@ class GenericBackend:
                 raise NotImplementedError
         
     def parseData(self, i: any, dtype = None):
-        o = i
-        if type(i) is self.raw_type:
+        if dtype:
+            pass
+        elif type(i) is self.raw_type:
             dtype = i.dtype
         else:
+            o = i
             while type(o) == list or type(o) == tuple:
                 o = o[0]
-            if not dtype:
-                if type(o) == int:
-                    dtype = self.int32
-                elif type(o) == float:
-                    dtype = self.float64
-                elif type(o) == str:
-                    print("String type detected, no gradient required")
-                    return np.array(i)
-                elif type(o) == complex:
-                    dtype = self.complex128
-                else:
-                    # print(o)
-                    # print(type(o))
-                    # print(f"unrecognised type {dtype}, set to float")
-                    dtype = type(o)
+            if type(o) is self.raw_type:
+                dtype = o.dtype
+            elif type(o) == int:
+                dtype = self.int32
+            elif type(o) == float:
+                dtype = self.float64
+            elif type(o) == str: # shouldn't ever pass through here
+                print("String type detected, no gradient required")
+                return np.array(i)
+            elif type(o) == complex:
+                dtype = self.complex128
+            else:
+                dtype = type(o)
         
         match self.backend:
             case "torch":
@@ -333,8 +333,13 @@ class GenericBackend:
         match self.backend:
             case "torch":
                 return i.clone() if keep_grad else i.detach().clone()
-            case "autograd" | "jax" | "numpy":
+            case "autograd" | "numpy":
                 return np.copy(i, order='C', subok=True)
+            case "jax": 
+                if type(i) is not self.raw_type: # temporarily handle scipy.linalg's np array inputs
+                    return np.copy(i, order='C', subok=True)
+                else: # jax arrays are immutable, so a copy is always made
+                    return i
             case _:
                 raise NotImplementedError
             
@@ -462,13 +467,6 @@ class GenericBackend:
                 return jnp.block(arr)
             case "numpy":
                 return np.block(arr)
-            case _:
-                raise NotImplementedError
-            
-    def checkAny(self, i):
-        match self.backend:
-            case "torch" | "autograd" | "jax" | "numpy":
-                return i.any()
             case _:
                 raise NotImplementedError
             
