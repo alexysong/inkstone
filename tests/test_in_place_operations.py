@@ -45,6 +45,17 @@ def test_indexAssign_numpy_slice_index():
     data = nb.indexAssign(data,idx,replacement)
     
     assert (data[idx] == replacement).all()
+
+def test_indexAssign_numpy_slice_all_index():
+    """
+    Test indexAssign for numpy backend with index replacement for ":"
+    """
+    data = nb.zeros((10,10)) 
+    idx = (slice(None),5)
+    replacement = 1
+    data = nb.indexAssign(data,idx,replacement)
+    
+    assert (data[idx] == replacement).all()
         
 def test_indexAssign_numpy_truth_index():
     """
@@ -105,6 +116,17 @@ def test_indexAssign_jax_slice_index():
     data = jb.arange(10) 
     idx = slice(3,5)
     replacement = 30
+    data = jb.indexAssign(data,idx,replacement)
+    
+    assert (data[idx] == replacement).all()
+
+def test_indexAssign_jax_slice_all_index():
+    """
+    Test indexAssign for jax backend with index replacement for ":"
+    """
+    data = jb.zeros((10,10)) 
+    idx = (slice(None),5)
+    replacement = 1
     data = jb.indexAssign(data,idx,replacement)
     
     assert (data[idx] == replacement).all()
