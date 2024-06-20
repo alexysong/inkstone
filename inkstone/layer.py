@@ -595,7 +595,7 @@ class Layer:
         i_wn0 = self.gb.where(wn0)
 
         vh = self.gb.zeros((2 * self.pr.num_g, 2 * self.pr.num_g), dtype=gb.complex128)
-        vh[:, i_wn0[0]] = -1j * (self.Q @ v[:, i_wn0[0]]) / w[i_wn0[0]]
+        vh = self.gb.indexAssign(vh, (slice(None),i_wn0[0]), -1j * (self.Q @ v[:, i_wn0[0]]) / w[i_wn0[0]])
         # vh = -1j * q @ v / w[:, None, :]
 
         if wis0.any():
@@ -616,12 +616,11 @@ class Layer:
                 _v_norm = self.gb.sqrt(gb.conj(_v_w0[ii]) @ _v_w0[ii])
                 if _vh_norm >= _v_norm:
                     # vh[i_wis0[0][ii], :, i_wis0[1][ii]] /= _vh_norm
-                    vh[:, i_wis0[0][ii]] = vh_[:, i_wis0[0][ii]]
-                    v[:, i_wis0[0][ii]] = 0.
+                    vh = self.gb.indexAssign(vh, (slice(None),i_wis0[0][ii]), vh_[:, i_wis0[0][ii]])
+                    v = self.gb.indexAssign(v, (slice(None),i_wis0[0][ii]), 0.)
                 else:
                     # the column of v is already correct
-                    vh[:, i_wis0[0][ii]] = self.gb.parseData([[0.],
-                                                     [0.]])
+                    vh = self.gb.indexAssign(vh, (slice(None),i_wis0[0][ii]), self.gb.parseData([[0.],[0.]]))
 
         # normalize such that the larger norm of v and vh's each column is 1
         vn = sla.norm(v, axis=0)
@@ -714,7 +713,7 @@ class Layer:
         w = self.gb.clone(w)
 
         if self.in_mid_out == 'mid':
-            w[w.imag < 0] *= -1
+            w = self.gb.assignAndMultiply(w, w.imag<0, -1)
         else:
             if self.pr.omega.imag < 0:
                 if self.pr.ccnif == "physical":
@@ -824,44 +823,45 @@ class Layer:
 
                 # c1[:, i_knz] = self.gb.inputParser([[1.], [0.]])
                 # c2[:, i_knz] = -1j / o / alpha * gb.inputParser([1. / mzz * Kx[i_knz] * Ky[i_knz] / qlh[i_knz], 1./myy*(-exx/ezz*gb.square(Kx[i_knz]) - gb.square(qlh[i_knz])) / qlh[i_knz]])  # should not be |Kx|^2
-                c1[:, i_kez] = self.gb.parseData([[1.], [0.]], dtype=gb.complex128)
-                c2[:, i_kez] = self.gb.parseData([[0.], [1.]], dtype=gb.complex128)
+                c1 = self.gb.indexAssign(c1, (slice(None),i_kez), self.gb.parseData([[1.], [0.]], dtype=gb.complex128))
+                c2 = self.gb.indexAssign(c2, (slice(None),i_kez), self.gb.parseData([[0.], [1.]], dtype=gb.complex128))
                 cphi = self.gb.cos(self.pr._phi)
                 sphi = self.gb.sin(self.pr._phi)
-                c1[:, ii] = self.gb.parseData([[eyy * sphi], [-exx * cphi]], dtype=gb.complex128)
+                c1 = self.gb.indexAssign(c1, (slice(None),ii), self.gb.parseData([[eyy * sphi], [-exx * cphi]], dtype=gb.complex128))
+                c2 = self.gb.indexAssign(c2, (slice(None),ii), self.gb.parseData([[cphi], [sphi]], dtype=gb.complex128))
                 # c1[:, ii] = self.gb.inputParser([[sphi], [-cphi]], dtype=gb.complex128)
-                c2[:, ii] = self.gb.parseData([[cphi], [sphi]], dtype=gb.complex128)
 
-                c1f[i_qlw] = o / qlh[i_qlw] / k_norm[i_qlw]
-                c2f[i_qlw] = 1j / k_norm[i_qlw]
+                c1f = self.gb.indexAssign(c1f, i_qlw, o / qlh[i_qlw] / k_norm[i_qlw])
+                c2f = self.gb.indexAssign(c2f, 1j / k_norm[i_qlw])
 
-                c1f[i_qsw] = 1. / k_norm[i_qsw]
-                c2f[i_qsw] = 1j / o * qlh[i_qsw] / k_norm[i_qsw]
+                c1f = self.gb.indexAssign(c1f, i_qsw, 1. / k_norm[i_qsw])
+                c2f = self.gb.indexAssign(c2f, i_qsw, 1j / o * qlh[i_qsw] / k_norm[i_qsw])
 
                 # c1f[i_knz] = 1.
                 # c2f[i_knz] = 1.
 
-                c1f[i_kez] = 1.
-                c2f[i_kez] = 1j * qlh[i_kez] / o
+                c1f = self.gb.indexAssign(c1f, i_kez, 1.)
+                c2f = self.gb.indexAssign(c2f, i_kez, 1j * qlh[i_kez] / o)
 
-                c1f[ii] = 1.
-                c2f[ii] = 1j * qlh[ii] / o
+                c1f = self.gb.indexAssign(c1f, ii, 1.)
+                c2f = self.gb.indexAssign(c2f, ii, 1j * qlh[ii] / o)
 
-                c1 *= c1f
-                c2 *= c2f
+                c1 = self.gb.inPlaceMultiply(c1, c1f)
+                c2 = self.gb.inPlaceMultiply(c2, c2f)
 
-                r1 = range(ng)
-                r2 = range(ng, 2 * ng)
+                r1 = self.gb.arange(ng)
+                r2 = self.gb.arange(ng, 2 * ng)
                 phil = self.gb.zeros((2*ng, 2*ng), dtype=gb.complex128)
                 psil = self.gb.clone(phil)
-                phil[r1, r1] = c1[0, :]
-                phil[r2, r1] = c1[1, :]
-                phil[r1, r2] = c2[0, :]
-                phil[r2, r2] = c2[1, :]
-                psil[r1, r1] = c2[0, :] * alpha
-                psil[r2, r1] = c2[1, :] * alpha
-                psil[r1, r2] = c1[0, :]
-                psil[r2, r2] = c1[1, :]
+
+                phil = self.gb.indexAssign(phil, (r1,r1), c1[0,:])
+                phil = self.gb.indexAssign(phil, (r2,r1), c1[1,:])
+                phil = self.gb.indexAssign(phil, (r1,r2), c2[0,:])
+                phil = self.gb.indexAssign(phil, (r2,r2), c2[1,:])
+                psil = self.gb.indexAssign(psil, (r1,r1), c2[0,:]*alpha)
+                psil = self.gb.indexAssign(psil, (r2,r1), c2[1,:]*alpha)
+                psil = self.gb.indexAssign(psil, (r1,r2), c1[0,:])
+                psil = self.gb.indexAssign(psil, (r2,r2), c1[1,:])
 
                 self.phil_2x2s = self.gb.moveaxis(gb.parseData([c1, c2]), 0, 1)
 
@@ -901,7 +901,8 @@ class Layer:
                 i_wn0 = self.gb.where(wn0)
 
                 vh = self.gb.zeros((self.pr.num_g, 2, 2), dtype=gb.complex128)
-                vh[i_wn0[0], :, i_wn0[1]] = -1j * (q[i_wn0[0], :, :] @ v[i_wn0[0], :, i_wn0[1]][:, :, None])[:, :, 0] / w[i_wn0[0], i_wn0[1], None]
+                vh = self.gb.indexAssign(vh, (i_wn0[0], slice(None), i_wn0[1]), 
+                                         -1j * (q[i_wn0[0], :, :] @ v[i_wn0[0], :, i_wn0[1]][:, :, None])[:, :, 0] / w[i_wn0[0], i_wn0[1], None])
 
                 if wis0.any():
                     w2h_, vh_ = self.gb.la.eig(-qp)
@@ -919,11 +920,11 @@ class Layer:
                         _v_norm = self.gb.sqrt(gb.conj(_v_w0[ii]) @ _v_w0[ii])
                         if _vh_norm >= _v_norm:
                             # vh[i_wis0[0][ii], :, i_wis0[1][ii]] /= _vh_norm
-                            vh[i_wis0[0][ii], :, i_wis0[1][ii]] = vh_[i_wis0[0][ii], :, i_wis0[1][ii]]
-                            v[i_wis0[0][ii], :, i_wis0[1][ii]] = self.gb.parseData([0., 0.])
+                            vh = self.gb.indexAssign(vh, (i_wis0[0][ii], slice(None), i_wis0[1][ii]), vh_[i_wis0[0][ii], :, i_wis0[1][ii]])
+                            v = self.gb.indexAssign(v, (i_wis0[0][ii], slice(None), i_wis0[1][ii]), self.gb.parseData([0., 0.]))
                         else:
                             # the column of v is already correct
-                            vh[i_wis0[0][ii], :, i_wis0[1][ii]] = self.gb.parseData([0., 0.])
+                            vh = self.gb.indexAssign(vh, (i_wis0[0][ii], slice(None), i_wis0[1][ii]), self.gb.parseData([0., 0.]))
 
                 vn = sla.norm(gb.moveaxis(v, 1, 2).reshape(self.pr.num_g*2, 2), axis=1).reshape(self.pr.num_g, 2)[:, None, :]
                 vhn = sla.norm(gb.moveaxis(vh, 1, 2).reshape(self.pr.num_g * 2, 2), axis=1).reshape(self.pr.num_g, 2)[:, None, :]
@@ -936,17 +937,17 @@ class Layer:
                 r2 = range(ng, 2 * ng)
 
                 phil = self.gb.zeros((2*ng, 2*ng), dtype=gb.complex128)
-                phil[r1, r1] = v[:, 0, 0]
-                phil[r1, r2] = v[:, 0, 1]
-                phil[r2, r1] = v[:, 1, 0]
-                phil[r2, r2] = v[:, 1, 1]
-
+                phil = self.gb.indexAssign(phil, (r1,r1), v[:, 0, 0])
+                phil = self.gb.indexAssign(phil, (r1,r2), v[:, 0, 1])
+                phil = self.gb.indexAssign(phil, (r2,r1), v[:, 1, 0])
+                phil = self.gb.indexAssign(phil, (r2,r2), v[:, 1, 1])
+                
                 psil = self.gb.zeros((2*ng, 2*ng), dtype=gb.complex128)
-                psil[r1, r1] = vh[:, 0, 0]
-                psil[r2, r1] = vh[:, 1, 0]
-                psil[r1, r2] = vh[:, 0, 1]
-                psil[r2, r2] = vh[:, 1, 1]
-
+                psil = self.gb.indexAssign(psil, (r1,r1), v[:, 0, 0])
+                psil = self.gb.indexAssign(psil, (r1,r2), v[:, 0, 1])
+                psil = self.gb.indexAssign(psil, (r2,r1), v[:, 1, 0])
+                psil = self.gb.indexAssign(psil, (r2,r2), v[:, 1, 1])
+                
                 row = self.gb.parseData([[0, 0], [ng, ng]])
                 rows = self.gb.repeat(row[:, :, None], ng, axis=2)
                 column = self.gb.parseData([[0, ng], [0, ng]])
@@ -1091,7 +1092,7 @@ class Layer:
 
             # for non zero w, calculate vh using -jQv/q
             vh = self.gb.zeros((self.pr.num_g, self.pr.num_g), dtype=gb.complex128)
-            vh[:, i_wn0[0]] = -1j * (Q @ v[:, i_wn0[0]]) / w[i_wn0[0]]
+            vh = self.gb.indexAssign(vh, (slice(None),i_wn0[0]), -1j * (Q @ v[:, i_wn0[0]]) / w[i_wn0[0]])
             # where w is 0, vh's column is 0
 
             # normalize such that the larger norm of v and vh's each column is 1
@@ -1123,12 +1124,12 @@ class Layer:
             _rc.append(rc)
 
         self.phil = self.gb.zeros((2*self.pr.num_g, 2*self.pr.num_g), dtype=gb.complex128)
-        self.phil[:self.pr.num_g, :self.pr.num_g] = _psil[0]
-        self.phil[self.pr.num_g:, self.pr.num_g:] = _phil[1]
+        self.phil = self.gb.indexAssign(self.phil, (slice(None,self.pr.num_g), slice(None,self.pr.num_g)), _psil[0])
+        self.phil = self.gb.indexAssign(self.phil, (slice(self.pr.num_g,None), slice(self.pr.num_g,None)), _phil[1])
 
         self.psil = self.gb.zeros((2*self.pr.num_g, 2*self.pr.num_g), dtype=gb.complex128)
-        self.psil[:self.pr.num_g, self.pr.num_g:] = _psil[1]
-        self.psil[self.pr.num_g:, :self.pr.num_g] = _phil[0]
+        self.psil = self.gb.indexAssign(self.psil, (slice(None,self.pr.num_g), slice(self.pr.num_g,None)), _psil[1])
+        self.psil = self.gb.indexAssign(self.psil, (slice(self.pr.num_g,None), slice(None,self.pr.num_g)), _phil[0])
 
         self.ql = self.gb.concatenate(_ql)
         self._rad_cha = _rc[0] + [a+self.pr.num_g for a in _rc[1]]

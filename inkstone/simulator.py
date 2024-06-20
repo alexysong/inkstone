@@ -772,7 +772,7 @@ class Inkstone:
         aibo = []
         for z, n in zip([a, ab], [en, enb]):
             i = self.gb.zeros(2*self.pr.num_g, dtype=self.gb.complex128)
-            i[n] = z
+            i = self.gb.indexAssign(i, n, z)
             aibo.append(i)
             # todo: is this done?
 
@@ -820,8 +820,8 @@ class Inkstone:
                                 # todo: need to handle this and document it.
                                 # if user specify 90 degree incidence, this is activated
                                 warn('You are specifying incidence in a channel that is parallel to the surface of the structure. \n In this case, only specific field configuration is allowed.')
-                                ab[jj] = sa[i]
-                                ab[jj + self.pr._num_g_ac] = pa[i]
+                                ab = self.gb.indexAssign(ab, jj, sa[i])
+                                ab = self.gb.indexAssign(ab, jj+self.pr._num_g_ac, pa[i])
                             else:
                                 s = sa[i]
                                 p = pa[i]
@@ -842,9 +842,9 @@ class Inkstone:
                                 ex = -s * sp + p * st * cp  # e_x
                                 ey = s * cp + p * st * sp  # e_y
                                 phi_2x2 = self.gb.castType(layer_inci.phil_2x2s[:, :, jj],self.gb.complex128)
-                                v = self.gb.la.solve(phi_2x2, [ex, ey])
-                                ab[jj] = v[0]
-                                ab[jj + self.pr._num_g_ac] = v[1]
+                                v = self.gb.la.solve(phi_2x2, self.gb.parseData([ex, ey]))
+                                ab = self.gb.indexAssign(ab, jj, v[0])
+                                ab = self.gb.indexAssign(ab, jj+self.pr._num_g_ac, v[1])
 
                     aibo.append(ab)
         else:
@@ -1551,8 +1551,8 @@ class Inkstone:
             z_l = za_l.tolist()
             if z_l:
                 fields = self.GetLayerFieldsListPoints(ll[idx], xy, z_l)
-                for F, f in zip(Fields, fields):
-                    F[:, iin] = f
+                for f_idx, f in enumerate(fields):
+                    Fields[f_idx] = self.gb.indexAssign(Fields[f_idx], (slice(None),iin), f) # jax might not like differentiating this
 
         Ex, Ey, Ez, Hx, Hy, Hz = Fields
 

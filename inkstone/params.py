@@ -181,11 +181,11 @@ class Params:
             val = self.gb.parseData(((val, 0), (0, 0)),self.gb.float64)
             self.is_1d_latt = True
         else:
-            a, b = val
-            an, bn = self.gb.parseData([self.gb.la.norm(a), self.gb.la.norm(b)],dtype=self.gb.float64)
+            a, b = self.gb.parseData(val)
+            an, bn = [self.gb.la.norm(a), self.gb.la.norm(b)]
             # if either latt vec is zero, then it is 1D. Make sure it's x-z for layer solver.
             if an == 0:
-                val =self.gb.parseData(((bn, 0), (0, 0)),dtype=self.gb.float64)
+                val = self.gb.parseData(((bn, 0), (0, 0)),dtype=self.gb.float64)
                 self.is_1d_latt = True
                 warn("2D structure (in-plane 1D), non-uniform direction is rotated to x axis.")
             if bn == 0:
@@ -579,7 +579,7 @@ class Params:
     def _calc_gs(self):
         """ calculate E and H Fourier components g points """
         if self._num_g_input and self.recipr_vec:
-            b1, b2 = self.recipr_vec
+            b1, b2 = self.gb.parseData(self.recipr_vec)
             b1n, b2n = [self.gb.la.norm(b) for b in [b1, b2]]
             if b1n != float('inf') and b2n != float('inf'):
                 self.gs, self.idx_g = g_pts(self._num_g_input, self.recipr_vec[0], self.recipr_vec[1])
@@ -683,7 +683,7 @@ class Params:
         if self.idx_g:
             # t1 = time.process_time()
 
-            m, n = max_idx_diff(self.idx_g,self.gb)
+            m, n = max_idx_diff(self.idx_g)
             self.mmax = m
             self.nmax = n
             x = self.gb.arange(-m, m+1)
@@ -697,7 +697,7 @@ class Params:
 
             # t3 = time.process_time()
 
-            b1, b2 = self.recipr_vec
+            b1, b2 = self.gb.parseData(self.recipr_vec)
             b1n, b2n = [self.gb.la.norm(b) for b in [b1, b2]]
             # if one of them is infinity, this is a 1D structure. set it to 0 such that they don't appear in ks_ep_mu
             if b1n == float('inf'):
@@ -717,7 +717,7 @@ class Params:
             # print('_calc_ks_ep_mu', time.process_time()-t1)
 
     def _calc_q0(self):
-        if self._num_g_ac and (self.omega is not None) and gb.checkAny(self.ks):
+        if self._num_g_ac and (self.omega is not None) and (self.ks).any():
             # t1 = time.process_time()
             k_parallel = self.gb.la.norm(self.ks, axis=-1)
             q02 = self.gb.ones(self._num_g_ac) * self.gb.square(self.omega) - self.gb.square(k_parallel) + 0j
@@ -878,49 +878,46 @@ class Params:
 
             # c1[:, i_knz] = self.gb.inputParser([[1.], [0.]])
             # c2[:, i_knz] = -1j / o * self.gb.inputParser([Kx[i_knz] * Ky[i_knz] / q0h[i_knz], (-self.gb.square(Kx[i_knz]) - self.gb.square(q0h[i_knz])) / q0h[i_knz]])  # should not be |Kx|^2
-            c1[:, i_kez] = self.gb.parseData([[1.], [0.]])
-            c2[:, i_kez] = self.gb.parseData([[0.], [1.]])
+            c1 = self.gb.indexAssign(c1, (slice(None),i_kez), self.gb.parseData([[1.], [0.]]))
+            c2 = self.gb.indexAssign(c2, (slice(None),i_kez), self.gb.parseData([[0.], [1.]]))
             cphi = self.gb.cos(self._phi)
             sphi = self.gb.sin(self._phi)
-            c1[:, ii] = self.gb.parseData([[sphi], [-cphi]])
-            c2[:, ii] = self.gb.parseData([[cphi], [sphi]])
+            c1 = self.gb.indexAssign(c1, (slice(None),ii), self.gb.parseData([[sphi], [-cphi]], dtype=self.gb.complex128))
+            c2 = self.gb.indexAssign(c2, (slice(None),ii), self.gb.parseData([[cphi], [sphi]], dtype=self.gb.complex128))
 
             k_norm = self.gb.castType(k_norm, self.gb.complex128) #compatible dtype with c1f,c2f assignment below
-            c1f[i_qlw] = o / q0h[i_qlw] / k_norm[i_qlw]
-            c2f[i_qlw] = 1j / k_norm[i_qlw]
+            c1f = self.gb.indexAssign(c1f, i_qlw, o / q0h[i_qlw] / k_norm[i_qlw])
+            c2f = self.gb.indexAssign(c2f, i_qlw, 1j / k_norm[i_qlw])
 
-            c1f[i_qsw] = 1. / k_norm[i_qsw]
-            c2f[i_qsw] = 1j / o * q0h[i_qsw] / k_norm[i_qsw]
+            c1f = self.gb.indexAssign(c1f, i_qsw, 1. / k_norm[i_qsw])
+            c2f = self.gb.indexAssign(c2f, i_qsw, 1j / o * q0h[i_qsw] / k_norm[i_qsw])
 
             # c1f[i_knz] = 1.
             # c2f[i_knz] = 1.
 
-            c1f[i_kez] = 1.
-            c2f[i_kez] = 1j * q0h[i_kez] / o
+            c1f = self.gb.indexAssign(c1f, i_kez, 1.)
+            c2f = self.gb.indexAssign(c2f, i_kez, 1j * q0h[i_kez] / o)
 
-            c1f[ii] = 1.
-            c2f[ii] = 1j * q0h[ii] / o
-
-            c1 = self.gb.castType(c1,self.gb.complex128)
-            c2 = self.gb.castType(c2,self.gb.complex128)
+            c1f = self.gb.indexAssign(c1f, ii, 1.)
+            c2f = self.gb.indexAssign(c2f, ii, 1j * q0h[ii] / o)
             
-            c1 *= c1f
-            c2 *= c2f
+            c1 = self.gb.inPlaceMultiply(c1,c1f)
+            c2 = self.gb.inPlaceMultiply(c2,c2f)
 
-            r1 = range(ng)
-            r2 = range(ng, 2 * ng)
+            r1 = self.gb.arange(ng)
+            r2 = self.gb.arange(ng, 2 * ng)
             phi0 = self.gb.zeros((2*ng, 2*ng), dtype=self.gb.complex128)
             psi0 = self.gb.clone(phi0)
-            phi0[r1, r1] = c1[0, :]
-            phi0[r2, r1] = c1[1, :]
-            phi0[r1, r2] = c2[0, :]
-            phi0[r2, r2] = c2[1, :]
-            psi0[r1, r1] = c2[0, :]
-            psi0[r2, r1] = c2[1, :]
-            psi0[r1, r2] = c1[0, :]
-            psi0[r2, r2] = c1[1, :]
+            phi0 = self.gb.indexAssign(phi0, (r1,r1), c1[0,:])
+            phi0 = self.gb.indexAssign(phi0, (r2,r1), c1[1,:])
+            phi0 = self.gb.indexAssign(phi0, (r1,r2), c2[0,:])
+            phi0 = self.gb.indexAssign(phi0, (r2,r2), c2[1,:])
+            psi0 = self.gb.indexAssign(psi0, (r1,r1), c2[0,:])
+            psi0 = self.gb.indexAssign(psi0, (r2,r1), c2[1,:])
+            psi0 = self.gb.indexAssign(psi0, (r1,r2), c1[0,:])
+            psi0 = self.gb.indexAssign(psi0, (r2,r2), c1[1,:])
 
-            self.phi0_2x2s = self.gb.moveaxis(self.gb.parseData([c1, c2]), 0, 1)
+            self.phi0_2x2s = self.gb.moveaxis(self.gb.parseData([c1, c2], dtype=self.gb.complex128), 0, 1)
 
             # # debugging,  check if phi is eigen and consistent with psi
             # psi00 = -1j * self.P0 @ phi0 / self.q0
@@ -961,8 +958,8 @@ class Params:
             # phif[r2, r2] = -1.
 
             # attention! If need to change this form, note in interface matrix calculations this form is assumed to speed up things. Need to change coding there, not just changing psif here.
-            psif = gb.indexAssign(psif, (r2,r1), 1.j)
-            psif = gb.indexAssign(psif, (r1,r2), -1.j)
+            psif = self.gb.indexAssign(psif, (r2,r1), 1.j)
+            psif = self.gb.indexAssign(psif, (r1,r2), -1.j)
 
             self.phif = phif
             self.psif = psif
@@ -1201,10 +1198,10 @@ class Params:
             if not isinstance(self.latt_vec, (tuple, self.gb.raw_type)):
                 self._uc_area = self.latt_vec
             else:
-                a1, a2 = self.latt_vec
+                a1, a2 = gb.parseData(self.latt_vec)
                 a1n, a2n = [self.gb.la.norm(a) for a in [a1, a2]]
                 if a1n != 0. and a2n != 0.:
-                    self._uc_area = self.gb.abs(self.gb.cross(self.latt_vec[0], self.latt_vec[1]))
+                    self._uc_area = self.gb.abs(self.gb.cross(a1,a2))
                 elif a1n == 0.:  # 1D
                     self._uc_area = a2n
                 elif a2n == 0.:
@@ -1217,7 +1214,7 @@ class Params:
         calculate cos(vartheta), sin(vartheta), cos(phi), sin(phi) for all relevant orders, where vartheta = pi/2-theta
         Used in calculating ai bo. Recording these cos and sin allow for high-order incidence.
         """
-        if gb.checkAny(self.ks) and self.num_g and (self._theta is not None) and (self._phi is not None) and (self.kii is not None):
+        if (self.ks).any() and self.num_g and (self._theta is not None) and (self._phi is not None) and (self.kii is not None):
             # t1 = time.process_time()
 
             idxa = self.gb.parseData(self.idx_g)
@@ -1229,18 +1226,19 @@ class Params:
 
             cphi = self.gb.zeros(self._num_g_ac, dtype=self.gb.complex128)
             sphi = self.gb.zeros(self._num_g_ac, dtype=self.gb.complex128)
-            cphi[ib] = self.gb.castType(ksa[ib, 0] / k_pa[ib], self.gb.complex128)
-            sphi[ib] = self.gb.castType(ksa[ib, 1] / k_pa[ib], self.gb.complex128)
-            cphi[i0] = 1.
-            sphi[i0] = 0.
-            cphi[ii] = self.gb.cos(self._phi)
-            sphi[ii] = self.gb.sin(self._phi)
+            
+            cphi = self.gb.indexAssign(cphi, ib, ksa[ib, 0] / k_pa[ib])
+            sphi = self.gb.indexAssign(sphi, ib, ksa[ib, 1] / k_pa[ib])
+            cphi = self.gb.indexAssign(cphi, i0, 1.)
+            sphi = self.gb.indexAssign(sphi, i0, 0.)
+            cphi = self.gb.indexAssign(cphi, ii, self.gb.cos(self._phi))
+            sphi = self.gb.indexAssign(sphi, ii, self.gb.sin(self._phi))
 
             cthe = k_pa / self.kii.real + 0j  # this is always positive
             # when omega complex, k_parallel is still calc as real
             sthe = self.gb.sqrt(1 - cthe**2 + 0j)
-            cthe[ii] = self.gb.cos(self.gb.pi/2 - self._theta)
-            sthe[ii] = self.gb.sin(self.gb.pi/2 - self._theta)
+            cthe = self.gb.indexAssign(cthe, ii, self.gb.cos(self.gb.pi/2 - self._theta))
+            sthe = self.gb.indexAssign(sthe, ii, self.gb.sin(self.gb.pi/2 - self._theta))
             # todo: theta could be None (e.g. setting Excitation By Eigen)
 
             self.cos_phis = list(cphi)
@@ -1253,8 +1251,8 @@ class Params:
                 # todo: self.kio is updated in solving stage as which layer is output is determined then. But all `Params` data should be calculated at setting structure stage.
                 # when omega complex, k_parallel is still calc as real
                 sthe_bk = self.gb.sqrt(1 - cthe_bk ** 2 + 0j)
-                cthe_bk[ii] = self.gb.cos(self.gb.pi / 2 - self._theta)  # incorrect, out region could have different refractive index
-                sthe_bk[ii] = self.gb.sin(self.gb.pi / 2 - self._theta)
+                cthe_bk = self.gb.indexAssign(cthe_bk, ii, self.gb.cos(self.gb.pi / 2 - self._theta)) # incorrect, out region could have different refractive index
+                sthe_bk = self.gb.indexAssign(sthe_bk, ii, self.gb.sin(self.gb.pi / 2 - self._theta)) 
                 self.cos_phis_bk = self.cos_phis.copy()
                 self.sin_phis_bk = self.sin_phis.copy()
                 self.cos_varthetas_bk = list(cthe)
