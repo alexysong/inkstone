@@ -20,6 +20,7 @@ def recipro(a1, a2, gb=gb):
 
     """
 
+    a1, a2 = [gb.parseData(a) for a in [a1, a2]]
     a1n, a2n = [gb.la.norm(a) for a in [a1, a2]]
 
     if a1n == 0.:
