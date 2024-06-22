@@ -44,15 +44,17 @@ Ex, Ey, Ez, Hx, Hy, Hz = s.GetFields(xmin=-0.5, xmax=0.5, nx=101,
 #%% plotting
 from matplotlib import pyplot as plt
 import numpy as np
+
 plt.pcolormesh(np.linspace(-0.5, 0.5, 101),
                np.linspace(-0.2, d+0.2, 101),
-            np.abs(Ey[0, :, :]).T,
+               np.abs(Ey[0, :, :]).T,
                shading='gouraud')
-#import torch
-#plt.pcolormesh(torch.linspace(-0.5, 0.5, 101),
- #              torch.linspace(-0.2, d+0.2, 101),
-  #             torch.abs(Ey[0, :, :]).T,
-   #            shading='gouraud')
+'''       
+import torch
+plt.pcolormesh(torch.linspace(-0.5, 0.5, 101),
+               torch.linspace(-0.2, d+0.2, 101),
+               torch.abs(Ey[0, :, :]).T,
+                shading='gouraud')'''
 plt.xlabel('x')
 plt.ylabel('z')
 plt.colorbar()

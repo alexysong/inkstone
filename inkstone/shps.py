@@ -89,13 +89,12 @@ class Shp:
         """
         if ks:
             self.ks: List = ks
-        a = self._calc_ft()
-        self._ft = [x[0] for x in self._calc_ft()]
+        self._ft = self.gb.parseData(self._calc_ft(),dtype=self.gb.complex128)
         s = 1
         self.use_gibbs_correction(**kw_gibbs)
         if self._if_gibbs_corr:
-            s = gibbs_corr(self.ks, **self._kw_gibbs)
-        ft = (self.gb.parseData(self._ft, dtype=self.gb.complex128) * self.gb.parseData(s, dtype=self.gb.complex128)).tolist()
+            s = self.gb.parseData(gibbs_corr(self.ks, **self._kw_gibbs))
+        ft = (self._ft * s).tolist()
         self._ft = ft
         return self._ft
 

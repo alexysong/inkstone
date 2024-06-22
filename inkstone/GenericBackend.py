@@ -24,8 +24,20 @@ class GenericBackend:
     backend     :   str
 
     """
-    def __init__(self, backend: str):
-        self.backend = backend
+    def __init__(self, b: str):
+        self._backend = b
+        self.loadBasicFuncs()
+
+    @property
+    def backend(self):
+        return self._backend
+        
+    @backend.setter
+    def backend(self,backend:str):
+        self._backend = backend
+        self.loadBasicFuncs()
+    
+    def loadBasicFuncs(self):
         match self.backend:
             case "torch":
                 self.raw_type = torch.Tensor
@@ -60,8 +72,7 @@ class GenericBackend:
                 self.maximum = torch.maximum
                 self.einsum = torch.einsum
                 self.lu_factor = torch.linalg.lu_factor
-               # self.lu_solve = torch.linalg.lu_solve
-                self.norm = torch.norm
+         #       self.lu_solve = torch.linalg.lu_solve
                 self.fft = torch.fft
                 self.slogdet = torch.slogdet
                 self.solve = torch.linalg.solve
@@ -108,8 +119,7 @@ class GenericBackend:
                 self.maximum = np.maximum
                 self.einsum = np.einsum
                 self.lu_factor = sla.lu_factor
-                self.lu_solve = sla.lu_solve
-                self.norm = sla.norm
+            #    self.lu_solve = sla.lu_solve
                 self.fft = sfft
                 self.solve = sla.solve
                 
@@ -125,16 +135,21 @@ class GenericBackend:
         
     def parseData(self, i: any, dtype = None):
         if(type(i) is self.raw_type):
-           # print(i)
-            return i
+            # print(i)
+            if dtype != None and dtype != i.dtype:
+                return self.castType(i, dtype)
+            else:
+                return i
         o = i
         depth = 0
         while type(o) == list or type(o) == tuple:
             o = o[0]
             depth += 1
         
-        
         types = [type(o),type(i)]
+        
+        if (self.raw_type in types):
+            return self.parseList(i)
         
         if not dtype:
             if int in types:
@@ -200,6 +215,12 @@ class GenericBackend:
                 while len(t:=[torch.stack(i) for i in d if type(i) is tuple]) != 0: 
                     d = t
                 tup = d
+                
+                for i in range(len(tup)):
+                    if type(tup[i]) is list:
+                        tup[i] = self.parseList(tup[i])
+                        i-=1
+                        
                 return torch.stack(tup,dim=dim)
             case "numpy":
                 return np.stack(tup, axis=dim)
@@ -272,7 +293,7 @@ class GenericBackend:
         match self.backend:
             case "torch": #a: input, b: dim to sort along, c: descending, d: controls the relative order of equivalent elements
                 if not col:
-                    print("col needs to be specified when using torch. But here it's set =m if missing, like what numpy does")
+                    #print("col needs to be specified when using torch. But here it's set =m if missing, like what numpy does")
                     col = row
                 return torch.triu_indices(row,col,offset)
             case "numpy":#a: input, b: axis, c: algorithm, d: order of comparing
@@ -282,14 +303,21 @@ class GenericBackend:
             case _:
                 raise NotImplementedError
     
- #   def lu_solve(self,p,q):
+    def lu_solve(self,p,q):
         match self.backend:
             case 'torch':
-                return torch.linalg.lu_solve(p.LU,p.pivots,q)
+                return torch.linalg.lu_solve(p[0],p[1],q)
             case 'numpy':
-                return sla.lu_solve((p.LU,p.pivots),q)
+                return sla.lu_solve(p,q)
             case _:
                 raise NotImplementedError
+            
+    def norm(self, i, dim=None):
+        match self.backend:
+            case 'torch':
+                return torch.norm(i, dim=dim)
+            case 'numpy':
+                return sla.norm(i,axis=dim)
     
     def argsort(self, ipt, dim=-1, c=None, d=None):
         if c or d:
@@ -381,8 +409,7 @@ global genericBackend
 genericBackend = GenericBackend("numpy")
 def switchTo(backend):
     global genericBackend
-    genericBackend = GenericBackend(backend)
-    print(genericBackend.backend)
+    genericBackend.backend = backend
     
 def getLsDepth(ls):
     if type(ls) is list:

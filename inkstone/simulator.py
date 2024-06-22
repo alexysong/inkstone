@@ -808,7 +808,7 @@ class Inkstone:
 
             for ii, (sa, pa, od, sphi, cphi, sthe, cthe) in enumerate([[self.pr._s_amps, self.pr._p_amps, self.pr._incident_orders, self.pr.sin_phis, self.pr.cos_phis, self.pr.sin_varthetas, self.pr.cos_varthetas], [self.pr._s_amps_bk, self.pr._p_amps_bk, self.pr._incident_orders_bk, self.pr.sin_phis_bk, self.pr.cos_phis_bk, self.pr.sin_varthetas_bk, self.pr.cos_varthetas_bk]]):
                 if self.pr._num_g_ac:
-                    ab = self.gb.zeros(2 * self.pr._num_g_ac) + 0j
+                    ab = self.gb.zeros(2 * self.pr._num_g_ac, dtype=self.gb.complex128) + 0j
                     if (sa or pa) and od and self.pr.idx_g and \
                             sphi and cphi and sthe and cthe:
                         # find the index of the input orders in the g list
@@ -841,7 +841,7 @@ class Inkstone:
                                 ex = -s * sp + p * st * cp  # e_x
                                 ey = s * cp + p * st * sp  # e_y
                                 phi_2x2 = self.gb.castType(layer_inci.phil_2x2s[:, :, jj],self.gb.complex128)
-                                v = self.gb.la.solve(phi_2x2, [ex, ey])
+                                v = self.gb.la.solve(phi_2x2, self.gb.parseList([ex, ey]))
                                 ab[jj] = v[0]
                                 ab[jj + self.pr._num_g_ac] = v[1]
 
@@ -937,22 +937,22 @@ class Inkstone:
 
                 a, b = layer.imfl
                 # ia = la.inv(a)
-                aTlu = sla.lu_factor(a.T)
+                aTlu = self.gb.lu_factor(a.T)
                 aTlu2 = (self.gb.clone(aTlu[0]), self.gb.clone(aTlu[1]))
                 a1 = aTlu2[0]
                 a1[self.gb.triu_indices(a1.shape[0])] *= 0.5
 
-                alu = sla.lu_factor(a)
-                alu2 = (alu[0].copy(), alu[1].copy())
+                alu = self.gb.lu_factor(a)
+                alu2 = (self.gb.clone(alu[0]), self.gb.clone(alu[1]))
                 a1 = alu2[0]
                 a1[self.gb.triu_indices(a1.shape[0])] *= 0.5
 
-                ab = sla.lu_solve(alu, b)
+                ab = self.gb.lu_solve(alu, b)
 
                 # alu = sla.lu_factor(a)
                 # aib = sla.lu_solve(alu, b)
                 # sl11 = b @ ia
-                sl11 = sla.lu_solve(aTlu, b.T).T
+                sl11 = self.gb.lu_solve(aTlu, b.T).T
                 # sl12 = a - b @ ia @ b
                 sl12 = 0.5 * (a - b @ ab)
                 sl21 = alu2
@@ -983,8 +983,8 @@ class Inkstone:
                 sa = scp21 @ self.ai
                 sb = scin12 @ self.bo
                 # try:
-                al = sla.solve((I - (scp22 * f) @ (scin11 * f)), (sa + (scp22 * f) @ sb))
-                bl = sla.solve((I - (scin11 * f) @ (scp22 * f)), ((scin11 * f) @ sa + sb))
+                al = self.gb.solve((I - (scp22 * f) @ (scin11 * f)), (sa + (scp22 * f) @ sb))
+                bl = self.gb.solve((I - (scin11 * f) @ (scp22 * f)), ((scin11 * f) @ sa + sb))
                 # except Exception as e:
                 #     warn('Singular matrix in calculating al and bl.')
                 #     print(la.cond((I - (scp22 * f) @ (scin11 * f))))
@@ -1426,7 +1426,7 @@ class Inkstone:
         exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)  # each has shape (num_g, len(z))
         ex, ey, ez, hx, hy, hz = [a + b for a, b in [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
 
-        xa, ya = self.gb.hsplit(self.gb.parseData(xy), 2)  # 2d array with one column
+        xa, ya = self.gb.hsplit(self.gb.parseList(xy), 2)  # 2d array with one column
 
         kxa, kya = self.gb.hsplit(self.gb.parseData(self.pr.ks), 2)  # 2d array with one column
 
@@ -1595,9 +1595,9 @@ class Inkstone:
                                      ['x', 'y', 'z']):
             if c is not None:
                 if hasattr(c, '__len__'):
-                    c = self.gb.parseData(c)
+                    c = self.gb.parseData(c, dtype=gb.float64)
                 else:
-                    c = self.gb.parseData([c])
+                    c = self.gb.parseData([c], dtype=gb.float64)
                 u = c
             elif min is None or max is None or n is None:
                 warn(s + " points to get fields not defined properly. Default to 0.")

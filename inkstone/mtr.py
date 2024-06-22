@@ -157,9 +157,9 @@ class Mtr:
         adbc = v[0, 0] * v[1, 1] - v[0, 1] * v[1, 0]
         if adbc == 0 or v[2, 2] == 0:
             raise Exception('Singular permittivity tensor.')
-        ei = self.gb.parseData([[v[1, 1] / adbc, -v[0, 1] / adbc, 0],
-                       [-v[1, 0] / adbc, v[0, 0] / adbc, 0],
-                       [0, 0, 1 / v[2, 2]]], dtype=self.gb.complex128)
+        ei = self.gb.parseList([[v[1, 1] / adbc, -v[0, 1] / adbc, self.gb.parseData(0)],
+                       [-v[1, 0] / adbc, v[0, 0] / adbc, self.gb.parseData(0)],
+                       [self.gb.parseData(0), self.gb.parseData(0), 1 / v[2, 2]]])
         self._epsi_inv = ei
 
     @property
@@ -215,9 +215,9 @@ class Mtr:
         adbc = v[0, 0] * v[1, 1] - v[0, 1] * v[1, 0]
         if adbc == 0 or v[2, 2] == 0:
             raise Exception('Singular permittivity tensor.')
-        mi = self.gb.parseData([[v[1, 1] / adbc, -v[0, 1] / adbc, 0],
-                       [-v[1, 0] / adbc, v[0, 0] / adbc, 0],
-                       [0, 0, 1 / v[2, 2]]], dtype=self.gb.complex128)
+        mi = self.gb.parseList([[v[1, 1] / adbc, -v[0, 1] / adbc, self.gb.parseData(0)],
+                       [-v[1, 0] / adbc, v[0, 0] / adbc, self.gb.parseData(0)],
+                       [self.gb.parseData(0), self.gb.parseData(0), 1 / v[2, 2]]])
         self._mu_inv = mi
 
     @property

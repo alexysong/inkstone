@@ -16,7 +16,11 @@ A circular hole of radius 0.2 in each unit cell.
 """
 import sys
 sys.path.append("C:/Users/w-a-c/Desktop/inkstone")
-import numpy as np
+#import numpy as np
+import torch
+#import GenericBackend
+#GenericBackend.switchTo("torch")
+from GenericBackend import genericBackend as gb
 from inkstone import Inkstone
 
 s = Inkstone()
@@ -36,7 +40,7 @@ s.SetExcitation(theta=0, phi=0, s_amplitude=1, p_amplitude=0)
 
 flux_in = []
 flux_out = []
-freq = np.linspace(0.25, 0.45, 201)
+freq = torch.linspace(0.25, 0.45, 201)
 for i in freq:
     print('Frequency: {:g}'.format(i))
 
@@ -45,9 +49,9 @@ for i in freq:
     flux_in.append(s.GetPowerFlux('in'))
     flux_out.append(s.GetPowerFlux('out'))
 
-incident = np.array([a[0] for a in flux_in])
-reflection = -np.array([a[1] for a in flux_in]) / incident
-transmission = np.array([a[0] for a in flux_out]) / incident
+incident = gb.parseList(([a[0] for a in flux_in]))
+reflection = -gb.parseList([a[1] for a in flux_in]) / incident
+transmission = gb.parseList([a[0] for a in flux_out]) / incident
 
 #%% plotting
 from matplotlib import pyplot as plt

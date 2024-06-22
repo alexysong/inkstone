@@ -16,7 +16,10 @@ A circular hole of radius 0.2 in each unit cell.
 """
 import sys
 sys.path.append("C:/Users/w-a-c/Desktop/inkstone")
-import numpy as np
+#import numpy as np
+import torch
+import GenericBackend
+GenericBackend.switchTo("torch")
 from inkstone import Inkstone
 
 s = Inkstone()
@@ -43,9 +46,9 @@ Ex, Ey, Ez, Hx, Hy, Hz = s.GetFields(xmin=-0.5, xmax=0.5, nx=101,
 #%% plotting
 from matplotlib import pyplot as plt
 
-plt.pcolormesh(np.linspace(-0.5, 0.5, 101),
-               np.linspace(-0.2, 0.7, 91),
-               np.abs(Ex[0, :, :]).T, shading='gouraud')
+plt.pcolormesh(torch.linspace(-0.5, 0.5, 101),
+               torch.linspace(-0.2, 0.7, 91),
+               torch.abs(Ex[0, :, :]).T, shading='gouraud')
 plt.xlabel('x')
 plt.ylabel('z')
 plt.colorbar()

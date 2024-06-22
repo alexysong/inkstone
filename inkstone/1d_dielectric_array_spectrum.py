@@ -14,6 +14,9 @@ Each rod has side length 0.55.
 import sys
 sys.path.append("C:/Users/w-a-c/Desktop/inkstone")
 from inkstone import Inkstone
+import torch
+import GenericBackend
+GenericBackend.switchTo('torch')
 import numpy as np
 
 s = Inkstone()
@@ -34,7 +37,8 @@ s.SetExcitation(theta=0, phi=0, s_amplitude=1, p_amplitude=0)
 I = []
 R = []
 T = []
-freq = np.linspace(0.2, 0.9, 201)
+freq = torch.linspace(0.2, 0.9, 201)
+#freq = np.linspace(0.2, 0.9, 201)
 for f in freq:
     s.frequency = f
     i, r = s.GetPowerFlux('in')

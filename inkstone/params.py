@@ -180,8 +180,9 @@ class Params:
             val = self.gb.parseData(((val, 0), (0, 0)),self.gb.float64)
             self.is_1d_latt = True
         else:
+            val = [self.gb.parseData(a, dtype=gb.float64) for a in val]
             a, b = val
-            an, bn = self.gb.parseData([self.gb.la.norm(a), self.gb.la.norm(b)],dtype=self.gb.float64)
+            an, bn = self.gb.parseList([self.gb.norm(a), self.gb.norm(b)])
             # if either latt vec is zero, then it is 1D. Make sure it's x-z for layer solver.
             if an == 0:
                 val =self.gb.parseData(((bn, 0), (0, 0)),dtype=self.gb.float64)
@@ -193,7 +194,7 @@ class Params:
                 self.is_1d_latt = True
                 if val_old != val:
                     warn("2D structure (in-plane 1D), non-uniform direction is rotated to x axis.")
-        self._latt_vec: Union[Tuple[Tuple[float, float], Tuple[float, float]]] = val
+        self._latt_vec: Union[Tuple[Tuple[float, float], Tuple[float, float]]] = self.gb.parseData(val)
         self._recipr_vec: Tuple[Tuple[float, float], Tuple[float, float]] = recipro(val[0], val[1], gb=self.gb)
         self.if_2d()
         self._calc_gs()
@@ -1207,9 +1208,9 @@ class Params:
                 if a1n != 0. and a2n != 0.:
                     self._uc_area = self.gb.abs(self.gb.cross(self.latt_vec[0], self.latt_vec[1]))
                 elif a1n == 0.:  # 1D
-                    self._uc_area = a2n
+                    self._uc_area = gb.parseData(a2n)
                 elif a2n == 0.:
-                    self._uc_area = a1n
+                    self._uc_area = gb.parseData(a1n)
                 else:
                     raise Exception("Both lattice vectors have zero norms. Can't calculate unit cell area.")
 

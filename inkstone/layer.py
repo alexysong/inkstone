@@ -422,7 +422,7 @@ class Layer:
         ep, ei, mu, mi = [t[None, :, :] * d[:, None, None] for t in [epsi_bg, epsi_bg_inv, mu_bg, mu_bg_inv]]   # each is complex ((2mmax+1)x(2nmax+1), 3, 3) shape
 
         for bx in self.patterns.values():
-            eb, eib, mb, mib = [gb.parseList(f) / self.pr.uc_area for f in bx.ft(self.pr.ks_ep_mu)]
+            eb, eib, mb, mib = [gb.parseData(f, dtype=gb.complex128) / self.pr.uc_area for f in bx.ft(self.pr.ks_ep_mu)]
             ep += eb
             ei += eib
             mu += mb
@@ -624,8 +624,8 @@ class Layer:
                                                      [0.]])
 
         # normalize such that the larger norm of v and vh's each column is 1
-        vn = gb.norm(v, axis=0)
-        vhn = gb.norm(vh, axis=0)
+        vn = gb.norm(v, 0)
+        vhn = gb.norm(vh, 0)
         nm = self.gb.maximum(vn, vhn)
         v /= nm
         vh /= nm
@@ -1096,8 +1096,8 @@ class Layer:
 
             # normalize such that the larger norm of v and vh's each column is 1
             
-            vn = gb.norm(v, axis = 0)
-            vhn = gb.norm(vh,axis=0)
+            vn = gb.norm(v, 0)
+            vhn = gb.norm(vh,0)
             nm = self.gb.maximum(vn, vhn)
             v /= nm
             vh /= nm
