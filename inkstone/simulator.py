@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 # import scipy.sparse as sps
-import scipy.linalg as sla
+# import scipy.linalg as sla
 from warnings import warn
 from collections import OrderedDict
 from typing import Tuple, Optional, List, Dict, Union
 import time
 from GenericBackend import genericBackend as gb
-# import GenericBackend 
-# gb = GenericBackend.genericBackend
 
 from inkstone.rsp import rsp, rsp_sa12lu, rsp_sb21lu
 from inkstone.params import Params
@@ -901,26 +899,26 @@ class Inkstone:
                 # scin11, scin12, scin21, scin22 = csmrn
                 #
                 # if (layersl[i-1].in_mid_out == "in") and not layersl[i-1].is_vac:
-                #     sa = sla.lu_solve(scp21, ai_v)
+                #     sa = self.gb.sla.lu_solve(scp21, ai_v)
                 #     sb = sci12 @ bo_v
-                #     al = 1. / 2. * (bl0 @ sla.solve((I - sci11 @ scp22), (sci11 @ sa + sb))
-                #                     + al0 @ sla.solve((I - scp22 @ sci11), (sa + scp22 @ sb)))
+                #     al = 1. / 2. * (bl0 @ self.gb.sla.solve((I - sci11 @ scp22), (sci11 @ sa + sb))
+                #                     + al0 @ self.gb.sla.solve((I - scp22 @ sci11), (sa + scp22 @ sb)))
                 # else:
                 #     sa = scp21 @ ai_v
                 #     sb = sci12 @ bo_v
-                #     al = 1. / 2. * (bl0 @ sla.solve((I - sci11 @ scp22), (sci11 @ sa + sb))
-                #                     + al0 @ sla.solve((I - scp22 @ sci11), (sa + scp22 @ sb)))
+                #     al = 1. / 2. * (bl0 @ self.gb.sla.solve((I - sci11 @ scp22), (sci11 @ sa + sb))
+                #                     + al0 @ self.gb.sla.solve((I - scp22 @ sci11), (sa + scp22 @ sb)))
                 #
                 # if (layersl[i+1].in_mid_out == "out") and not layersl[i+1].is_vac:
                 #     sa = sc21 @ ai_v
-                #     sb = sla.lu_solve(scin12, bo_v)
-                #     bl = 1. / 2. * (bl0 @ sla.solve((I - sc22 @ scin11), (sa + sc22 @ sb))
-                #                     + al0 @ sla.solve((I - scin11 @ sc22), (scin11 @ sa + sb)))
+                #     sb = self.gb.sla.lu_solve(scin12, bo_v)
+                #     bl = 1. / 2. * (bl0 @ self.gb.sla.solve((I - sc22 @ scin11), (sa + sc22 @ sb))
+                #                     + al0 @ self.gb.sla.solve((I - scin11 @ sc22), (scin11 @ sa + sb)))
                 # else:
                 #     sa = sc21 @ ai_v
                 #     sb = scin12 @ bo_v
-                #     bl = 1. / 2. * (bl0 @ sla.solve((I - sc22 @ scin11), (sa + sc22 @ sb))
-                #                     + al0 @ sla.solve((I - scin11 @ sc22), (scin11 @ sa + sb)))
+                #     bl = 1. / 2. * (bl0 @ self.gb.sla.solve((I - sc22 @ scin11), (sa + sc22 @ sb))
+                #                     + al0 @ self.gb.sla.solve((I - scin11 @ sc22), (scin11 @ sa + sb)))
                 #
                 # # ravel 2d array (just one column) to 1d array
                 # al_old = al.ravel()
@@ -938,22 +936,22 @@ class Inkstone:
 
                 a, b = layer.imfl
                 # ia = la.inv(a)
-                aTlu = sla.lu_factor(a.T)
-                aTlu2 = (self.gb.clone(aTlu[0]), self.gb.clone(aTlu[1]))
-                a1 = aTlu2[0]
-                a1[self.gb.triu_indices(a1.shape[0])] *= 0.5
+                aTlu = self.gb.sla.lu_factor(a.T)
+                # a1 = self.gb.clone(aTlu[0])
+                # a1 = self.gb.assignAndMultiply(a1, self.gb.triu_indices(a1.shape[0]), 0.5)
+                # aTlu2 = (a1, aTlu[1])
+            
+                alu = self.gb.sla.lu_factor(a)
+                a1 = self.gb.clone(alu[0])
+                a1 = self.gb.assignAndMultiply(a1, self.gb.triu_indices(a1.shape[0]), 0.5)
+                alu2 = (a1, alu[1])
 
-                alu = sla.lu_factor(a)
-                alu2 = (alu[0].copy(), alu[1].copy())
-                a1 = alu2[0]
-                a1[self.gb.triu_indices(a1.shape[0])] *= 0.5
+                ab = self.gb.sla.lu_solve(alu, b)
 
-                ab = sla.lu_solve(alu, b)
-
-                # alu = sla.lu_factor(a)
-                # aib = sla.lu_solve(alu, b)
+                # alu = self.gb.sla.lu_factor(a)
+                # aib = self.gb.sla.lu_solve(alu, b)
                 # sl11 = b @ ia
-                sl11 = sla.lu_solve(aTlu, b.T).T
+                sl11 = self.gb.sla.lu_solve(aTlu, b.T).T
                 # sl12 = a - b @ ia @ b
                 sl12 = 0.5 * (a - b @ ab)
                 sl21 = alu2
@@ -984,16 +982,16 @@ class Inkstone:
                 sa = scp21 @ self.ai
                 sb = scin12 @ self.bo
                 # try:
-                al = sla.solve((I - (scp22 * f) @ (scin11 * f)), (sa + (scp22 * f) @ sb))
-                bl = sla.solve((I - (scin11 * f) @ (scp22 * f)), ((scin11 * f) @ sa + sb))
+                al = self.gb.sla.solve((I - (scp22 * f) @ (scin11 * f)), (sa + (scp22 * f) @ sb))
+                bl = self.gb.sla.solve((I - (scin11 * f) @ (scp22 * f)), ((scin11 * f) @ sa + sb))
                 # except Exception as e:
                 #     warn('Singular matrix in calculating al and bl.')
                 #     print(la.cond((I - (scp22 * f) @ (scin11 * f))))
                 #     # print(la.cond((sa + (scp22 * f) @ sb)))
                 #     print(la.cond((I - (scin11 * f) @ (scp22 * f))))
                 #     # print(la.cond(((scin11 * f) @ sa + sb)))
-                #     al = sla.solve((I - (scp22 * f) @ (scin11 * f) + 1e-14 * I), (sa + (scp22 * f) @ sb))
-                #     bl = sla.solve((I - (scin11 * f) @ (scp22 * f) + 1e-14 * I), ((scin11 * f) @ sa + sb))
+                #     al = self.gb.sla.solve((I - (scp22 * f) @ (scin11 * f) + 1e-14 * I), (sa + (scp22 * f) @ sb))
+                #     bl = self.gb.sla.solve((I - (scin11 * f) @ (scp22 * f) + 1e-14 * I), ((scin11 * f) @ sa + sb))
                 #     print(al.max())
                 #     print(bl.max())
 
