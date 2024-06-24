@@ -2,8 +2,8 @@
 import numpy as np
 
 # import scipy.sparse as sps
-import scipy.fft as fft
-import scipy.linalg as sla
+# import scipy.fft as fft
+# import scipy.linalg as sla
 from warnings import warn
 from collections import OrderedDict
 from typing import Optional, Set, Union, Tuple, Dict, List
@@ -388,7 +388,7 @@ class Layer:
                             break
                     elif bx2.shp.shape == 'disk':
                         r = self.gb.parseData(pt1) - gb.parseData(bx2.shp.center)
-                        d = self.gb.linalg.norm(r)
+                        d = self.gb.la.norm(r)
                         if d < bx2.shp.radius:
                             bx1.outside = bx2
                             break
@@ -445,10 +445,10 @@ class Layer:
 
         if self.patterns:
             idx = self.pr.idx_conv_mtx
-            ems = [fft.ifftshift(self.epsi_fs.swapaxes(0, 1), axes=(0, 1)),
-                   fft.ifftshift(self.epsi_inv_fs.swapaxes(0, 1), axes=(0, 1)),
-                   fft.ifftshift(self.mu_fs.swapaxes(0, 1), axes=(0, 1)),
-                   fft.ifftshift(self.mu_inv_fs.swapaxes(0, 1), axes=(0, 1))]
+            ems = [self.gb.fft.ifftshift(self.epsi_fs.swapaxes(0, 1), axes=(0, 1)),
+                   self.gb.fft.ifftshift(self.epsi_inv_fs.swapaxes(0, 1), axes=(0, 1)),
+                   self.gb.fft.ifftshift(self.mu_fs.swapaxes(0, 1), axes=(0, 1)),
+                   self.gb.fft.ifftshift(self.mu_inv_fs.swapaxes(0, 1), axes=(0, 1))]
             self.epxxcm, self.epxycm, self.epyxcm, self.epyycm, self.epzzcm, \
             self.eixxcm, self.eixycm, self.eiyxcm, self.eiyycm, self.eizzcm, \
             self.muxxcm, self.muxycm, self.muyxcm, self.muyycm, self.muzzcm, \
@@ -513,7 +513,7 @@ class Layer:
             self._calc_ep_mu_fs_3d()
         self.epsi_fs_used, self.epsi_inv_fs_used, self.mu_fs_used, self.mu_inv_fs_used = \
             [[em[j, i, :, :] for i, j in self.pr.idx_g_ep_mu_used]
-             for em in [fft.ifftshift(self.epsi_fs, axes=(0, 1)), fft.ifftshift(self.epsi_inv_fs, axes=(0, 1)), fft.ifftshift(self.mu_fs, axes=(0, 1)), fft.ifftshift(self.mu_inv_fs, axes=(0, 1))]]
+             for em in [self.gb.fft.ifftshift(self.epsi_fs, axes=(0, 1)), self.gb.fft.ifftshift(self.epsi_inv_fs, axes=(0, 1)), self.gb.fft.ifftshift(self.mu_fs, axes=(0, 1)), self.gb.fft.ifftshift(self.mu_inv_fs, axes=(0, 1))]]
 
         eu = self.epsi_fs_used
         ea = self.gb.parseData(eu, dtype=gb.complex128)
@@ -623,8 +623,8 @@ class Layer:
                     vh = self.gb.indexAssign(vh, (slice(None),i_wis0[0][ii]), self.gb.parseData([[0.],[0.]]))
 
         # normalize such that the larger norm of v and vh's each column is 1
-        vn = sla.norm(v, axis=0)
-        vhn = sla.norm(vh, axis=0)
+        vn = self.gb.la.norm(v, axis=0)
+        vhn = self.gb.la.norm(vh, axis=0)
         nm = self.gb.maximum(vn, vhn)
         v /= nm
         vh /= nm
@@ -651,7 +651,7 @@ class Layer:
         # # old
         # ql_inv = 1. / self.ql
         # self.psil = -1j * self.Q @ self.phil * ql_inv
-        # # self.psil = 1j * sla.solve(self.P, self.phil) @ gb.diag(self.ql)
+        # # self.psil = 1j * self.gb.sla.solve(self.P, self.phil) @ gb.diag(self.ql)
 
         self.ql = w
         self.phil = phil
@@ -717,22 +717,22 @@ class Layer:
         else:
             if self.pr.omega.imag < 0:
                 if self.pr.ccnif == "physical":
-                    w[(w2.real < 0) * (w.imag < 0)] *= -1
+                    w = self.gb.assignAndMultiply(w, (w2.real < 0) * (w.imag < 0), -1)
                 elif self.pr.ccnif == "ac":
-                    w[(w2.real < 0) * (w.imag > 0)] *= -1
+                    w = self.gb.assignAndMultiply(w, (w2.real < 0) * (w.imag > 0), -1)
                 else:
                     warn("ccnif not recognized. Default to 'physical'.")
-                    w[(w2.real < 0) * (w.imag < 0)] *= -1
+                    w = self.gb.assignAndMultiply(w, (w2.real < 0) * (w.imag < 0), -1)
             elif self.pr.omega.imag > 0:
                 if self.pr.ccpif == "ac":
-                    w[(w2.real < 0) * (w.imag < 0)] *= -1
+                    w = self.gb.assignAndMultiply(w, (w2.real < 0) * (w.imag < 0), -1)
                 elif self.pr.ccpif == "physical":
-                    w[(w2.real < 0) * (w.imag > 0)] *= -1
+                    w = self.gb.assignAndMultiply(w, (w2.real < 0) * (w.imag > 0), -1)
                 else:
                     warn("ccpif not recognized. Default to 'ac'.")
-                    w[(w2.real < 0) * (w.imag < 0)] *= -1
+                    w = self.gb.assignAndMultiply(w, (w2.real < 0) * (w.imag < 0), -1)
             else:
-                w[w.imag < 0] *= -1
+                w = self.gb.assignAndMultiply(w, w.imag<0, -1)
 
         return w
 
@@ -926,8 +926,8 @@ class Layer:
                             # the column of v is already correct
                             vh = self.gb.indexAssign(vh, (i_wis0[0][ii], slice(None), i_wis0[1][ii]), self.gb.parseData([0., 0.]))
 
-                vn = sla.norm(gb.moveaxis(v, 1, 2).reshape(self.pr.num_g*2, 2), axis=1).reshape(self.pr.num_g, 2)[:, None, :]
-                vhn = sla.norm(gb.moveaxis(vh, 1, 2).reshape(self.pr.num_g * 2, 2), axis=1).reshape(self.pr.num_g, 2)[:, None, :]
+                vn = self.gb.la.norm(gb.moveaxis(v, 1, 2).reshape(self.pr.num_g*2, 2), axis=1).reshape(self.pr.num_g, 2)[:, None, :]
+                vhn = self.gb.la.norm(gb.moveaxis(vh, 1, 2).reshape(self.pr.num_g * 2, 2), axis=1).reshape(self.pr.num_g, 2)[:, None, :]
                 nm = self.gb.maximum(vn, vhn)
                 v /= nm
                 vh /= nm
@@ -1020,11 +1020,11 @@ class Layer:
         Ky = self.pr.Ky
 
         # TM is p, Ex-Hy-Ez
-        Ppilu = sla.lu_factor(-1./o*eixx)  # i means inverted
+        Ppilu = self.gb.sla.lu_factor(-1./o*eixx)  # i means inverted
         Qp = o * muyy - 1. / o * Kx[:, None] * eizz * Kx
 
         # TE is s, Hx-Ey-Hz
-        Psilu = sla.lu_factor(-1./o * mixx)
+        Psilu = self.gb.sla.lu_factor(-1./o * mixx)
         Qs = o * epyy - 1. / o * Kx[:, None] * mizz * Kx
 
         return Ppilu, Qp, Psilu, Qs
@@ -1053,11 +1053,11 @@ class Layer:
         # Ky = self.pr.Ky
         #
         # # TM is p, Ex-Hy-Ez
-        # Ppilu = sla.lu_factor(-1./o*eixx)  # i means inverted
+        # Ppilu = self.gb.sla.lu_factor(-1./o*eixx)  # i means inverted
         # Qp = o * muyy - 1. / o * Kx[:, None] * eizz * Kx
         #
         # # TE is s, Hx-Ey-Hz
-        # Psilu = sla.lu_factor(-1./o * mixx)
+        # Psilu = self.gb.sla.lu_factor(-1./o * mixx)
         # Qs = o * epyy - 1. / o * Kx[:, None] * mizz * Kx
 
         Ppilu, Qp, Psilu, Qs = self._calc_PQ_2d()
@@ -1069,7 +1069,7 @@ class Layer:
 
         for P, Q in [(Ppilu, Qp), (Psilu, Qs)]:
 
-            # ql2, phil = self.gb.la.eig(- sla.lu_solve(P, Q))
+            # ql2, phil = self.gb.la.eig(- self.gb.sla.lu_solve(P, Q))
             # rc = self.gb.where(ql2.real > 0)[0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
             # ql = self.gb.sqrt(ql2 + 0j)
             #
@@ -1079,7 +1079,7 @@ class Layer:
             # psil = -1j * Q @ phil * ql_inv
             # # psil = 1j * gb.la.inv(P) @ phil @ gb.diag(self.ql)
 
-            w2, v = self.gb.la.eig(- sla.lu_solve(P, Q))
+            w2, v = self.gb.la.eig(- self.gb.sla.lu_solve(P, Q))
             rc = self.gb.where(w2.real > 0)[0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
             w = self.gb.sqrt(w2 + 0j)
 
@@ -1096,8 +1096,8 @@ class Layer:
             # where w is 0, vh's column is 0
 
             # normalize such that the larger norm of v and vh's each column is 1
-            vn = sla.norm(v, axis=0)
-            vhn = sla.norm(vh, axis=0)
+            vn = self.gb.la.norm(v, axis=0)
+            vhn = self.gb.la.norm(vh, axis=0)
             nm = self.gb.maximum(vn, vhn)
             v /= nm
             vh /= nm
@@ -1113,7 +1113,7 @@ class Layer:
             # print('psi0 diff {:g}'.format(diff))
             # diff_where = self.gb.where(gb.abs(psil1 - psil) > 1e-10)
             #
-            # check_eigen = sla.lu_solve(P, Q) @ phil
+            # check_eigen = self.gb.sla.lu_solve(P, Q) @ phil
             # diff1 = self.gb.abs(check_eigen + phil * w * w).max()
             # print('check eigen {:g}'.format(diff1))
             # # a = 1
@@ -1185,8 +1185,8 @@ class Layer:
         # b0l3 = term1 - term2
         # self.imfl3 = (a0l3, b0l3)
 
-        # term1 = sla.solve(self.pr.phif4, self.phil)
-        # term2 = sla.solve(self.pr.psif4, self.psil)
+        # term1 = self.gb.sla.solve(self.pr.phif4, self.phil)
+        # term2 = self.gb.sla.solve(self.pr.psif4, self.psil)
         # a0l4 = term1 + term2
         # b0l4 = term1 - term2
         # self.imfl4 = (a0l4, b0l4)
