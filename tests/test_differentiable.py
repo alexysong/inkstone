@@ -8,11 +8,14 @@ import scipy.linalg as sla
 import autograd.numpy as anp
 from autograd import grad as grada, holomorphic_grad as holomorphic_grada
 
+import jax.numpy as jnp
+from jax import grad as gradj
+
+import sys
+sys.path.append("./")
+sys.path.append("../")
 import objective_functions
 from finite_diff import finite_diff_grad
-
-# import jax.numpy as npj
-# from jax import grad as gradj
 
 
 # SETTINGS ################################################################################################
@@ -84,6 +87,31 @@ def test_sla_lu_solve():
         assert True
 
 
+
+# JAX ################################################################################################
+def test_jn():
+    """
+    Test if scipy.special.jn is differentiable by JAX
+    """
+    x = jnp.linspace(-5,5,100)
+
+    try:
+        auto_diff_result = grada(objective_functions.j1)(x)
+        assert False
+    except TypeError:
+        assert True
+
+def test_j0_custom():
+    """
+    Test j0 custom jax vjp 
+    """
+    from ..primitives import j0
+    data = np.random.uniform(low=-1,high=1,size=(1,10))
+    auto_diff_result = gradj(j0)(data)
+    finite_diff_result = finite_diff_grad(j0, data, default_eps)
+    abs_error = np.abs(auto_diff_result-finite_diff_result)
+    
+    assert np.max(abs_error)<default_abs_tol
 
 # TORCH ################################################################################################
 def test_float_torch():

@@ -1,6 +1,10 @@
 import numpy as np
+import scipy as sp
 import scipy.linalg as sla
 import autograd.numpy as anp
+import jax
+import jax.numpy as jnp
+import matplotlib.pyplot as plt
 
 import torch
 
@@ -29,3 +33,16 @@ def sum_of_lu_solve(A,b):
     lu, piv = sla.lu_factor(A)
     x = sla.lu_solve((lu, piv), b)
     return np.sum(x)
+
+def j1(x):
+    return sp.special.jn(1,x)
+
+if __name__ == '__main__':
+    bessel_order = 0
+    x = np.linspace(-5,5,100)
+    y = jax.scipy.special.bessel_jn(x, v=0)
+    x = np.linspace(-5,5,100).reshape(1,100)
+    # y = jnp.real(jnp.power(1j,bessel_order)*jax.scipy.special.i0(-1j*x))
+    print(y)
+    plt.plot(x,y)
+    plt.show()
