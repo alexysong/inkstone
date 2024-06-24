@@ -3,6 +3,7 @@
 import torch
 
 import numpy as np
+import scipy as sp
 
 import autograd.numpy as anp
 
@@ -10,6 +11,7 @@ import jax
 import jaxlib
 jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
+import jax.scipy as jsp
 
 from warnings import warn
 
@@ -31,11 +33,23 @@ class GenericBackend:
     backend     :   str
 
     """
-    def __init__(self, backend: str):
-        self.backend = backend
+    def __init__(self, b: str):
+        self._backend = b
+        self.loadBasicFuncs()
+
+    @property
+    def backend(self):
+        return self._backend
+        
+    @backend.setter
+    def backend(self,backend:str):
+        self._backend = backend
+        self.loadBasicFuncs()
+    
+    def loadBasicFuncs(self):    
         match self.backend:
             case "torch":
-                self.raw_type = torch.tensor
+                self.raw_type = torch.Tensor
                 self.abs = torch.abs
                 self.sqrt = torch.sqrt
                 self.arange = torch.arange
@@ -115,6 +129,7 @@ class GenericBackend:
                 self.eye = anp.eye
             
             case "jax":
+                # from .primitives import (j0,j1)
                 self.raw_type = jaxlib.xla_extension.ArrayImpl
                 
                 self.abs = jnp.abs
@@ -122,7 +137,6 @@ class GenericBackend:
                 self.arange = jnp.arange
                 self.ceil = jnp.ceil
                 self.where = jnp.where
-                self.la = jnp.linalg
                 self.diag = jnp.diag
                 self.sin = jnp.sin
                 self.cos = jnp.cos
@@ -142,11 +156,19 @@ class GenericBackend:
                 self.hsplit = jnp.hsplit
                 self.repeat = jnp.repeat
                 self.reshape = jnp.reshape
+                self.rollaxis = jnp.rollaxis
                 self.moveaxis = jnp.moveaxis
                 self.full = jnp.full
                 self.logical_not = jnp.logical_not
                 self.maximum = jnp.maximum
                 self.einsum = jnp.einsum
+
+                self.la = jnp.linalg
+                self.sla = jsp.linalg
+                self.special = sp.special
+                # self.special.j0 = j0 
+                # self.special.j1 = j1
+                self.fft = jnp.fft # only numpy fft used 
                 
                 self.pi = np.pi
                 self.float64 = jnp.float64
@@ -162,7 +184,6 @@ class GenericBackend:
                 self.arange = np.arange
                 self.ceil = np.ceil
                 self.where = np.where
-                self.la = np.linalg
                 self.diag = np.diag
                 self.sin = np.sin
                 self.cos = np.cos
@@ -182,11 +203,17 @@ class GenericBackend:
                 self.hsplit = np.hsplit
                 self.repeat = np.repeat
                 self.reshape = np.reshape
+                self.rollaxis = np.rollaxis
                 self.moveaxis = np.moveaxis
                 self.full = np.full
                 self.logical_not = np.logical_not
                 self.maximum = np.maximum
                 self.einsum = np.einsum
+                
+                self.la = np.linalg
+                self.sla = sp.linalg
+                self.special = sp.special
+                self.fft = np.fft
                 
                 self.pi = np.pi
                 self.float64 = np.float64
@@ -551,7 +578,7 @@ global genericBackend
 genericBackend = GenericBackend("numpy")
 def switchTo(backend):
     global genericBackend
-    genericBackend = GenericBackend(backend)
+    genericBackend.backend = backend
     
 def getLsDepth(ls):
     if type(ls) is list:
