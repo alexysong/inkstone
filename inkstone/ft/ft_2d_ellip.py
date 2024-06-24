@@ -35,7 +35,7 @@ def ft_2d_ellip(a, b, ks, center=None, angle=0.,gb=gb):
 
     ksa = gb.parseData(ks)  # nx2 shape
     aksa = (aff.T @ ksa.T).T
-    aks_nm = gb.linalg.norm(aksa, axis=-1)  # 1d array of n. The norm of each k vector
+    aks_nm = gb.la.norm(aksa, axis=-1)  # 1d array of n. The norm of each k vector
     idx_0 = gb.where(aks_nm == 0)[0]  # index to where k is (0, 0)
     idx_i = gb.where(aks_nm != 0)[0]  # index to where k is not (0, 0)
     aks_nm1 = gb.delete(aks_nm, idx_0)
@@ -47,7 +47,7 @@ def ft_2d_ellip(a, b, ks, center=None, angle=0.,gb=gb):
     cent = gb.parseData(center)
 
     s = 1j * gb.zeros(aks_nm.size)
-    s = gb.indexAssign(s, idx_i, gb.abs(gb.la.det(aff)) * 2 * gb.pi * jn(1, aks_nm1) / aks_nm1 * gb.exp(-1j * cent @ ksa1.T))
+    s = gb.indexAssign(s, idx_i, gb.abs(gb.la.det(aff)) * 2 * gb.pi * gb.special.jn(1, aks_nm1) / aks_nm1 * gb.exp(-1j * cent @ ksa1.T))
     s = gb.indexAssign(s, idx_0, gb.pi * a * b)
 
     return s.tolist()

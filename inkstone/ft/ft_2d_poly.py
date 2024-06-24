@@ -50,7 +50,7 @@ def ft_2d_poly_1(vertices, ks):
     cross = gb.cross(ln[:, None, :], ksa[None, :, :])
     # Say ln.shape is mx2, ksa is nx2, this gives mxn shape
 
-    term1 = cross * (gb.exp(-1j * rnc @ ksa.T)) * jn(0, ln @ ksa.T / 2.)
+    term1 = cross * (gb.exp(-1j * rnc @ ksa.T)) * gb.special.jn(0, ln @ ksa.T / 2.)
 
     s = coef * gb.sum(term1, axis=0)
 
