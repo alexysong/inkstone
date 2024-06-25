@@ -11,11 +11,8 @@ from autograd import grad as grada, holomorphic_grad as holomorphic_grada
 import jax.numpy as jnp
 from jax import grad as gradj
 
-import sys
-sys.path.append("./")
-sys.path.append("../")
-import objective_functions
-from finite_diff import finite_diff_grad
+from . import objective_functions
+from .finite_diff import finite_diff_grad
 
 
 # SETTINGS ################################################################################################

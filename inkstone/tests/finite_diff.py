@@ -1,5 +1,4 @@
 import numpy as np
-import autograd.numpy as anp
 
 def finite_diff(function, input, step, epsilon):
     """
@@ -43,11 +42,3 @@ def finite_diff_grad(function, input, epsilon):
                     FD_grad[row,col] -= 1j*np.real(finite_diff(function,input,step,epsilon)).item()
     
     return FD_grad
-
-if __name__ == '__main__':
-    def eigen(H):
-        """Objective function to return product of eigenvalues of H + product of eigenvector components"""
-        w,v = anp.linalg.eig(H)
-        return anp.prod(w) + anp.prod(anp.abs(v))
-    data = np.random.uniform(low=-1,high=1,size=(3,3)) + 1j*np.random.uniform(low=-1,high=1,size=(3,3))
-    finite_diff_result = finite_diff_grad(eigen, data, 1e-6)

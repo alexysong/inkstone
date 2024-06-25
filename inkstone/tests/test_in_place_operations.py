@@ -5,10 +5,7 @@ import numpy as np
 import autograd.numpy as anp
 import jax.numpy as jnp
 
-import sys
-sys.path.append("../")
-sys.path.append("../inkstone")
-import GenericBackend
+from .. import GenericBackend
 
 
 # SETTINGS ################################################################################################
@@ -162,9 +159,3 @@ def test_assignAndMultiply_jax_truth_index():
     data = jb.assignAndMultiply(data, idx, multiply_by)
     
     assert (data == jnp.array([0,1,2,3,4,5,60,70,80,9])).all()        
-
-
-# For running VSCode debugger
-if __name__ == '__main__':
-    test_indexAssign_numpy_integer_index()
-    test_indexAssign_jax_integer_index()

@@ -5,10 +5,7 @@ import numpy as np
 import autograd.numpy as anp
 import jax.numpy as jnp
 
-import sys
-sys.path.append("../")
-sys.path.append("../inkstone")
-import GenericBackend
+from .. import GenericBackend
 
 
 # SETTINGS ################################################################################################
@@ -51,8 +48,3 @@ def test_parseData_jax_list_of_arrays():
     converted_data = jb.parseData(data)
     
     assert (converted_data == jnp.array([[1.,2.],[3.,4.]])).all()
-
-
-# For running VSCode debugger
-if __name__ == '__main__':
-    pass

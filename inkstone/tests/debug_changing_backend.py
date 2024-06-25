@@ -1,15 +1,8 @@
 import numpy as np
 import jax.numpy as jnp
 
-import sys
-# sys.path.append("../../inkstone_old")
-# import inkstone
-# from inkstone import Inkstone as Inkstone0310
-
-sys.path.append("../")
-sys.path.append("../inkstone")
-import GenericBackend
-from inkstone import Inkstone
+from .. import GenericBackend
+from ..simulator import Inkstone
 
 
 # SETTINGS ################################################################################################
