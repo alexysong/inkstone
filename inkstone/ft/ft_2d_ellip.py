@@ -50,5 +50,5 @@ def ft_2d_ellip(a, b, ks, center=None, angle=0.,gb=gb):
     s = gb.indexAssign(s, idx_i, gb.abs(gb.la.det(aff)) * 2 * gb.pi * gb.special.jn(1, aks_nm1) / aks_nm1 * gb.exp(-1j * cent @ ksa1.T))
     s = gb.indexAssign(s, idx_0, gb.pi * a * b)
 
-    return s.tolist()
+    return s
 

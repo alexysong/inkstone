@@ -95,7 +95,7 @@ class Shp:
         self.use_gibbs_correction(**kw_gibbs)
         if self._if_gibbs_corr:
             s = gibbs_corr(self.ks, **self._kw_gibbs)
-        ft = (self.gb.parseData(self._ft, dtype=self.gb.complex128) * self.gb.parseData(s, dtype=self.gb.complex128)).tolist()
+        ft = self._ft * s
         self._ft = ft
         return self._ft
 

@@ -37,5 +37,5 @@ def ft_2d_rct(a, b, ks, center=None, angle=0.,gb=gb):
 
     s = gb.exp(-1j * cen @ ksa.T) * sx * sy
 
-    return s.tolist()
+    return s
 

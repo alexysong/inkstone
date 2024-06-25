@@ -34,5 +34,5 @@ def ft_1d_sq(width, ks, center=0. , gb=gb):
    # note numpy sinc(x) definition is sin(pi x) / (pi x)
 
    # return s
-   return s.tolist()
+   return s
 

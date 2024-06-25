@@ -22,4 +22,4 @@ def ft_2d_cnst(ks,gb=gb):
     s = 1j * gb.zeros(gb.getSize(ks_nm))
     s = gb.indexAssign(s, idx_0, 1.)
 
-    return s.tolist()
+    return s

@@ -41,5 +41,5 @@ def ft_2d_disk(r, ks, center=(0,0),gb=gb):
     s = gb.indexAssign(s, idx_i, 2 * gb.pi * r * gb.special.jn(1, r * ks_nm1) / ks_nm1 * gb.exp(-1j * ksa1 @ cent))
     s = gb.indexAssign(s, idx_0, gb.pi * r**2)
 
-    return s.tolist()
+    return s
 
