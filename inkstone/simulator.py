@@ -5,7 +5,7 @@ from warnings import warn
 from collections import OrderedDict
 from typing import Tuple, Optional, List, Dict, Union
 import time
-from GenericBackend import genericBackend as gb
+from inkstone.GenericBackend import genericBackend as gb
 
 from inkstone.rsp import rsp, rsp_sa12lu, rsp_sb21lu
 from inkstone.params import Params

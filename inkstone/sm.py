@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from GenericBackend import genericBackend as gb
+from inkstone.GenericBackend import genericBackend as gb
 # import scipy.linalg as sla
 # import scipy.sparse as sps
 from warnings import warn

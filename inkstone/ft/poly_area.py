@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from GenericBackend import genericBackend as gb
+from inkstone.GenericBackend import genericBackend as gb
 
 
 def poly_area(vertices,gb=gb):

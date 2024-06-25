@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from GenericBackend import genericBackend as gb
+from inkstone.GenericBackend import genericBackend as gb
 
 
 def ft_1d_sq(width, ks, center=0. , gb=gb):

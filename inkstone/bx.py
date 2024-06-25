@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from GenericBackend import genericBackend as gb
+from inkstone.GenericBackend import genericBackend as gb
 # import numpy.linalg as la
 from inkstone.shps import Rect, Para, Disk, Elli, Poly, OneD
 from warnings import warn

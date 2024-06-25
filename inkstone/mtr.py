@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from typing import Tuple, Union, Optional
-from GenericBackend import genericBackend as gb
+from inkstone.GenericBackend import genericBackend as gb
 # import numpy.linalg as la
 # from warnings import warn
 

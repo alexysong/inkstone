@@ -9,7 +9,7 @@ from collections import OrderedDict
 from typing import Optional, Set, Union, Tuple, Dict, List
 import time
 
-from GenericBackend import genericBackend as gb
+from inkstone.GenericBackend import genericBackend as gb
 
 from inkstone.ft.ft_2d_cnst import ft_2d_cnst
 from inkstone.im import im

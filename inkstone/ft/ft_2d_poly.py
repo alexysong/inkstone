@@ -7,7 +7,7 @@ Reference:
 K. McInturff and P.S. Simon, "The Fourier transform of linearly varying functions with polygonal support", IEEE Trans. Ann. Prop.  39, 1441 (1991)
 """
 
-from GenericBackend import genericBackend as gb
+from inkstone.GenericBackend import genericBackend as gb
 from scipy.special import jn
 from inkstone.ft.poly_area import poly_area
 

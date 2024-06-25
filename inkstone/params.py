@@ -6,7 +6,7 @@ sys.path.append("C:/Users/w-a-c/Desktop/inkstone")
 ###----------------
 
 from scipy import sparse as sps
-import scipy.linalg as sla
+# import scipy.linalg as sla
 # import scipy.fft as fft
 from typing import Tuple, List, Union, Optional, Set
 # import time
@@ -16,7 +16,7 @@ from inkstone.g_pts import g_pts
 from inkstone.g_pts_1d import g_pts_1d
 from inkstone.max_idx_diff import max_idx_diff
 from inkstone.conv_mtx_idx import conv_mtx_idx_2d
-from GenericBackend import genericBackend as gb
+from inkstone.GenericBackend import genericBackend as gb
 
 
 

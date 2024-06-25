@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from GenericBackend import genericBackend as gb
+from inkstone.GenericBackend import genericBackend as gb
 
 
 def ft_2d_cnst(ks,gb=gb):

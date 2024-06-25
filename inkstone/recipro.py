@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from GenericBackend import genericBackend as gb
+from inkstone.GenericBackend import genericBackend as gb
 
 
 def recipro(a1, a2, gb=gb):
