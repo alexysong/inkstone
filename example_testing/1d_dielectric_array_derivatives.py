@@ -19,7 +19,7 @@ GenericBackend.switchTo("jax")
 
 from inkstone import Inkstone
 import numpy as np
-from autograd import grad
+from jax import grad
 
 def calc_reflection(d,w,f,permittivity):
       s = Inkstone()
@@ -45,18 +45,16 @@ w = 0.45
 permittivity = 12
 R = []
 freq = np.linspace(0.2, 0.9, 201)
-for f in freq:
-    R.append(calc_reflection(d,w,f,permittivity))
-
-# plotting
-from matplotlib import pyplot as plt
-
-plt.figure()
-plt.plot(freq, R)
-plt.xlabel('frequency')
-plt.ylabel('reflection')
-# plt.show()
-
 grad_reflection_wrt_d = grad(calc_reflection,0)
+print(grad_reflection_wrt_d(d,w,freq[0],permittivity))
+# for f in freq:
+#     R.append(calc_reflection(d,w,f,permittivity))
 
-grad_reflection_wrt_d(d,w,freq[0],permittivity)
+# # plotting
+# from matplotlib import pyplot as plt
+
+# plt.figure()
+# plt.plot(freq, R)
+# plt.xlabel('frequency')
+# plt.ylabel('reflection')
+# plt.show()

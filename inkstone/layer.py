@@ -315,10 +315,18 @@ class Layer:
 
         bxs = list(self.patterns.values())
 
-        bx_areas = np.array([a.shp.area for a in bxs])
-        idx = np.argsort(bx_areas)
-        bx_names = np.array([a.name for a in bxs])
-        bx_name_sorted = bx_names[idx]
+        # bx_areas = np.array([a.shp.area for a in bxs])
+        # idx = np.argsort(bx_areas)
+        # bx_names = np.array([a.name for a in bxs])
+        # bx_name_sorted = bx_names[idx]
+        def argsort(seq):
+            # http://stackoverflow.com/questions/3071415/efficient-method-to-calculate-the-rank-vector-of-a-list-in-python
+            return sorted(range(len(seq)), key=seq.__getitem__)
+        bx_areas = [a.shp.area for a in bxs]
+        idx = argsort(bx_areas)
+        bx_names = [a.name for a in bxs]
+        bx_name_sorted = [bx_names[i] for i in idx]
+        # bx_name_sorted = bx_names[idx]
         
         # a fictional bx with background material of this layer.
         bxf = Bx(self.materials[self.material_bg], 'polygon', name='the cell', vertices=[(0, 0), (1, 0), (0, 1)])
