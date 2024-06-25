@@ -8,6 +8,7 @@ import scipy.linalg as sla
 import autograd.numpy as anp
 from autograd import grad as grada, holomorphic_grad as holomorphic_grada
 
+import jax
 import jax.numpy as jnp
 from jax import grad as gradj
 
@@ -18,6 +19,7 @@ from .finite_diff import finite_diff_grad
 # SETTINGS ################################################################################################
 np.random.seed(2024)
 default_eps = 1e-6
+default_rel_tol = 1e-8
 default_abs_tol = 1e-8
 
 
@@ -86,6 +88,17 @@ def test_sla_lu_solve():
 
 
 # JAX ################################################################################################
+def test_tolist():
+    """
+    Test if jax can differentiate through .tolist() method
+    """
+    data = jnp.arange(0,5,1, dtype=jnp.float64)
+    try:
+        auto_diff_result = gradj(objective_functions.sinxsq)(data)
+        assert False
+    except jax.errors.ConcretizationTypeError:
+        assert True
+
 def test_jn():
     """
     Test if scipy.special.jn is differentiable by JAX
@@ -109,6 +122,8 @@ def test_j0_custom():
     abs_error = np.abs(auto_diff_result-finite_diff_result)
     
     assert np.max(abs_error)<default_abs_tol
+
+
 
 # TORCH ################################################################################################
 def test_float_torch():

@@ -34,6 +34,11 @@ def sum_of_lu_solve(A,b):
     x = sla.lu_solve((lu, piv), b)
     return np.sum(x)
 
+def sinxsq(x):
+    sum_of_squares = jnp.sum(jnp.power(x,2))
+    sum_of_squares = sum_of_squares.tolist()
+    return jnp.sin(sum_of_squares)    
+
 def j1(x):
     return sp.special.jn(1,x)
 
