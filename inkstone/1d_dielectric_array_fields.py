@@ -13,8 +13,8 @@ Each rod has side length 0.55.
 """
 import sys
 sys.path.append("C:/Users/w-a-c/Desktop/inkstone")
-#import GenericBackend
-#GenericBackend.switchTo("torch")
+import GenericBackend
+GenericBackend.switchTo("torch")
 from inkstone import Inkstone
 #import numpy as np
 
@@ -44,7 +44,7 @@ Ex, Ey, Ez, Hx, Hy, Hz = s.GetFields(xmin=-0.5, xmax=0.5, nx=101,
 #%% plotting
 from matplotlib import pyplot as plt
 import numpy as np
-
+'''
 plt.pcolormesh(np.linspace(-0.5, 0.5, 101),
                np.linspace(-0.2, d+0.2, 101),
                np.abs(Ey[0, :, :]).T,
@@ -54,7 +54,7 @@ import torch
 plt.pcolormesh(torch.linspace(-0.5, 0.5, 101),
                torch.linspace(-0.2, d+0.2, 101),
                torch.abs(Ey[0, :, :]).T,
-                shading='gouraud')'''
+                shading='gouraud')
 plt.xlabel('x')
 plt.ylabel('z')
 plt.colorbar()
