@@ -129,7 +129,8 @@ class GenericBackend:
                 self.eye = anp.eye
             
             case "jax":
-                # from .primitives import (j0,j1)
+                from .primitives import j0, j1, eig
+                
                 self.raw_type = jaxlib.xla_extension.ArrayImpl
                 
                 self.abs = jnp.abs
@@ -162,13 +163,15 @@ class GenericBackend:
                 self.logical_not = jnp.logical_not
                 self.maximum = jnp.maximum
                 self.einsum = jnp.einsum
+                self.isnan = jnp.isnan
 
                 self.la = jnp.linalg
                 self.sla = jsp.linalg
-                self.special = sp.special
-                # self.special.j0 = j0 
-                # self.special.j1 = j1
                 self.fft = jnp.fft # only numpy fft used 
+
+                self.j0 = j0 
+                self.j1 = j1
+                self.eig = eig
                 
                 self.pi = np.pi
                 self.float64 = jnp.float64
@@ -209,11 +212,15 @@ class GenericBackend:
                 self.logical_not = np.logical_not
                 self.maximum = np.maximum
                 self.einsum = np.einsum
+                self.isnan = np.isnan
                 
                 self.la = np.linalg
                 self.sla = sp.linalg
-                self.special = sp.special
                 self.fft = np.fft
+
+                self.j0 = sp.special.j0
+                self.j1 = sp.special.j1
+                self.eig = np.linalg.eig
                 
                 self.pi = np.pi
                 self.float64 = np.float64
@@ -239,7 +246,7 @@ class GenericBackend:
                 dtype = self.int32
             elif type(o) == float:
                 dtype = self.float64
-            elif type(o) == str: # shouldn't ever pass through here
+            elif type(o) == str: 
                 print("String type detected, no gradient required")
                 return np.array(i)
             elif type(o) == complex:
@@ -255,7 +262,11 @@ class GenericBackend:
             case "autograd":
                 return anp.array(i, dtype=dtype)
             case "jax":
-                return jnp.array(i, dtype=dtype)
+                if isinstance(i, jax.Array): # handle tracer inputs by not passing invalid dtype
+                    # TODO: is it okay if func argument dtype is lost in passing through here?
+                    return jnp.array(i)
+                else:
+                    return jnp.array(i, dtype=dtype)
             case "numpy":
                 return np.array(i, dtype=dtype)
             case _:
@@ -363,10 +374,7 @@ class GenericBackend:
             case "autograd" | "numpy":
                 return np.copy(i, order='C', subok=True)
             case "jax": 
-                if type(i) is not self.raw_type: # temporarily handle scipy.linalg's np array inputs
-                    return np.copy(i, order='C', subok=True)
-                else: # jax arrays are immutable, so a copy is always made
-                    return i
+                return i
             case _:
                 raise NotImplementedError
             
