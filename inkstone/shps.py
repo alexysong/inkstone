@@ -159,7 +159,7 @@ class OneD(Shp):
     @ks.setter
     def ks(self, val: List[Union[float, Tuple[float, float]]]):
         if val is not None:
-            if type(val[0]) is tuple:
+            if type(val[0]) is tuple or self.gb.parseData(val[0]).ndim == 1:
                 for v in val:
                     if v[0] != 0:
                         self._ks: List[float] = [k[0] for k in val]
