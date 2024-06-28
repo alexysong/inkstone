@@ -110,7 +110,8 @@ class Mtr:
 
     @epsi.setter
     def epsi(self, val):
-        if type(val) in [float, int, complex, self.gb.float64, self.gb.complex128]:
+        if (type(val) in [float, int, complex, self.gb.float64, self.gb.complex128]) \
+        or self.gb.parseData(val).ndim == 0:
             ep = self.gb.eye(3, dtype=self.gb.complex128) * val
             self._epsi = ep + 0j
             self.ep_is_diagonal = True
@@ -131,7 +132,7 @@ class Mtr:
                 self.ep_is_vac = True
             else:
                 self.ep_is_vac = False
-        elif (type(val) is not any) or val.shape != (3, 3):
+        elif (type(val) is not self.gb.raw_type) or val.shape != (3, 3):
             raise ValueError('data format for epsilon is incorrect.')
         else:
             ep = val
@@ -151,7 +152,7 @@ class Mtr:
                 self.ep_is_diagonal = False
                 self.ep_is_isotropic = False
                 self.ep_is_vac = False
-
+        
         # explicit computation of inverse.
         v = ep
         adbc = v[0, 0] * v[1, 1] - v[0, 1] * v[1, 0]
@@ -168,7 +169,8 @@ class Mtr:
 
     @mu.setter
     def mu(self, val):
-        if type(val) in [float, int, complex, self.gb.float64, self.gb.complex128]:
+        if type(val) in [float, int, complex, self.gb.float64, self.gb.complex128] \
+        or self.gb.parseData(val).ndim == 0:
             mu = self.gb.eye(3, dtype=self.gb.complex128) * val
             self._mu = mu + 0j
             self.mu_is_diagonal = True
@@ -189,7 +191,7 @@ class Mtr:
                 self.mu_is_vac = True
             else:
                 self.mu_is_vac = False
-        elif (type(val) is not any) or val.shape != (3, 3):
+        elif (type(val) is not self.gb.raw_type) or val.shape != (3, 3):
             raise ValueError('data format for mu is incorrect.')
         else:
             mu = val
