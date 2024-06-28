@@ -590,8 +590,8 @@ class Layer:
 
         t1 = time.process_time()
 
-        # ql2, self.phil = self.gb.la.eig(- self.P @ self.Q)
-        w2, v = self.gb.la.eig(- self.P @ self.Q)  # w2 shape (2num_g),  v shape (2num_g, 2num_g)
+        # ql2, self.phil = self.gb.eig(- self.P @ self.Q)
+        w2, v = self.gb.eig(- self.P @ self.Q)  # w2 shape (2num_g),  v shape (2num_g, 2num_g)
         self._rad_cha = self.gb.where(w2.real > 0)[0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
         w = self.gb.sqrt(w2 + 0j)
 
@@ -607,13 +607,13 @@ class Layer:
         # vh = -1j * q @ v / w[:, None, :]
 
         if wis0.any():
-            w2h_, vh_ = self.gb.la.eig(- self.Q @ self.P)
+            w2h_, vh_ = self.gb.eig(- self.Q @ self.P)
 
             o = self.pr.omega
             _o = o * (1 + 1e-13)
             P, Q = self._calc_PQ_3d(_o)
 
-            _w2, _v = self.gb.la.eig(-P @ Q)  # w2 shape (num_g, 2), v shape (num_g, 2, 2)
+            _w2, _v = self.gb.eig(-P @ Q)  # w2 shape (num_g, 2), v shape (num_g, 2, 2)
             _w2 = _w2  # shape (num_g, 2)
             _w = self.gb.sqrt(_w2 + 0j)
             _v_w0 = _v[:, i_wis0[0]]
@@ -894,7 +894,7 @@ class Layer:
                 # pass
 
             else:  # require solving of 2x2 PQ Hamiltonian
-                w2, v = self.gb.la.eig(-pq)  # w2 shape (num_g, 2), v shape (num_g, 2, 2)
+                w2, v = self.gb.eig(-pq)  # w2 shape (num_g, 2), v shape (num_g, 2, 2)
                 w2 = w2  # shape (num_g, 2)
                 self._rad_cha = self.gb.where(w2.real > 0)[0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
                 w = self.gb.sqrt(w2 + 0j)
@@ -913,11 +913,11 @@ class Layer:
                                          -1j * (q[i_wn0[0], :, :] @ v[i_wn0[0], :, i_wn0[1]][:, :, None])[:, :, 0] / w[i_wn0[0], i_wn0[1], None])
 
                 if wis0.any():
-                    w2h_, vh_ = self.gb.la.eig(-qp)
+                    w2h_, vh_ = self.gb.eig(-qp)
 
                     _o = o * (1 + 1e-13)
                     _p, _q, _pq, _qp = self._calc_pq_3d_uniform(_o, mxx, mxy, myx, myy, mzz, exx, exy, eyx, eyy, ezz, kxa, kya)
-                    _w2, _v = self.gb.la.eig(-_pq)  # w2 shape (num_g, 2), v shape (num_g, 2, 2)
+                    _w2, _v = self.gb.eig(-_pq)  # w2 shape (num_g, 2), v shape (num_g, 2, 2)
                     _w2 = _w2  # shape (num_g, 2)
                     _w = self.gb.sqrt(_w2 + 0j)
                     _v_w0 = _v[i_wis0[0], :, i_wis0[1]]
@@ -1077,7 +1077,7 @@ class Layer:
 
         for P, Q in [(Ppilu, Qp), (Psilu, Qs)]:
 
-            # ql2, phil = self.gb.la.eig(- self.gb.sla.lu_solve(P, Q))
+            # ql2, phil = self.gb.eig(- self.gb.sla.lu_solve(P, Q))
             # rc = self.gb.where(ql2.real > 0)[0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
             # ql = self.gb.sqrt(ql2 + 0j)
             #
@@ -1087,7 +1087,7 @@ class Layer:
             # psil = -1j * Q @ phil * ql_inv
             # # psil = 1j * gb.la.inv(P) @ phil @ gb.diag(self.ql)
 
-            w2, v = self.gb.la.eig(- self.gb.sla.lu_solve(P, Q))
+            w2, v = self.gb.eig(- self.gb.sla.lu_solve(P, Q))
             rc = self.gb.where(w2.real > 0)[0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
             w = self.gb.sqrt(w2 + 0j)
 
