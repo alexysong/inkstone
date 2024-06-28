@@ -99,6 +99,16 @@ def test_tolist():
     except jax.errors.ConcretizationTypeError:
         assert True
 
+def test_abs():
+    """
+    Test the jax return around x=0 when differentiating jnp.abs()
+    """
+    data = [-0.1, 0., 0.1]
+    abs_grad = gradj(jnp.abs)
+    auto_diff_result = [abs_grad(x) for x in data]
+    answer = [-1, 1, 1]
+    assert np.allclose(auto_diff_result, answer, rtol=default_rel_tol, atol=default_abs_tol)
+    
 def test_jn():
     """
     Test if scipy.special.jn is differentiable by JAX
@@ -116,12 +126,24 @@ def test_j0_custom():
     Test j0 custom jax vjp 
     """
     from ..primitives import j0
-    data = np.random.uniform(low=-1,high=1,size=(1,10))
-    auto_diff_result = gradj(j0)(data)
-    finite_diff_result = finite_diff_grad(j0, data, default_eps)
-    abs_error = np.abs(auto_diff_result-finite_diff_result)
-    
-    assert np.max(abs_error)<default_abs_tol
+    data = np.random.uniform(low=-1,high=1,size=(10,))
+    def j0_sum(x):
+        return jnp.sum(j0(x))
+    auto_diff_result = gradj(j0_sum)(data)
+    finite_diff_result = finite_diff_grad(j0_sum, data, default_eps)
+    assert np.allclose(auto_diff_result, finite_diff_result, rtol=default_rel_tol, atol=default_abs_tol)
+
+def test_j1_custom():
+    """
+    Test j1 custom jax vjp 
+    """
+    from ..primitives import j1
+    data = np.random.uniform(low=-1,high=1,size=(10,))
+    def j1_sum(x):
+        return jnp.sum(j1(x))
+    auto_diff_result = gradj(j1_sum)(data)
+    finite_diff_result = finite_diff_grad(j1_sum, data, default_eps)
+    assert np.allclose(auto_diff_result, finite_diff_result, rtol=default_rel_tol, atol=default_abs_tol)
 
 
 
