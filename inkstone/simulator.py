@@ -840,7 +840,7 @@ class Inkstone:
                                 ex = -s * sp + p * st * cp  # e_x
                                 ey = s * cp + p * st * sp  # e_y
                                 phi_2x2 = self.gb.castType(layer_inci.phil_2x2s[:, :, jj],self.gb.complex128)
-                                v = self.gb.la.solve(phi_2x2, self.gb.parseData([ex, ey]))
+                                v = self.gb.la.solve(phi_2x2, self.gb.parseData([ex, ey], dtype=self.gb.complex128))
                                 ab = self.gb.indexAssign(ab, jj, v[0])
                                 ab = self.gb.indexAssign(ab, jj+self.pr._num_g_ac, v[1])
 
@@ -1314,10 +1314,10 @@ class Inkstone:
         """
         if z is None:
             za = self.gb.parseData([0.])
-        elif hasattr(z, "__len__"):
-            za = self.gb.parseData(z)
-        else:
+        elif self.gb.parseData(z).ndim == 0:
             za = self.gb.parseData([z])
+        else:
+            za = self.gb.parseData(z)
 
         t = self.layers[layer].thickness
         if self.layers[layer].in_mid_out == 'in':
@@ -1413,7 +1413,7 @@ class Inkstone:
         """
         if type(xy) is tuple:
             xy = [xy]
-        if not hasattr(z, '__len__'):
+        if self.gb.parseData(z).ndim == 0:
             z = [z]
 
         # if not self.pr.q0_contain_0:
@@ -1425,7 +1425,7 @@ class Inkstone:
         exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)  # each has shape (num_g, len(z))
         ex, ey, ez, hx, hy, hz = [a + b for a, b in [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
 
-        xa, ya = self.gb.hsplit(self.gb.parseData(xy), 2)  # 2d array with one column
+        xa, ya = self.gb.hsplit(self.gb.parseData(xy, dtype=self.gb.float64), 2)  # 2d array with one column
 
         kxa, kya = self.gb.hsplit(self.gb.parseData(self.pr.ks), 2)  # 2d array with one column
 
@@ -1483,10 +1483,10 @@ class Inkstone:
                                      [nx, ny, nz],
                                      ['x', 'y', 'z']):
             if c is not None:
-                if hasattr(c, '__len__'):
-                    c = self.gb.parseData(c)
-                else:
+                if self.gb.parseData(c).ndim == 0:
                     c = self.gb.parseData([c])
+                else:
+                    c = self.gb.parseData(c)
                 u = c
             elif min is None or max is None or n is None:
                 warn(s + " points to get fields not defined properly. Default to 0.")
@@ -1530,10 +1530,10 @@ class Inkstone:
 
         ll = list(self.layers.keys())
 
-        if hasattr(z, "__len__"):
-            za = self.gb.parseData(z)
+        if self.gb.parseData(z).ndim == 0: 
+            za = self.gb.parseData([z], dtype=self.gb.float64)
         else:
-            za = self.gb.parseData([z])
+            za = self.gb.parseData(z)
 
         Fields = [self.gb.zeros((len(xy), len(za)), dtype=self.gb.complex128) for i in range(6)]
 
@@ -1546,9 +1546,8 @@ class Inkstone:
 
         for idx, iin in enumerate(i_in_l):
             za_l = za[iin] - ([0] + z_interfaces)[idx]  # z coordinate of this layer w.r.t. the left interface of this layer
-            z_l = za_l.tolist()
-            if z_l:
-                fields = self.GetLayerFieldsListPoints(ll[idx], xy, z_l)
+            if za_l.any() or za_l.size: # TODO: do other .any() type checks need to account for array of zeros?
+                fields = self.GetLayerFieldsListPoints(ll[idx], xy, za_l)
                 for f_idx, f in enumerate(fields):
                     Fields[f_idx] = self.gb.indexAssign(Fields[f_idx], (slice(None),iin), f) # jax might not like differentiating this
 
@@ -1593,10 +1592,10 @@ class Inkstone:
                                      [nx, ny, nz],
                                      ['x', 'y', 'z']):
             if c is not None:
-                if hasattr(c, '__len__'):
-                    c = self.gb.parseData(c)
+                if self.gb.parseData(c).ndim == 0:
+                    c = self.gb.parseData([c], dtype=self.gb.float64)
                 else:
-                    c = self.gb.parseData([c])
+                    c = self.gb.parseData(c)
                 u = c
             elif min is None or max is None or n is None:
                 warn(s + " points to get fields not defined properly. Default to 0.")
