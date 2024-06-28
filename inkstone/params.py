@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
 
-###for testing only
-import sys
-sys.path.append("C:/Users/w-a-c/Desktop/inkstone")
-###----------------
-
-from scipy import sparse as sps
+# from scipy import sparse as sps
 # import scipy.linalg as sla
 # import scipy.fft as fft
 from typing import Tuple, List, Union, Optional, Set
@@ -177,8 +172,8 @@ class Params:
 
     @latt_vec.setter
     def latt_vec(self, val: Union[float, Tuple[Tuple[float, float], Tuple[float, float]]]):
-        if type(val) is not tuple:
-            val = self.gb.parseData(((val, 0), (0, 0)),self.gb.float64)
+        if type(val) is float or self.gb.parseData(val).ndim == 0: 
+            val = self.gb.parseData(((val, 0), (0, 0)), self.gb.float64)
             self.is_1d_latt = True
         else:
             a, b = self.gb.parseData(val)
@@ -659,7 +654,7 @@ class Params:
         """Calculate Kx Ky arrays"""
         if self.ks is not None:
             # t1 = time.process_time()
-            ksa = self.gb.parseData(self.ks,dtype=self.gb.float64)  # shape (NumG, 2)
+            ksa = self.gb.parseData(self.ks ,dtype=self.gb.float64)  # shape (NumG, 2)
             kx = ksa[:, 0]
             ky = ksa[:, 1]
             self.Kx = kx
@@ -723,6 +718,8 @@ class Params:
             q02 = self.gb.ones(self._num_g_ac) * self.gb.square(self.omega) - self.gb.square(k_parallel) + 0j
             self._rad_cha_0 = self.gb.where(q02.real > 0)[0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
             q0 = self.gb.sqrt(q02)
+            q0 = self.gb.indexAssign(q0, self.gb.isnan(q0), 0) # to convert jax sqrt(tracer(0)) nans to 0
+            # TODO: could nans come from not 0, that shouldn't be converted to 0?
             if self.omega.imag < 0:
                 if self.ccnif == "physical":
                     q0 = gb.assignAndMultiply(q0, (q02.real<0)*(q0.imag<0), -1)
@@ -854,7 +851,7 @@ class Params:
             ng = self._num_g_ac
             o = self.omega
 
-            ksa = self.gb.parseData(self.ks)
+            ksa = self.gb.parseData(self.ks, dtype=self.gb.float64)
             Kx = ksa[:, 0]
             Ky = ksa[:, 1]
             # Kx = self.Kx.copy()
@@ -1193,8 +1190,7 @@ class Params:
         return self._uc_area
 
     def _calc_uc_area(self):
-        if type(self.latt_vec) is not None or self.latt_vec is not None:
-            #print(type(self.latt_vec))
+        if self.latt_vec is not None:
             if not isinstance(self.latt_vec, (tuple, self.gb.raw_type)):
                 self._uc_area = self.latt_vec
             else:
@@ -1218,7 +1214,7 @@ class Params:
             # t1 = time.process_time()
 
             idxa = self.gb.parseData(self.idx_g)
-            ksa = self.gb.parseData(self.ks)
+            ksa = self.gb.parseData(self.ks, dtype=self.gb.float64)
             k_pa = self.gb.la.norm(ksa, axis=-1)  # norm of in-plane momentum
             i0 = (k_pa == 0.)
             ib = (k_pa != 0.)
@@ -1237,6 +1233,7 @@ class Params:
             cthe = k_pa / self.kii.real + 0j  # this is always positive
             # when omega complex, k_parallel is still calc as real
             sthe = self.gb.sqrt(1 - cthe**2 + 0j)
+            sthe = self.gb.indexAssign(sthe, self.gb.isnan(sthe), 0) # to convert jax sqrt(tracer(0)) nans to 0
             cthe = self.gb.indexAssign(cthe, ii, self.gb.cos(self.gb.pi/2 - self._theta))
             sthe = self.gb.indexAssign(sthe, ii, self.gb.sin(self.gb.pi/2 - self._theta))
             # todo: theta could be None (e.g. setting Excitation By Eigen)
@@ -1250,7 +1247,8 @@ class Params:
                 cthe_bk = k_pa / self.kio.real + 0j  # this is always positive
                 # todo: self.kio is updated in solving stage as which layer is output is determined then. But all `Params` data should be calculated at setting structure stage.
                 # when omega complex, k_parallel is still calc as real
-                sthe_bk = self.gb.sqrt(1 - cthe_bk ** 2 + 0j)
+                sthe_bk = self.gb.sqrt(1 - cthe_bk**2 + 0j)
+                sthe_bk = self.gb.indexAssign(sthe_bk, self.gb.isnan(sthe_bk), 0) # to convert jax sqrt(tracer(0)) nans to 0
                 cthe_bk = self.gb.indexAssign(cthe_bk, ii, self.gb.cos(self.gb.pi / 2 - self._theta)) # incorrect, out region could have different refractive index
                 sthe_bk = self.gb.indexAssign(sthe_bk, ii, self.gb.sin(self.gb.pi / 2 - self._theta)) 
                 self.cos_phis_bk = self.cos_phis.copy()
