@@ -1,5 +1,6 @@
 """
-File for debugging inkstone_objective_functions.py functions
+Debugging inkstone_objective_functions.py functions and derivatives
+
 """
 
 import numpy as np

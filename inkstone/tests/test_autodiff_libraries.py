@@ -1,3 +1,8 @@
+"""
+Testing some functionalities of the autodiff libraries
+
+"""
+
 import torch # import before numpy to avoid OMP error 15
 import numpy as np
 import autograd.numpy as anp

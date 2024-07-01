@@ -1,3 +1,8 @@
+"""
+Inkstone-based objective functions whose derivative will be taken using both automatic differentiation and finite difference
+
+"""
+
 import numpy as np
 
 from ... import GenericBackend 

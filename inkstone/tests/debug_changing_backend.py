@@ -1,3 +1,8 @@
+"""
+Debugging backend changing methods to ensure complete backend switch
+
+"""
+
 import numpy as np
 import jax.numpy as jnp
 

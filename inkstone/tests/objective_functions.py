@@ -1,3 +1,8 @@
+"""
+Objective functions used in miscellaneous testing
+
+"""
+
 import numpy as np
 import scipy as sp
 import scipy.linalg as sla

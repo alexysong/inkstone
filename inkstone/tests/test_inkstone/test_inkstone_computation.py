@@ -1,3 +1,8 @@
+"""
+Testing inkstone computations using the variable backends and comparing to v0.3.10's static numpy backend.
+
+"""
+
 import pytest
 
 import numpy as np
@@ -18,6 +23,9 @@ rel_tol = 1e-10
 
 
 # SETUP ################################################################################################
+"""
+Fixtures create the inkstone simulation class objects with a specified backend.
+"""
 @pytest.fixture
 def one_layer_simulation_1D():
     def _one_layer_simulation_1D(frequency=0.4, theta=0., phi=0., 

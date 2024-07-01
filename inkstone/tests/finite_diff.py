@@ -2,14 +2,16 @@ import numpy as np
 
 def finite_diff(function, input, step, epsilon):
     """
-    Calculate the finite difference for a function at a given point, step and step size
+    Finite difference for a function of a single (given) input, step and step size
     step must be positive or have positive real/imaginary part
+
     """
     step = np.array(step)
     step_magnitude = step[step!=0]
     return (function(input+step*epsilon/2) - function(input-step*epsilon/2))/(np.abs(step_magnitude)*epsilon)
 
 def finite_diff_grad(function, input, epsilon):
+    """Finite difference derivative for a function with a single input and given step size"""
     output = np.array(function(input))
     input = np.array(input)
     input_shape = input.shape

@@ -5,6 +5,25 @@ import scipy as sp
 import jax.numpy as jnp
 from jax import custom_vjp
 
+"""
+This file defines the custom vector-Jacobian products (vjp) to be used by an automatic differentiation (AD) library (autograd/jax/torch).
+To add the vjp to a certain AD library, implement it manually using only differentiable functions from that AD library.
+
+If there is a base scipy/numpy/other package function that you want to differentiate but is not natively included 
+in the AD library, you can add it here.
+
+You should not add a custom vjp here if, for your AD library of choice:
+    1) The function already exists (e.g. numpy.sin is jax.numpy.sin in jax)
+        Caveat: some functions (like jax.numpy.eig()) are natively included in the AD library, but not natively differentiable.
+        However, there might be a differentiable alternative, like jax.numpy.eigvals().
+    2) You've successfully differentiated the function using the AD library and found consistent results compared to 
+        finite difference derivatives
+    3) The function is your objective function. In this case, the function should be differentiated in your main script. 
+        If the AD library is throwing errors when trying to differentiate your objective function, then you should look inside
+        your objective for functions which are not natively differentiable and add them here with their custom vjp.
+        
+"""
+
 
 
 # SETUP ################################################################################################################################################################################################
@@ -27,33 +46,44 @@ def _matrix_diag(a):
 
 
 # JAX ################################################################################################################################################################################################
+"""
+To add a custom vjp for a function f(x) in jax:
+    1) Define f(x) with the @custom_vjp jax decorator
+        JAX treats f as a black-box function whose derivative (vjp) is supplied directly by our vjp definition. In other words,
+        JAX won't look inside f(x) to trace its composite functions, instead obtaining the vjp directly from our given definition.
+    2) Define the forward pass function f_fwd(x)
+        Returns the result of the forward computation, f(x).
+        You can add a second return value in the form of a tuple containing "residual" data. The 
+        residual data (e.g. the input x) are intermediate results from the forward computation which can be used by the 
+        backward computation f_bwd without needing to recalculate, since the forward pass happens anyway.
+    3) Define the backward pass function f_bwd(res,g)
+        The res parameter is the residual results tuple generated in (2). The g parameter is the gradient vector 
+        (the "vector" in vector-Jacobian product); if your final objective function output is a scalar y, g = (dy/dx)^T 
+        and has the same dimensions as x.
+        Returns the vjp of f(x): matmul(g, df/dx).
+        
+        NOTE: from custom_vjp docs, the output of f_bwd must be a tuple of length equal to the number of arguments of the 
+        primal function f(x). This is so the return tuple accounts for the fan-in of inputs to the function x. Hence, if f has 
+        only 1 argument, the return is a tuple of length 1: (vjp,).
+        
+        NOTE: you have to be careful that the inputs x and outputs vjp to the function have the same type, but cannot use 
+        type checking.
+    4) Declare that your custom function has a forward and backward with f.defvjp(f_fwd,f_bwd)
+
+"""
 @custom_vjp
 def j1(x):
+    """
+    Bessel function of the first kind of order 1.
+    """
     return jnp.array(sp.special.j1(x))
 
 def j1_fwd(x):
-    """
-    Second return value is tuple containing 'residual' data to be stored for use by back pass
-    """
     return j1(x), (x,)
 
 def j1_bwd(res, g):
     """
-    Parameters
-    ----------
-    res: residuals from fwd func (tuple)
-    g  : vector to backprop (scalar, for some nodes)
-
-    Return
-    ------
-    vjp: vector-Jacobian product of g with Jacobian (tuple)
-
-    NOTE: from custom_vjp docs, the output of bwd must be a tuple of length equal to the number 
-    of arguments of the primal function. Here, sinxsq has only 1 argument, so create a tuple of 
-    length 1 with (vjp,)
-
-    NOTE: you have to be careful that the inputs x and outputs vjp to the function have the 
-    same type, but cannot use type checking
+    The n-th derivative of the Bessel function of the first kind of order v at x is: sp.special.jvp(v,x,n)
     """
     x = res[0]
     vjp = g*jnp.array(sp.special.jvp(1, x, n=1))
@@ -67,27 +97,13 @@ def j0(x):
 
 def j0_fwd(x):
     """
-    Second return value is tuple containing 'residual' data to be stored for use by back pass
+    Bessel function of the first kind of order 0.
     """
     return j0(x), (x,)
 
 def j0_bwd(res, g):
     """
-    Parameters
-    ----------
-    res: residuals from fwd func (tuple)
-    g  : vector to backprop (scalar, for some nodes)
-
-    Return
-    ------
-    vjp: vector-Jacobian product of g with Jacobian (tuple)
-
-    NOTE: from custom_vjp docs, the output of bwd must be a tuple of length equal to the number 
-    of arguments of the primal function. Here, sinxsq has only 1 argument, so create a tuple of 
-    length 1 with (vjp,)
-
-    NOTE: you have to be careful that the inputs x and outputs vjp to the function have the 
-    same type, but cannot use type checking
+    The n-th derivative of the Bessel function of the first kind of order v at x is: sp.special.jvp(v,x,n)
     """
     x = res[0]
     vjp = g*jnp.array(sp.special.jvp(0, x, n=1))
@@ -102,21 +118,12 @@ def eig(A):
 
 def eig_fwd(A):
     """
-    Second return value is tuple containing 'residual' data to be stored for use by back pass
+    Calculates the eigenvalues and eigenvectors of a square matrix A
     """
     return eig(A), (A, eig(A))
 
 def eig_bwd(res, g):
     """
-    Parameters
-    ----------
-    res: residuals from fwd func (tuple)
-    g  : vector to backprop (scalar, for some nodes)
-
-    Return
-    ------
-    vjp: vector-Jacobian product of g with Jacobian (tuple)
-
     VJP taken from https://github.com/HIPS/autograd/blob/master/autograd/numpy/linalg.py
     """
     A = res[0]

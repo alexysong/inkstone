@@ -1,3 +1,8 @@
+"""
+Testing which methods are/aren't differentiable for each autodiff library
+
+"""
+
 import torch # import before numpy to avoid OMP error 15
 import numpy as np
 import numpy.linalg as nla

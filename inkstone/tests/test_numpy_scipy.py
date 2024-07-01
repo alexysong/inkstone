@@ -1,3 +1,8 @@
+"""
+Testing that certain numpy and scipy functions with the same name produce the same results
+
+"""
+
 import numpy as np
 import scipy as sp
 
