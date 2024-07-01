@@ -263,7 +263,22 @@ class GenericBackend:
                 return anp.array(i, dtype=dtype)
             case "jax":
                 if isinstance(i, jax.Array): # handle tracer inputs by not passing invalid dtype
-                    # TODO: is it okay if func argument dtype is lost in passing through here?
+                    """
+                    JL
+                    TODO:
+                    Need more robust handling of list of tracer inputs to self.gb.parseData
+                    Currently, if o is a JAX tracer, then the above control flow sets dtype = jax tracer.
+                    Since JAX does not accept dtype = jax tracer in jnp.array(), it throws an error.
+                    Workaround is manually setting the parseData argument dtype whenever JAX throws an error 
+                    to avoid setting dtype = type(o)
+                    Potential fix is to manually check isinstance(o, jax.Array), but that requires the user 
+                    to have installed JAX, which they may not have if they only want to use one of the other backends.
+                    Need to somehow detect innermost o type as tracer and set jnp.array(i, dtype=None) without 
+                    re-calculating “o” or calculating “o” in cases where it is not needed
+
+                    This isinstance(i, jax.Array) check loses dtype from the previous control flow, is that
+                    acceptable? The dtype is then implicitly set by the dtype of o, i.e. the dtype in the tracer arrays.
+                    """
                     return jnp.array(i)
                 else:
                     return jnp.array(i, dtype=dtype)
