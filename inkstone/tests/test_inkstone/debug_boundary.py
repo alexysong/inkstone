@@ -1,5 +1,6 @@
 """
 Observing finite difference (wrt z position) divergence at boundary between two layers
+
 """
 
 from inkstone import GenericBackend
@@ -48,8 +49,7 @@ def params_2layer_1d():
     p2 = 0.05
     f = 10.
     theta = 25. # degrees
-    z = 0.6
-    return [d1,d2,w1,w2,p1,p2,f,theta,z]
+    return [d1,d2,w1,w2,p1,p2,f,theta]
 
 
 
@@ -61,7 +61,7 @@ z_position = d1 # to measure |Ey|
 
 def Ey_z(z):
     GenericBackend.switchTo("jax")
-    s = simulation_2layer_1d(*params_2layer_1d()[:-1],num_g,backend="jax")
+    s = simulation_2layer_1d(*params_2layer_1d(),num_g,backend="jax")
     Ex, Ey, Ez, Hx, Hy, Hz = s.GetFields(x=0,y=0,z=z)
     return GenericBackend.genericBackend.abs(Ey[0][0][0])
 
