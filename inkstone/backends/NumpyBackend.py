@@ -45,6 +45,7 @@ class NumpyBackend(GenericBackend):
         #    self.lu_solve = sla.lu_solve
         self.fft = sfft
         self.solve = sla.solve
+        self.linspace = np.linspace
 
         self.slogdet = np.linalg.slogdet
 
@@ -56,6 +57,9 @@ class NumpyBackend(GenericBackend):
     
     def parseData(self, i: any, dtype=None):
         return np.array(i, dtype=dtype)
+
+    def meshgrid(self, a, b):
+        return np.meshgrid(a, b)
 
     def castType(self, i, typ):  # typ(e), avoid collision with keyword
         return i.astype(typ)
@@ -86,10 +90,11 @@ class NumpyBackend(GenericBackend):
     def argsort(self, ipt, dim=-1, c=None, d=None):
         if c or d:
             warn("The 3rd and 4th argument are for different purpose in different backends")
-        if c is None: c = False
-        if d is None: d = False
+        if c is None: c = 'quicksort'
+        if d is None:
+            return np.argsort(ipt,dim,kind=c)
         return np.argsort(ipt,dim,kind=c,order=d)
 
     def sort(self,i,dim=-1,des=False,sort_alg='quicksort'):
-        if des:
-            return np.sort(i,dim,sort_alg)
+        return np.sort(i,dim,sort_alg)
+

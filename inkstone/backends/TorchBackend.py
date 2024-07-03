@@ -43,13 +43,15 @@ class TorchBackend(GenericBackend):
         self.fft = torch.fft
         self.slogdet = torch.slogdet
         self.solve = torch.linalg.solve
+        self.linspace = torch.linspace
+        self.eye = torch.eye
+        self.conj = torch.conj
 
         self.pi = torch.pi
         self.float64 = torch.float64  # default float precision
         self.int32 = torch.int32  # defualt int precision
         self.complex128 = torch.complex128  # default complex precision
-        self.eye = torch.eye
-        self.conj = torch.conj
+
 
     def parseData(self, i: any, dtype=None):
         if type(i) is self.raw_type:

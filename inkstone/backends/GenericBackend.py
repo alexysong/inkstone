@@ -58,6 +58,7 @@ class GenericBackend(ABC):
         self.float64 = None  # default float precision
         self.int32 = None  # defualt int precision
         self.complex128 = None  # default complex precision
+        self.linspace = None
 
     @abstractmethod
     def parseData(self, i: any, dtype=None):
@@ -79,6 +80,10 @@ class GenericBackend(ABC):
 
     @abstractmethod
     def laCross(self, a, b):
+        pass
+
+    @abstractmethod
+    def meshgrid(self,a,b):
         pass
 
     @abstractmethod
