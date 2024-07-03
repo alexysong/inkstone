@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from GenericBackend import genericBackend as gb
+from inkstone.backends.GenericBackend import genericBackend as gb
 from scipy.special import jn
 
 

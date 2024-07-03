@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-from GenericBackend import genericBackend as gb
+from inkstone.backends.GenericBackend import genericBackend as gb
 #import scipy.linalg as sla
 # import scipy.sparse as sps
-from warnings import warn
-from .rsp import rsp, rsp_sa21Tlu, rsp_sb12Tlu
+from .rsp import rsp_sa21Tlu, rsp_sb12Tlu
 
 
 def s_1l(thickness, ql, al0, bl0, gb = gb):

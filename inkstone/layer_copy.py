@@ -3,9 +3,9 @@
 from typing import Tuple, Optional, List
 import time
 from inkstone.layer import Layer
-from inkstone.sm import s_1l, s_1l_1212, s_1l_1221, s_1l_rsp
+from inkstone.sm import s_1l_1212, s_1l_1221, s_1l_rsp
 from warnings import warn
-from GenericBackend import genericBackend as gb
+from inkstone.backends.GenericBackend import genericBackend as gb
 
 
 class LayerCopy:

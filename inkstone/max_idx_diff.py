@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
-from GenericBackend import genericBackend as gb
+from inkstone.backends.GenericBackend import genericBackend as gb
 
 
 def max_idx_diff(idx,gb=gb):

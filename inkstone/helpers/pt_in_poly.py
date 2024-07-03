@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from typing import List, Tuple, Union
-from GenericBackend import genericBackend as gb
+from inkstone.backends.GenericBackend import genericBackend as gb
 
 def pt_in_poly(vts: List[Tuple[float, float]],
                pt: Union[any, Tuple[float, float]],gb=gb) -> bool:

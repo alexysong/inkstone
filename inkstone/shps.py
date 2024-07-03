@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from GenericBackend import genericBackend as gb
-from warnings import warn
-import copy
+from inkstone.backends.GenericBackend import genericBackend as gb
 from typing import List, Union, Tuple, Optional
 from inkstone.ft.ft_1d_sq import ft_1d_sq
 from inkstone.ft.ft_2d_rct import ft_2d_rct

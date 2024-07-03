@@ -6,15 +6,14 @@ from collections import OrderedDict
 from typing import Optional, Set, Union, Tuple, Dict, List
 import time
 
-from GenericBackend import genericBackend as gb
+from inkstone.backends.GenericBackend import genericBackend as gb
 
 from inkstone.ft.ft_2d_cnst import ft_2d_cnst
-from inkstone.im import im
-from inkstone.sm import s_1l, s_1l_rsp, s_1l_1212, s_1l_1221, s_1l_rsp_lrd
+from inkstone.sm import s_1l_rsp, s_1l_1212, s_1l_1221
 from inkstone.params import Params
 from inkstone.bx import Bx
 from inkstone.mtr import Mtr
-from inkstone.shps import Rect, Para, Elli, Disk, Poly, OneD
+from inkstone.shps import Para
 from inkstone.helpers.pt_in_poly import pt_in_poly
 
 class Layer:

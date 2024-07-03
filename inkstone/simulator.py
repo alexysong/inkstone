@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
 # import scipy.sparse as sps
-import scipy.linalg as sla
 from warnings import warn
 from collections import OrderedDict
 from typing import Tuple, Optional, List, Dict, Union
 import time
-from GenericBackend import genericBackend as gb
+from inkstone.backends.GenericBackend import genericBackend as gb
 
 from inkstone.rsp import rsp, rsp_sa12lu, rsp_sb21lu
 from inkstone.params import Params
 from inkstone.mtr import Mtr
 from inkstone.layer import Layer
 from inkstone.layer_copy import LayerCopy
-
+from line_profiler_pycharm import profile
 
 class Inkstone:
     # todo: more tests of magneto-optics and gyro-magnetic
@@ -24,7 +23,7 @@ class Inkstone:
                  frequency: Union[float, complex] = None,
                  theta: float = None,
                  phi: float = None,
-                 gb = gb
+                 gb=gb
                  ):
         """
 
@@ -66,9 +65,11 @@ class Inkstone:
         self.layers: OrderedDict[str, Layer] = OrderedDict()  # all layers
 
         self.sm: Optional[Tuple[any, any, any, any]] = None
-        self.csms: List[List[Optional[Tuple[int, int, Tuple[any, any, any, any]]]]] = []  # the cumulative scattering matrices.
-        self.csmsr: List[Optional[Tuple[int, int, Tuple[any, any, any, any]]]] = []  # the cumulative scattering matrices reversed.
-        
+        self.csms: List[
+            List[Optional[Tuple[int, int, Tuple[any, any, any, any]]]]] = []  # the cumulative scattering matrices.
+        self.csmsr: List[
+            Optional[Tuple[int, int, Tuple[any, any, any, any]]]] = []  # the cumulative scattering matrices reversed.
+
         self.gb = gb
 
     @property
@@ -79,6 +80,7 @@ class Inkstone:
         For 2D calculations (1D in-plane), all the patterns should have shape of "1d".
         """
         return self.pr.latt_vec
+
     lattice.__doc__ += Params.latt_vec.__doc__
     __init__.__doc__ += lattice.__doc__
 
@@ -93,6 +95,7 @@ class Inkstone:
     def num_g(self) -> int:
         """"""
         return self.pr.num_g
+
     num_g.__doc__ += Params.num_g.__doc__
 
     @num_g.setter
@@ -106,6 +109,7 @@ class Inkstone:
     def omega(self) -> Union[float, complex]:
         """"""
         return self.pr.omega
+
     omega.__doc__ += Params.omega.__doc__
 
     @omega.setter
@@ -120,6 +124,7 @@ class Inkstone:
     def frequency(self) -> Union[float, complex]:
         """"""
         return self.pr.frequency
+
     frequency.__doc__ += Params.frequency.__doc__
 
     @frequency.setter
@@ -134,6 +139,7 @@ class Inkstone:
     def theta(self):
         """"""
         return self.pr.theta
+
     theta.__doc__ += Params.theta.__doc__
 
     @theta.setter
@@ -149,9 +155,11 @@ class Inkstone:
     def phi(self):
         """"""
         return self.pr.phi
+
     phi.__doc__ += Params.phi.__doc__
 
     @phi.setter
+    @profile
     def phi(self, val):
         if (val is not None) and (val != self.pr.phi):
             self.pr.phi = val
@@ -164,6 +172,7 @@ class Inkstone:
         Set the lattice vectors。
         """
         self.lattice = lattice_vectors
+
     SetLattice.__doc__ += lattice.__doc__
 
     def SetNumG(self, num_g: int):
@@ -171,6 +180,7 @@ class Inkstone:
         Set the number of G points.
         """
         self.num_g = num_g
+
     SetNumG.__doc__ += num_g.__doc__
 
     def channels_choices(self,
@@ -194,8 +204,10 @@ class Inkstone:
 
     def AddMaterial(self,
                     name: str,
-                    epsilon: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], any],
-                    mu: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], any] = 1.
+                    epsilon: Union[Union[float, complex], Tuple[
+                        Union[float, complex], Union[float, complex], Union[float, complex]], any],
+                    mu: Union[Union[float, complex], Tuple[
+                        Union[float, complex], Union[float, complex], Union[float, complex]], any] = 1.
                     ):
         """
         Add materials to structure.
@@ -214,8 +226,10 @@ class Inkstone:
 
     def SetMaterial(self,
                     name: str,
-                    epsi: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], any] = None,
-                    mu: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], any] = None
+                    epsi: Union[Union[float, complex], Tuple[
+                        Union[float, complex], Union[float, complex], Union[float, complex]], any] = None,
+                    mu: Union[Union[float, complex], Tuple[
+                        Union[float, complex], Union[float, complex], Union[float, complex]], any] = None
                     ):
         """
         Update material parameters.
@@ -247,7 +261,8 @@ class Inkstone:
             layer = Layer(name, thickness, material_background, self.materials, self.pr)
             if not self.layers:
                 if thickness != 0.:
-                    warn('You set the first layer (incident region) thickness to be nonzero. This thickness is ignored and set to 0, i.e. treated as infinity. If you meant there was an infinite vacuum before this layer, please explicitly add that using AddLayer().')
+                    warn(
+                        'You set the first layer (incident region) thickness to be nonzero. This thickness is ignored and set to 0, i.e. treated as infinity. If you meant there was an infinite vacuum before this layer, please explicitly add that using AddLayer().')
                     thickness = 0.
                 layer.in_mid_out = 'in'
             self.layers[name] = layer
@@ -423,9 +438,13 @@ class Inkstone:
         """
 
         if self.pr.is_1d_latt and shape != '1d':
-            warn('This is a 2D calculation (i.e. 1D in-plane). Setting 2D in-plane patterns may lead to unexpected results.', RuntimeWarning)
+            warn(
+                'This is a 2D calculation (i.e. 1D in-plane). Setting 2D in-plane patterns may lead to unexpected results.',
+                RuntimeWarning)
         if not self.pr.is_1d_latt and shape == '1d':
-            warn('This is a 3D calculation (i.e. 2D in-plane). Setting 1D in-plane patterns may lead to unexpected results.', RuntimeWarning)
+            warn(
+                'This is a 3D calculation (i.e. 2D in-plane). Setting 1D in-plane patterns may lead to unexpected results.',
+                RuntimeWarning)
 
         if layer in self.layers.keys():
             self.layers[layer].add_box(material, shape, box_name=pattern_name, **kwargs)
@@ -446,7 +465,9 @@ class Inkstone:
                      **kw_gibbs
                      ):
         if not self.pr.is_1d_latt:
-            warn('This is a 3D calculation (i.e. 2D in-plane). Setting 1D in-plane patterns may lead to unexpected results.', RuntimeWarning)
+            warn(
+                'This is a 3D calculation (i.e. 2D in-plane). Setting 1D in-plane patterns may lead to unexpected results.',
+                RuntimeWarning)
 
         if layer in self.layers.keys():
             self.layers[layer].add_box(material, "1d", box_name=pattern_name, width=width, center=center, **kw_gibbs)
@@ -468,10 +489,13 @@ class Inkstone:
                             **kw_gibbs
                             ):
         if self.pr.is_1d_latt:
-            warn('This is a 2D calculation (i.e. 1D in-plane). Setting 2D in-plane patterns may lead to unexpected results.', RuntimeWarning)
+            warn(
+                'This is a 2D calculation (i.e. 1D in-plane). Setting 2D in-plane patterns may lead to unexpected results.',
+                RuntimeWarning)
 
         if layer in self.layers.keys():
-            self.layers[layer].add_box(material, "rectangle", box_name=pattern_name, side_lengths=side_lengths, center=center, angle=angle, **kw_gibbs)
+            self.layers[layer].add_box(material, "rectangle", box_name=pattern_name, side_lengths=side_lengths,
+                                       center=center, angle=angle, **kw_gibbs)
             # propagate if_mod of the layer to all layer copies
             if self.layers[layer].if_mod:
                 for ly in self.layers.values():
@@ -492,10 +516,13 @@ class Inkstone:
                                 ):
 
         if self.pr.is_1d_latt:
-            warn('This is a 2D calculation (i.e. 1D in-plane). Setting 2D in-plane patterns may lead to unexpected results.', RuntimeWarning)
+            warn(
+                'This is a 2D calculation (i.e. 1D in-plane). Setting 2D in-plane patterns may lead to unexpected results.',
+                RuntimeWarning)
 
         if layer in self.layers.keys():
-            self.layers[layer].add_box(material, "parallelogram", box_name=pattern_name, side_lengths=side_lengths, center=center, angle=angle, shear_angle=shear_angle, **kw_gibbs)
+            self.layers[layer].add_box(material, "parallelogram", box_name=pattern_name, side_lengths=side_lengths,
+                                       center=center, angle=angle, shear_angle=shear_angle, **kw_gibbs)
             # propagate if_mod of the layer to all layer copies
             if self.layers[layer].if_mod:
                 for ly in self.layers.values():
@@ -513,10 +540,13 @@ class Inkstone:
                        **kw_gibbs
                        ):
         if self.pr.is_1d_latt:
-            warn('This is a 2D calculation (i.e. 1D in-plane). Setting 2D in-plane patterns may lead to unexpected results.', RuntimeWarning)
+            warn(
+                'This is a 2D calculation (i.e. 1D in-plane). Setting 2D in-plane patterns may lead to unexpected results.',
+                RuntimeWarning)
 
         if layer in self.layers.keys():
-            self.layers[layer].add_box(material, "disk", box_name=pattern_name, radius=radius, center=center, **kw_gibbs)
+            self.layers[layer].add_box(material, "disk", box_name=pattern_name, radius=radius, center=center,
+                                       **kw_gibbs)
             # propagate if_mod of the layer to all layer copies
             if self.layers[layer].if_mod:
                 for ly in self.layers.values():
@@ -535,10 +565,13 @@ class Inkstone:
                           **kw_gibbs
                           ):
         if self.pr.is_1d_latt:
-            warn('This is a 2D calculation (i.e. 1D in-plane). Setting 2D in-plane patterns may lead to unexpected results.', RuntimeWarning)
+            warn(
+                'This is a 2D calculation (i.e. 1D in-plane). Setting 2D in-plane patterns may lead to unexpected results.',
+                RuntimeWarning)
 
         if layer in self.layers.keys():
-            self.layers[layer].add_box(material, "ellipse", box_name=pattern_name, half_lengths=half_lengths, center=center, angle=angle, **kw_gibbs)
+            self.layers[layer].add_box(material, "ellipse", box_name=pattern_name, half_lengths=half_lengths,
+                                       center=center, angle=angle, **kw_gibbs)
             # propagate if_mod of the layer to all layer copies
             if self.layers[layer].if_mod:
                 for ly in self.layers.values():
@@ -555,7 +588,9 @@ class Inkstone:
                           **kw_gibbs
                           ):
         if self.pr.is_1d_latt:
-            warn('This is a 2D calculation (i.e. 1D in-plane). Setting 2D in-plane patterns may lead to unexpected results.', RuntimeWarning)
+            warn(
+                'This is a 2D calculation (i.e. 1D in-plane). Setting 2D in-plane patterns may lead to unexpected results.',
+                RuntimeWarning)
 
         if layer in self.layers.keys():
             self.layers[layer].add_box(material, "polygon", box_name=pattern_name, vertices=vertices, **kw_gibbs)
@@ -579,6 +614,9 @@ class Inkstone:
         else:
             warn('Did not find the layer you specified. The layer is NOT changed.', UserWarning)
 
+
+
+    @profile
     def SetExcitation(self,
                       theta: Union[float, complex] = None,
                       phi: float = None,
@@ -622,47 +660,41 @@ class Inkstone:
 
         li: Layer = list(self.layers.values())[0]
         lo: Layer = list(self.layers.values())[-1]
+        spherical = theta is not None and phi is not None
+        cartesian = kx is not None and ky is not None
 
-        if ((theta is not None) or (phi is not None)) and ((kx is not None) or (ky is not None)):
-            raise Exception("Please specify either (theta, phi) or (kx, ky) but not at the same time.")
+        if spherical == cartesian:
+            raise Exception("Error: Please specify either (theta, phi) or (kx, ky), but not both or neither.")
 
-        if theta is not None:
-            if phi is not None:
-                self.pr.iesbtpsp = True
-                self.pr.iesbksp = False
-                self.pr.iesbe = False
-                self.theta = theta
-                self.phi = phi
-            else:
-                raise Exception("Both theta and phi need to be set.")
-        elif phi is not None:
-                raise Exception("Both theta and phi need to be set.")
+        if spherical:
+            #print(f"Spherical coordinates: (theta, phi) = ({theta}, {phi})")
+            self.pr.iesbtpsp = True
+            self.pr.iesbksp = False
+            self.pr.iesbe = False
+            self.theta = theta
+            self.phi = phi
 
-        if kx is not None:
-            if ky is not None:
-                self.pr.iesbksp = True
-                self.pr.iesbtpsp = False
-                self.pr.iesbe = False
-                self.pr.k_pa_inci = (kx, ky)
-                for layer_name, layer in self.layers.items():
-                    layer.if_mod = True
-            else:
-                raise Exception("Both kx and ky need to be set.")
-        elif ky is not None:
-            raise Exception("Both kx and ky need to be set.")
+        else:
+            self.pr.iesbksp = True
+            self.pr.iesbtpsp = False
+            self.pr.iesbe = False
+            self.pr.k_pa_inci = (kx, ky)
+            for layer_name, layer in self.layers.items():
+                layer.if_mod = True
 
-        if (s_amplitude is not None) or (p_amplitude is not None) or (order is not None) or (s_amplitude_back is not None) or (p_amplitude_back is not None) or (order_back is not None):
+        if (not None) in [s_amplitude, p_amplitude, order, s_amplitude_back, p_amplitude_back, order_back]:
             self.pr.set_inci_ord_amp(s_amplitude, p_amplitude, order, s_amplitude_back, p_amplitude_back, order_back)
             self._need_recalc_bi_ao = True
             for ly in list(self.layers.values()):
                 ly.need_recalc_al_bl = True
 
         if (not li.is_isotropic) and (s_amplitude or p_amplitude):
-            raise Exception('Incident region is not uniform isotropic. s and p waves with arbitrary angles are not guaranteed to be eign. Use `SetExcitationByEigen()` instead.')
+            raise Exception(
+                'Incident region is not uniform isotropic. s and p waves with arbitrary angles are not guaranteed to be eign. Use `SetExcitationByEigen()` instead.')
 
         if (not lo.is_isotropic) and (s_amplitude_back or p_amplitude_back):
-            raise Exception('Output region is not uniform isotropic. s and p waves with arbitrary angles are not guaranteed to be eign. If you are setting incidence from this back side, please consider use `SetExcitationByEigen()` instead.')
-
+            raise Exception(
+                'Output region is not uniform isotropic. s and p waves with arbitrary angles are not guaranteed to be eign. If you are setting incidence from this back side, please consider use `SetExcitationByEigen()` instead.')
 
     def SetExcitationByEigen(self,
                              kx: Union[float, complex],
@@ -674,7 +706,7 @@ class Inkstone:
                              ab: Optional[Union[float, complex, List[Union[float, complex]]]] = None,
                              # sab: Optional[Union[float, complex, List[Union[float, complex]]]] = None,
                              # pab: Optional[Union[float, complex, List[Union[float, complex]]]] = None,
-                             eigen_number_back:  Union[int, List[int]] = None
+                             eigen_number_back: Union[int, List[int]] = None
                              ):
         """
         Set excitation to the structure by specifying in-plane wave vectors kx and ky and the amplitudes of the eigen waves in the incident and output regions.
@@ -710,7 +742,8 @@ class Inkstone:
         enb = eigen_number_back
 
         if (en is None) and (enb is None):
-            raise Exception('You must select at least an eigen number from either the incident side or the output side.')
+            raise Exception(
+                'You must select at least an eigen number from either the incident side or the output side.')
         else:
             ae = []
             for (_a, _n) in [(a, en), (ab, enb)]:
@@ -750,11 +783,14 @@ class Inkstone:
         # lo = ll[-1]
         # o = self.pr.omega
         if li.is_isotropic:
-            warn('Uniform isotropic medium. You can use `SetExcitation()` which works with theta, phi, s and p wave amplitudes.', UserWarning)
+            warn(
+                'Uniform isotropic medium. You can use `SetExcitation()` which works with theta, phi, s and p wave amplitudes.',
+                UserWarning)
             # Note: should not reinvent the wheel. Could just call SetExcitation() from here, but then possible confusion in self.pr.iesbe and self.pr.iesbtpsp.
             kn = self.gb.sqrt(self.gb.abs(kx) ** 2 + self.gb.abs(ky) ** 2)
             if kn != 0.:
-                self.pr._phi = self.gb.arccos(kx / kn)  # not setting property self.pr.phi to avoid double calling stuff like self.pr._calc_ks()
+                self.pr._phi = self.gb.arccos(
+                    kx / kn)  # not setting property self.pr.phi to avoid double calling stuff like self.pr._calc_ks()
             else:
                 warn("At normal incidence, phi is uncertain and default to 0.")
                 self.pr._phi = 0.
@@ -770,7 +806,7 @@ class Inkstone:
 
         aibo = []
         for z, n in zip([a, ab], [en, enb]):
-            i = self.gb.zeros(2*self.pr.num_g, dtype=self.gb.complex128)
+            i = self.gb.zeros(2 * self.pr.num_g, dtype=self.gb.complex128)
             i[n] = z
             aibo.append(i)
             # todo: is this done?
@@ -780,7 +816,6 @@ class Inkstone:
         self.pr.iesbe = True
         self.pr.iesbtpsp = False
         self.pr.iesbksp = False
-
 
     def SetFrequency(self, freq: Union[float, complex]):
         """
@@ -806,7 +841,15 @@ class Inkstone:
 
         elif self.pr.iesbtpsp or self.pr.iesbksp:
 
-            for ii, (sa, pa, od, sphi, cphi, sthe, cthe) in enumerate([[self.pr._s_amps, self.pr._p_amps, self.pr._incident_orders, self.pr.sin_phis, self.pr.cos_phis, self.pr.sin_varthetas, self.pr.cos_varthetas], [self.pr._s_amps_bk, self.pr._p_amps_bk, self.pr._incident_orders_bk, self.pr.sin_phis_bk, self.pr.cos_phis_bk, self.pr.sin_varthetas_bk, self.pr.cos_varthetas_bk]]):
+            for ii, (sa, pa, od, sphi, cphi, sthe, cthe) in enumerate([[self.pr._s_amps, self.pr._p_amps,
+                                                                        self.pr._incident_orders, self.pr.sin_phis,
+                                                                        self.pr.cos_phis, self.pr.sin_varthetas,
+                                                                        self.pr.cos_varthetas],
+                                                                       [self.pr._s_amps_bk, self.pr._p_amps_bk,
+                                                                        self.pr._incident_orders_bk,
+                                                                        self.pr.sin_phis_bk, self.pr.cos_phis_bk,
+                                                                        self.pr.sin_varthetas_bk,
+                                                                        self.pr.cos_varthetas_bk]]):
                 if self.pr._num_g_ac:
                     ab = self.gb.zeros(2 * self.pr._num_g_ac, dtype=self.gb.complex128) + 0j
                     if (sa or pa) and od and self.pr.idx_g and \
@@ -814,11 +857,12 @@ class Inkstone:
                         # find the index of the input orders in the g list
                         idx = [i for order in od for i, j in enumerate(self.pr.idx_g) if j == order]
                         for i, jj in enumerate(idx):
-                        # for i in range(len(idx)):
+                            # for i in range(len(idx)):
                             if (jj in self.pr.q0_0):
                                 # todo: need to handle this and document it.
                                 # if user specify 90 degree incidence, this is activated
-                                warn('You are specifying incidence in a channel that is parallel to the surface of the structure. \n In this case, only specific field configuration is allowed.')
+                                warn(
+                                    'You are specifying incidence in a channel that is parallel to the surface of the structure. \n In this case, only specific field configuration is allowed.')
                                 ab[jj] = sa[i]
                                 ab[jj + self.pr._num_g_ac] = pa[i]
                             else:
@@ -840,7 +884,7 @@ class Inkstone:
                                 # with new calc that removed convergence problem at Wood
                                 ex = -s * sp + p * st * cp  # e_x
                                 ey = s * cp + p * st * sp  # e_y
-                                phi_2x2 = self.gb.castType(layer_inci.phil_2x2s[:, :, jj],self.gb.complex128)
+                                phi_2x2 = self.gb.castType(layer_inci.phil_2x2s[:, :, jj], self.gb.complex128)
                                 v = self.gb.la.solve(phi_2x2, self.gb.parseList([ex, ey]))
                                 ab[jj] = v[0]
                                 ab[jj + self.pr._num_g_ac] = v[1]
@@ -878,7 +922,7 @@ class Inkstone:
                 self._calc_csm_layer(i)
                 self._calc_csm_layer(i - 1)
                 csm = layersl[i].csm
-                csmp = layersl[i-1].csm
+                csmp = layersl[i - 1].csm
 
                 # # # # # # # # # #
                 # # old method using al0, bl0.
@@ -968,14 +1012,15 @@ class Inkstone:
                 sr22 = sl11
 
                 from .rsp import rsp_sb21lu, rsp_sa12lu, rsp_sa12lu_sb21lu
-                if (layersl[i-1].in_mid_out == "in"):
+                if (layersl[i - 1].in_mid_out == "in"):
                     scp11, scp12, scp21, scp22 = rsp_sa12lu_sb21lu(scp11, scp12, scp21, scp22, sl11, sl12, sl21, sl22)
                     # scp11, scp12, scp21, scp22 = rsp_sa12lu(scp11, scp12, scp21, scp22, sl11, sl12, sl21, sl22)  # for debugging
                 else:
                     scp11, scp12, scp21, scp22 = rsp_sb21lu(scp11, scp12, scp21, scp22, sl11, sl12, sl21, sl22)
 
-                if (layersl[i+1].in_mid_out == "out"):
-                    scin11, scin12, scin21, scin22 = rsp_sa12lu_sb21lu(sr11, sr12, sr21, sr22, scin11, scin12, scin21, scin22)
+                if (layersl[i + 1].in_mid_out == "out"):
+                    scin11, scin12, scin21, scin22 = rsp_sa12lu_sb21lu(sr11, sr12, sr21, sr22, scin11, scin12, scin21,
+                                                                       scin22)
                     # scin11, scin12, scin21, scin22 = rsp_sb21lu(sr11, sr12, sr21, sr22, scin11, scin12, scin21, scin22)  # for debugging
                 else:
                     scin11, scin12, scin21, scin22 = rsp_sa12lu(sr11, sr12, sr21, sr22, scin11, scin12, scin21, scin22)
@@ -1081,21 +1126,21 @@ class Inkstone:
             self.csms[1:] = [[(i + 1, j + 1, csm) for (i, j, csm) in li] for li in _csms]
             self.csms[0].append((0, 0, layersl[0].sm))
             ss = rsp_sa12lu(*(layersl[0].sm), *(_csms[0][-1][2]))
-            self.csms[0].append((0, _csms[0][-1][1]+1, ss))
+            self.csms[0].append((0, _csms[0][-1][1] + 1, ss))
             layersl[0].csm = layersl[0].sm
-            layersl[_csms[0][-1][1]+1].csm = ss
+            layersl[_csms[0][-1][1] + 1].csm = ss
 
             # handle last layer(s)
             # Update with fic gap layers: even it is vac its sm is not trivial from vac to fic, hence need to remove this `if layersl[-1].is_vac` part
             # if layersl[-1].is_vac:
             #     [li.append((li[-1][0], n_layers - 1, li[-1][2])) for li in self.csms if li[-1][1] == n_layers - 2]
             # elif self._layers_mod[-1] == n_layers-1:
-            if self._layers_mod[-1] == n_layers-1:
-                s = next(ll[-1] for ll in self.csms if ll[-1][1] == n_layers-2)
+            if self._layers_mod[-1] == n_layers - 1:
+                s = next(ll[-1] for ll in self.csms if ll[-1][1] == n_layers - 2)
                 csm = rsp_sb21lu(*(s[2]), *(layersl[-1].sm))
-                self.csms[s[0]].append((s[0], n_layers-1, csm))
+                self.csms[s[0]].append((s[0], n_layers - 1, csm))
             else:
-                self._calc_csmr_layer(self._layers_mod[-1]+1)
+                self._calc_csmr_layer(self._layers_mod[-1] + 1)
 
             # from new blocks calc overall sm
             csm = self.csms[0][-1][2]
@@ -1127,7 +1172,8 @@ class Inkstone:
 
         layersl = list(self.layers.values())
         if i == len(layersl) - 1:
-            warn('csm of the last layer is by definition the overall csm and should have been calculated already.', UserWarning)
+            warn('csm of the last layer is by definition the overall csm and should have been calculated already.',
+                 UserWarning)
         else:
             ii, s = next((j, x) for j, x in enumerate(reversed(self.csms[0])) if x[1] <= i)
             ii = len(self.csms[0]) - ii - 1
@@ -1222,7 +1268,8 @@ class Inkstone:
             #     layer.in_mid_out = 'in'
             if idx == len(self.layers.values()) - 1:
                 if layer.thickness != 0:
-                    warn('You set the last layer (output region) thickness to be nonzero. This thickness is ignored and set to 0, i.e. treated as infinity. If you meant there was an infinite vacuum after this layer, please explicitly add that using AddLayer().')
+                    warn(
+                        'You set the last layer (output region) thickness to be nonzero. This thickness is ignored and set to 0, i.e. treated as infinity. If you meant there was an infinite vacuum after this layer, please explicitly add that using AddLayer().')
                     layer.thickness = 0.
                 layer.in_mid_out = 'out'
             elif idx != 0:
@@ -1259,7 +1306,7 @@ class Inkstone:
         if self._need_recalc_sm:
             lm = [-1] + self._layers_mod
             for i, ilm in enumerate(self._layers_mod):
-                for j in range(lm[i]+1, ilm+1):
+                for j in range(lm[i] + 1, ilm + 1):
                     if self.csms[j]:
                         iii = next((ii for ii, s in enumerate(self.csms[j]) if s[1] >= ilm), n_layers)
                         del self.csms[j][iii:]
@@ -1296,7 +1343,8 @@ class Inkstone:
 
     def _calc_field_fs_layer_fb(self,
                                 layer: str,
-                                z: Union[float, List[float], any, Tuple[float]] = None) -> Tuple[any, any, any, any, any, any, any, any, any, any, any, any]:
+                                z: Union[float, List[float], any, Tuple[float]] = None) -> Tuple[
+        any, any, any, any, any, any, any, any, any, any, any, any]:
         """
         Calculate e and h, the Fourier components in a given layer at given z points. return the forward and backward components separately.
 
@@ -1323,12 +1371,16 @@ class Inkstone:
         t = self.layers[layer].thickness
         if self.layers[layer].in_mid_out == 'in':
             if (za > 0).any():
-                warn('Requesting fields of the incident layer at a position outside the layer. Fields may be diverging.', UserWarning)
+                warn(
+                    'Requesting fields of the incident layer at a position outside the layer. Fields may be diverging.',
+                    UserWarning)
         elif self.layers[layer].in_mid_out == 'out':
             if (za < 0).any():
-                warn('Requesting fields of the output layer at a position outside the layer. Fields may be diverging.', UserWarning)
+                warn('Requesting fields of the output layer at a position outside the layer. Fields may be diverging.',
+                     UserWarning)
         elif (za < 0).any() or (za > t).any():
-            warn('Requesting fields of the output layer at a position outside the layer. Fields may be diverging.', UserWarning)
+            warn('Requesting fields of the output layer at a position outside the layer. Fields may be diverging.',
+                 UserWarning)
 
         al, bl = self.layers[layer].al_bl  # for in/out layer?
         phil = self.layers[layer].phil
@@ -1336,7 +1388,8 @@ class Inkstone:
         qla = self.layers[layer].ql[:, None]  # 1-column 2d array of length 2num_g
         d = self.layers[layer].thickness
 
-        ef = phil * al @ self.gb.exp(1j * qla * za)  # todo: for incident/output region, z too negative and high order ql cause overflow. this is the wave exponential decaying towards the slab
+        ef = phil * al @ self.gb.exp(
+            1j * qla * za)  # todo: for incident/output region, z too negative and high order ql cause overflow. this is the wave exponential decaying towards the slab
         eb = phil * bl @ self.gb.exp(1j * qla * (d - za))
         hf = psil * al @ self.gb.exp(1j * qla * za)
         hb = -psil * bl @ self.gb.exp(1j * qla * (d - za))
@@ -1352,9 +1405,9 @@ class Inkstone:
         return exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb
 
     def GetAmplitudesByOrder(self,
-                      layer: str,
-                      z: Union[float, List[float], any, Tuple[float]] = None,
-                      order: Union[int, List[int], Tuple[int, int], List[Tuple[int, int]]] = None):
+                             layer: str,
+                             z: Union[float, List[float], any, Tuple[float]] = None,
+                             order: Union[int, List[int], Tuple[int, int], List[Tuple[int, int]]] = None):
         """
         Get the electric and magnetic fields by Fourier order in a given layer at a given z.
 
@@ -1392,7 +1445,8 @@ class Inkstone:
     def GetLayerFieldsListPoints(self,
                                  layer: str,
                                  xy: Union[Tuple[float, float], List[Tuple[float, float]]],
-                                 z: Union[float, List[float], any, Tuple[float]] = None) -> Tuple[any, any, any, any, any, any]:
+                                 z: Union[float, List[float], any, Tuple[float]] = None) -> Tuple[
+        any, any, any, any, any, any]:
         """
         Calculate fields at the list of (x, y) points defined in `xy` in each z plane in the `z` list.
 
@@ -1423,8 +1477,10 @@ class Inkstone:
         i = list(self.layers.keys()).index(layer)
         self._calc_al_bl_layer(i)
 
-        exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)  # each has shape (num_g, len(z))
-        ex, ey, ez, hx, hy, hz = [a + b for a, b in [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
+        exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer,
+                                                                                                  z)  # each has shape (num_g, len(z))
+        ex, ey, ez, hx, hy, hz = [a + b for a, b in
+                                  [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
 
         xa, ya = self.gb.hsplit(self.gb.parseList(xy), 2)  # 2d array with one column
 
@@ -1508,7 +1564,8 @@ class Inkstone:
 
     def GetFieldsListPoints(self,
                             xy: Union[Tuple[float, float], List[Tuple[float, float]]],
-                            z: Union[float, List[float], any, Tuple[float]] = None) -> Tuple[any, any, any, any, any, any]:
+                            z: Union[float, List[float], any, Tuple[float]] = None) -> Tuple[
+        any, any, any, any, any, any]:
         """
         Calculate fields at the list of (x, y) points defined by `xy` in each z plane in the `z` list.
 
@@ -1546,7 +1603,8 @@ class Inkstone:
         i_in_l.append(za >= z_interfaces[-1])
 
         for idx, iin in enumerate(i_in_l):
-            za_l = za[iin] - ([0] + z_interfaces)[idx]  # z coordinate of this layer w.r.t. the left interface of this layer
+            za_l = za[iin] - ([0] + z_interfaces)[
+                idx]  # z coordinate of this layer w.r.t. the left interface of this layer
             z_l = za_l.tolist()
             if z_l:
                 fields = self.GetLayerFieldsListPoints(ll[idx], xy, z_l)
@@ -1599,9 +1657,9 @@ class Inkstone:
                 else:
                     c = self.gb.parseData([c], dtype=gb.float64)
                 u = c
-            elif min is None or max is None or n is None:
+            elif None in [min, max, n]:
                 warn(s + " points to get fields not defined properly. Default to 0.")
-                u = 0.
+                u = self.gb.parseData(0.)
             else:
                 u = self.gb.linspace(min, max, n)
             uu.append(u)
@@ -1645,10 +1703,12 @@ class Inkstone:
 
         t1 = time.process_time()
         exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)
-        ex, ey, ez, hx, hy, hz = [a + b for a, b in [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
+        ex, ey, ez, hx, hy, hz = [a + b for a, b in
+                                  [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
 
         sf = -1.j / 4. * ((self.gb.einsum('i...,i...', ex.conj(), hyf) - self.gb.einsum('i...,i...', ey.conj(), hxf))
-                          - (self.gb.einsum('i...,i...', hy.conj(), exf) - self.gb.einsum('i...,i...', hx.conj(), eyf)))  # 1d array of length len(z)
+                          - (self.gb.einsum('i...,i...', hy.conj(), exf) - self.gb.einsum('i...,i...', hx.conj(),
+                                                                                          eyf)))  # 1d array of length len(z)
         sb = -1.j / 4. * ((self.gb.einsum('i...,i...', ex.conj(), hyb) - self.gb.einsum('i...,i...', ey.conj(), hxb))
                           - (self.gb.einsum('i...,i...', hy.conj(), exb) - self.gb.einsum('i...,i...', hx.conj(), eyb)))
 
@@ -1711,7 +1771,7 @@ class Inkstone:
         elif type(order[0]) is int:
             order = [(o, 0) for o in order]
         else:
-            raise('Incorrect datatype for input argument `order`.', RuntimeError)
+            raise ('Incorrect datatype for input argument `order`.', RuntimeError)
         idx = self.gb.parseData([self.pr.idx_g.index(o) for o in order])
 
         exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)
@@ -1719,7 +1779,8 @@ class Inkstone:
         ex, ey, hx, hy = [a + b for a, b in [(exf, exb), (eyf, eyb), (hxf, hxb), (hyf, hyb)]]
 
         sf = -1.j / 4. * ((ex.conj()[idx, :] * hyf[idx, :] - ey.conj()[idx, :] * hxf[idx, :])
-                          - (hy.conj()[idx, :] * exf[idx, :] - hx.conj()[idx, :] * eyf[idx, :]))  # 1d array of length len(z)
+                          - (hy.conj()[idx, :] * exf[idx, :] - hx.conj()[idx, :] * eyf[idx,
+                                                                                   :]))  # 1d array of length len(z)
         sb = -1.j / 4. * ((ex.conj()[idx, :] * hyb[idx, :] - ey.conj()[idx, :] * hxb[idx, :])
                           - (hy.conj()[idx, :] * exb[idx, :] - hx.conj()[idx, :] * eyb[idx, :]))
 
@@ -1745,7 +1806,7 @@ class Inkstone:
                    channels_in: List[Tuple[int, int]] = None,
                    channels_out: List[Tuple[int, int]] = None,
                    channels_exclude: List[Tuple[int, int]] = None
-                   ) :
+                   ):
         """
         Get the scattering matrix of the entire structure.
 
@@ -1781,7 +1842,7 @@ class Inkstone:
         sm_b = self.sm
 
         sm = self.gb.block([[sm_b[0], sm_b[1]],
-                       [sm_b[2], sm_b[3]]])
+                            [sm_b[2], sm_b[3]]])
 
         rci = []
         rco = []
@@ -1796,7 +1857,7 @@ class Inkstone:
             rco = [a + 2 * self.pr.num_g for a in rci]
         elif channels_in is not None:
             rci = [self.pr.idx_g.index(a) for a in channels_in]
-            rci += [a+self.pr.num_g for a in rci]
+            rci += [a + self.pr.num_g for a in rci]
             if channels_out is not None:
                 rco = [self.pr.idx_g.index(a) + 2 * self.pr.num_g for a in channels_out]
                 rco += [a + self.pr.num_g for a in rco]
@@ -1805,24 +1866,24 @@ class Inkstone:
             rco += [a + self.pr.num_g for a in rco]
         elif channels is not None:
             rci = [self.pr.idx_g.index(a) for a in channels]
-            rci += [a+self.pr.num_g for a in rci]
+            rci += [a + self.pr.num_g for a in rci]
             rco = [a + 2 * self.pr.num_g for a in rci]
         elif radiation_channels_only:
             layersl = list(self.layers.values())
             rci = layersl[0].rad_cha
             rco = layersl[-1].rad_cha
-            _rco = [a + 2*self.pr.num_g for a in rco]
+            _rco = [a + 2 * self.pr.num_g for a in rco]
 
         if rci or _rco:
             rc = rci + _rco
             sm = sm[rc, :][:, rc]
 
         if rci:
-            idx_i = [self.pr.idx_g[ii] for ii in rci[:len(rci)//2]]
+            idx_i = [self.pr.idx_g[ii] for ii in rci[:len(rci) // 2]]
         else:
             idx_i = self.pr.idx_g
         if rco:
-            idx_o = [self.pr.idx_g[ii] for ii in rco[:len(rco)//2]]
+            idx_o = [self.pr.idx_g[ii] for ii in rco[:len(rco) // 2]]
         else:
             idx_o = self.pr.idx_g
 
@@ -1834,7 +1895,7 @@ class Inkstone:
         return sm, (idx_i, idx_o)
 
     def GetSMatrixDet(self,
-                      radiation_channels_only: bool=False,
+                      radiation_channels_only: bool = False,
                       channels: List[Tuple[int, int]] = None,
                       channels_in: List[Tuple[int, int]] = None,
                       channels_out: List[Tuple[int, int]] = None,
@@ -1868,7 +1929,8 @@ class Inkstone:
         dets :
             the sign and the natural log of the determinant of the scattering matrix.
         """
-        sm, idx = self.GetSMatrix(radiation_channels_only=radiation_channels_only, channels=channels, channels_in=channels_in, channels_out=channels_out, channels_exclude=channels_exclude)
+        sm, idx = self.GetSMatrix(radiation_channels_only=radiation_channels_only, channels=channels,
+                                  channels_in=channels_in, channels_out=channels_out, channels_exclude=channels_exclude)
 
         if sm.any():
             dets = gb.slogdet(sm)
@@ -1878,7 +1940,8 @@ class Inkstone:
         return dets
 
     def GetSMatrixDeterminant(self, *args, **kwargs):
-        warn("This method is an alias of `GetSMatrixDet()`. It's recommended to use `GetSMatrixDet()` instead.", FutureWarning)
+        warn("This method is an alias of `GetSMatrixDet()`. It's recommended to use `GetSMatrixDet()` instead.",
+             FutureWarning)
         return self.GetSMatrixDet(*args, **kwargs)
 
     def GetReducedSMatrixDeterminant(self) -> Tuple[Union[float, complex], float]:
@@ -1896,7 +1959,8 @@ class Inkstone:
         dets :
             the sign and the natural log of the determinant of the scattering matrix.
         """
-        warn("This method is deprecated. Use `GetRadiativeSMatrixDet(radiation_channels_only=True)` instead.", FutureWarning)
+        warn("This method is deprecated. Use `GetRadiativeSMatrixDet(radiation_channels_only=True)` instead.",
+             FutureWarning)
         return self.GetSMatrixDet(radiation_channels_only=True)
 
     def GetRadiativeSMatrixDet(self) -> Tuple[Union[float, complex], float]:
@@ -1915,4 +1979,3 @@ class Inkstone:
             the sign and the natural log of the determinant of the scattering matrix.
         """
         return self.GetSMatrixDet(radiation_channels_only=True)
-    

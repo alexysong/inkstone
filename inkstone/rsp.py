@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from GenericBackend import genericBackend as gb
-import scipy.linalg as sla
+from inkstone.backends.GenericBackend import genericBackend as gb
 import time
 # import scipy.sparse as sps
 # import warnings

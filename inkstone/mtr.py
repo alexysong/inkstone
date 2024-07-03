@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from typing import Tuple, Union, Optional
-from GenericBackend import genericBackend as gb
+from inkstone.backends.GenericBackend import genericBackend as gb
 # import numpy.linalg as la
 # from warnings import warn
 
@@ -110,23 +110,19 @@ class Mtr:
 
     @epsi.setter
     def epsi(self, val):
-        if type(val) in [float, int, complex, self.gb.float64, self.gb.complex128]:
+        if type(val) in [float, int, complex, self.gb.int32, self.gb.float64, self.gb.complex128]:
             ep = self.gb.eye(3, dtype=self.gb.complex128) * val
             self._epsi = ep + 0j
             self.ep_is_diagonal = True
             self.ep_is_isotropic = True
-            if val == 1.:
-                self.ep_is_vac = True
-            else:
-                self.ep_is_vac = False
+            self.ep_is_vac = val == 1.
+           
         elif self.gb.parseData(val).ndim == 1 and self.gb.getSize(self.gb.parseData(val)) == 3:
             ep = self.gb.diag(val) + 0j
             self._epsi = ep + 0j
             self.ep_is_diagonal = True
-            if check_iso(ep):
-                self.ep_is_isotropic = True
-            else:
-                self.ep_is_isotropic = False
+            self.ep_is_isotropic = check_iso(ep)
+
             if val[0] == 1. and val[1] == 1. and val[2] == 1.:
                 self.ep_is_vac = True
             else:
@@ -231,10 +227,8 @@ class Mtr:
     def _check_isotropic(self):
         """check if material is isotropic."""
         if (self.epsi is not None) and (self.mu is not None):
-            if self.ep_is_isotropic and self.mu_is_isotropic:
-                self.is_isotropic = True
-            else:
-                self.is_isotropic = False
+            self.is_isotropic = self.ep_is_isotropic and self.mu_is_isotropic
+
 
             # ep = self.epsi
             # mu = self.mu
@@ -245,11 +239,8 @@ class Mtr:
 
     def _check_diagonal(self):
         """check if material is diagonal."""
-        if (self.epsi is not None) and (self.mu is not None):
-            if self.ep_is_diagonal and self.mu_is_diagonal:
-                self.is_diagonal = True
-            else:
-                self.is_diagonal = False
+        if self.epsi is not None and self.mu is not None:
+            self.is_diagonal = self.ep_is_diagonal and self.mu_is_diagonal
 
             # ep = self.epsi
             # mu = self.mu
@@ -267,10 +258,7 @@ class Mtr:
                 else:
                     ep = self.epsi
                     mu = self.mu
-                    if check_dege(ep, mu):
-                        self.is_dege = True
-                    else:
-                        self.is_dege = False
+                    self.is_dege = check_dege(ep, mu)
             else:
                 self.is_dege = False
 

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-from GenericBackend import genericBackend as gb
+from inkstone.backends.GenericBackend import genericBackend as gb
 # import numpy.linalg as la
 from inkstone.shps import Rect, Para, Disk, Elli, Poly, OneD
 from warnings import warn
-from typing import Tuple, Union, List, Optional
+from typing import Tuple
 from inkstone.mtr import Mtr
 
 
@@ -37,20 +37,19 @@ class Bx:
         self.mtr = mtr
         self.name = name
 
-        if shp == 'rectangle':
-            self.shp = Rect(**kwargs)
-        elif shp == 'parallelogram':
-            self.shp = Para(**kwargs)
-        elif shp == 'disk':
-            self.shp = Disk(**kwargs)
-        elif shp == 'polygon':
-            self.shp = Poly(**kwargs)
-        elif shp == 'ellipse':
-            self.shp = Elli(**kwargs)
-        elif shp == '1d':
-            self.shp = OneD(**kwargs)
+        shape_classes = {
+            'rectangle': Rect,
+            'parallelogram': Para,
+            'disk': Disk,
+            'polygon': Poly,
+            'ellipse': Elli,
+            '1d': OneD
+        }
+
+        if shp in shape_classes:
+            self.shp = shape_classes[shp](**kwargs)
         else:
-            warn('shape not recognized.', UserWarning)
+            warn('Shape not recognized.', UserWarning)
 
         self.outside: Bx = outside
 
@@ -142,7 +141,8 @@ class Bx:
 
         return ep, ei, mu, mi
 
-    def set_shape(self, width=None, center=None, angle=None, shear_angle=None, half_lengths=None, side_lengths=None, radius=None, vertices=None, **kw_gibbs):
+    def set_shape(self, width=None, center=None, angle=None, shear_angle=None, half_lengths=None,
+                  side_lengths=None, radius=None, vertices=None, **kw_gibbs):
         """
         Set the shape geometry.
 
@@ -160,43 +160,24 @@ class Bx:
 
         """
         # todo: what self.shp is is conditional; when refactoring this is a problem.
-        if self.shp.shape == 'rectangle':
-            if center is not None:
-                self.shp.center = center
-            if angle is not None:
-                self.shp.angle = angle
-            if side_lengths is not None:
-                self.shp.side_lengths = side_lengths
-        if self.shp.shape == 'parallelogram':
-            if center is not None:
-                self.shp.center = center
-            if angle is not None:
-                self.shp.angle = angle
-            if shear_angle is not None:
-                self.shp.shear_angle = shear_angle
-            if side_lengths is not None:
-                self.shp.side_lengths = side_lengths
-        if self.shp.shape == 'disk':
-            if center is not None:
-                self.shp.center = center
-            if radius is not None:
-                self.shp.radius = radius
-        if self.shp.shape == 'ellipse':
-            if center is not None:
-                self.shp.center = center
-            if angle is not None:
-                self.shp.angle = angle
-            if half_lengths is not None:
-                self.shp.half_lengths = half_lengths
-        if self.shp.shape == 'polygon':
-            if vertices is not None:
-                self.shp.vertices = vertices
-        if self.shp.shape == '1d':
-            if width is not None:
-                self.shp.width = width
-            if center is not None:
-                self.shp.center = center
+        shape_attributes = {
+            'rectangle': ['center', 'angle', 'side_lengths'],
+            'parallelogram': ['center', 'angle', 'shear_angle', 'side_lengths'],
+            'disk': ['center', 'radius'],
+            'ellipse': ['center', 'angle', 'half_lengths'],
+            'polygon': ['vertices'],
+            '1d': ['width', 'center']
+        }
 
-        self.shp.use_gibbs_correction(**kw_gibbs)
+        try:
+            for attr in shape_attributes[self.shp.shape]:
+                value = locals().get(attr)
+                if value is not None:
+                    setattr(self.shp, attr, value)
+            self.shp.use_gibbs_correction(**kw_gibbs)
+        except KeyError:
+            print(f"Missing attributes info for shape {self.shp.shape}")
+
+
 
 

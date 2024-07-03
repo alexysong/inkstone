@@ -5,9 +5,8 @@ import sys
 sys.path.append("C:/Users/w-a-c/Desktop/inkstone")
 ###----------------
 
-from scipy import sparse as sps
 # import scipy.fft as fft
-from typing import Tuple, List, Union, Optional, Set
+from typing import Tuple, List, Union, Optional
 # import time
 from warnings import warn
 from inkstone.recipro import recipro
@@ -15,8 +14,8 @@ from inkstone.g_pts import g_pts
 from inkstone.g_pts_1d import g_pts_1d
 from inkstone.max_idx_diff import max_idx_diff
 from inkstone.conv_mtx_idx import conv_mtx_idx_2d
-from GenericBackend import genericBackend as gb
-
+from inkstone.backends.GenericBackend import genericBackend as gb
+from line_profiler_pycharm import profile
 
 
 
@@ -377,6 +376,7 @@ class Params:
         return phi
 
     @phi.setter
+    @profile
     def phi(self, val: float):
         if val is not None:
             self._phi: float = self.gb.parseData(val * self.gb.pi / 180.)
@@ -564,6 +564,7 @@ class Params:
             self._ind_out = val
             self._calc_kio()
 
+    @profile
     def _calc_k_pa_inci(self):
         """calculate incident kx and ky"""
         if (self._theta is not None) and (self._phi is not None) and (self.kii is not None):
@@ -647,6 +648,7 @@ class Params:
         self._calc_ks()
         self._calc_conv_mtx_idx()
 
+    @profile
     def _calc_ks(self):
         if self.gs and (self.k_pa_inci is not None):
             self.ks = self.gb.parseData([[g[0] + self.k_pa_inci[0], g[1] + self.k_pa_inci[1]] for g in self.gs], dtype=self.gb.float64)
@@ -679,6 +681,7 @@ class Params:
             self.idx_g_ep_mu_used = list(set(tuple_list))
            # self.idx_g_ep_mu_used = list(set([(i, j) for (i, j) in self.idx_conv_mtx.reshape(self._num_g_ac ** 2, 2)]))  # The first element of each tuple is in physical "x" direction
 
+    @profile
     def _calc_ks_ep_mu(self):
         if self.idx_g:
             # t1 = time.process_time()
@@ -716,6 +719,7 @@ class Params:
             # print(time.process_time() - t3)
             # print('_calc_ks_ep_mu', time.process_time()-t1)
 
+    @profile
     def _calc_q0(self):
         if all(isinstance(v, self.gb.raw_type) 
                or v is not None for v in [self._num_g_ac,self.omega,self.ks]):
@@ -794,6 +798,7 @@ class Params:
             # self._calc_phi0_psi0()  # logically, should call this, however, the only place calling _calc_P0Q0() is _calc_Km(), which is only called at _calc_ks(). There, after _calc_Km(), _calc_q0() is called, which calls this.
             # self._calc_phif_psif()
 
+    @profile
     def _calc_phi0_psi0(self):
         if (self.Q0_val is not None) and (self.q0 is not None) and (self._num_g_ac is not None):
             # t1 = time.process_time()

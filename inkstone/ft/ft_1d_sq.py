@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-from GenericBackend import genericBackend as gb
+from inkstone.backends.GenericBackend import genericBackend as gb
 
 
-def ft_1d_sq(width, ks, center=0. , gb=gb):
-
+def ft_1d_sq(width, ks, center=0., gb=gb):
     """
     Calculate the Fourier transform of a 1d square function.
 
@@ -27,7 +26,7 @@ def ft_1d_sq(width, ks, center=0. , gb=gb):
                     1D array, Fourier series coefficients at the corresponding points
     """
     if width <= 0:
-       raise ValueError("No zero or negative width")
+        raise ValueError("No zero or negative width")
 
     ksa = gb.parseData(ks)
 
@@ -35,4 +34,3 @@ def ft_1d_sq(width, ks, center=0. , gb=gb):
     # note numpy sinc(x) definition is sin(pi x) / (pi x)
 
     return s.tolist()
-
