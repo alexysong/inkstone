@@ -68,16 +68,46 @@ def Ey_z(z):
 def FD_Ey_z(z, eps):
     return (Ey_z(z+eps/2) - Ey_z(z-eps/2))/eps
 
-FDs = jnp.array([FD_Ey_z(z_position, eps) for eps in eps_vals])
-autodiffgrad = jax_grad(Ey_z)
-AD_grad = autodiffgrad(z_position)
+# FDs = jnp.array([FD_Ey_z(z_position, eps) for eps in eps_vals])
+# autodiffgrad = jax_grad(Ey_z)
+# AD_grad = autodiffgrad(z_position)
+
+# fig, ax = plt.subplots(1)
+# ax.plot(eps_vals, FDs, '-k')
+# ax.axhline(y=AD_grad, color='r', linestyle=':', label="Automatic derivative")
+# ax.set_xscale("log")
+# ax.set_yscale("symlog", linthresh=20)
+# ax.set(xlabel=r"Finite difference step, $\epsilon$", ylabel="Finite difference at z = layer boundary")
+# ax.legend()
+# fig.tight_layout()
+# plt.show()
+
+
+
+params_left = params_2layer_1d()[:6]
+params_right = params_2layer_1d()[7:]
+f = 10.
+z = d1/2
+def Ey_f(f):
+    GenericBackend.switchTo("jax")
+    s = simulation_2layer_1d(*params_left,f,*params_right,num_g,backend="jax")
+    Ex, Ey, Ez, Hx, Hy, Hz = s.GetFields(x=0,y=0,z=z)
+    return GenericBackend.genericBackend.abs(Ey[0][0][0])
+
+def FD_Ey_f(f, eps):
+    return (Ey_f(f+eps/2) - Ey_f(f-eps/2))/eps
+
+FDs = jnp.array([FD_Ey_f(f, eps) for eps in eps_vals])
+autodiffgrad = jax_grad(Ey_f)
+AD_grad = autodiffgrad(f)
 
 fig, ax = plt.subplots(1)
 ax.plot(eps_vals, FDs, '-k')
 ax.axhline(y=AD_grad, color='r', linestyle=':', label="Automatic derivative")
 ax.set_xscale("log")
 ax.set_yscale("symlog", linthresh=20)
-ax.set(xlabel=r"Finite difference step, $\epsilon$", ylabel="Finite difference at z = layer boundary")
+ax.set(xlabel=r"Finite difference step, $\epsilon$", ylabel=f"Finite difference for f = {f}")
 ax.legend()
 fig.tight_layout()
+fig.savefig("./Figures/FD_f_vs_eps.pdf")
 plt.show()
