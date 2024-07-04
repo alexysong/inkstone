@@ -321,7 +321,39 @@ def test_abs_Ey_2layer_1d_grad_d2(params_2layer_1d, abs_Ey_2layer_1d_grad):
                    - abs_Ey_2layer_1d(*params_left,d2-eps/2,*params_right,num_g=30,backend="jax"))/eps
         AD_grad = autodiffgrad(*params_left,d2,*params_right,num_g=30,backend="jax")
         assert np.allclose(AD_grad, FD_grad, rtol=rel_tol, atol=abs_tol)
-    
+
+def test_abs_Ey_2layer_1d_grad_p1(params_2layer_1d, abs_Ey_2layer_1d_grad):
+    """
+    Test jax gradient of abs_Ey_2layer_1d wrt second layer grating permittivity matches finite difference
+
+    AssertionError:
+        Test case fails due to divergence in finite difference step size at low num_g. 
+        May need to tweak the step size to the right order of magnitude, adjust the tolerances and increase num_g to >200.
+    """
+    autodiffgrad = abs_Ey_2layer_1d_grad(derivative_argnum=4)
+    permittivities = jnp.logspace(-2,2,5, dtype=jnp.float64)
+    params_left = params_2layer_1d[:4]
+    params_right = params_2layer_1d[5:]
+    for p1 in permittivities:
+        FD_grad = (abs_Ey_2layer_1d(*params_left,p1+eps/2,*params_right,num_g=200,backend="jax") 
+                   - abs_Ey_2layer_1d(*params_left,p1-eps/2,*params_right,num_g=200,backend="jax"))/eps
+        AD_grad = autodiffgrad(*params_left,p1,*params_right,num_g=200,backend="jax")
+        assert np.allclose(AD_grad, FD_grad, rtol=10000*rel_tol, atol=abs_tol)
+
+def test_abs_Ey_2layer_1d_grad_f(params_2layer_1d, abs_Ey_2layer_1d_grad):
+    """
+    Test jax gradient of abs_Ey_2layer_1d wrt frequency matches finite difference
+    """
+    autodiffgrad = abs_Ey_2layer_1d_grad(derivative_argnum=6)
+    frequencies = jnp.linspace(0.01,0.99,5, dtype=jnp.float64)
+    params_left = params_2layer_1d[:6]
+    params_right = params_2layer_1d[7:]
+    for f in frequencies:
+        FD_grad = (abs_Ey_2layer_1d(*params_left,f+eps/2,*params_right,num_g=30,backend="jax") 
+                   - abs_Ey_2layer_1d(*params_left,f-eps/2,*params_right,num_g=30,backend="jax"))/eps
+        AD_grad = autodiffgrad(*params_left,f,*params_right,num_g=30,backend="jax")
+        assert np.allclose(AD_grad, FD_grad, rtol=10*rel_tol, atol=abs_tol)
+
 def test_abs_Ey_2layer_1d_grad_z(params_2layer_1d, abs_Ey_2layer_1d_grad):
     """
     Test jax gradient of abs_Ey_2layer_1d wrt second layer grating thickness matches finite difference
