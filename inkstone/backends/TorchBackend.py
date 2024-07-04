@@ -46,6 +46,7 @@ class TorchBackend(GenericBackend):
         self.linspace = torch.linspace
         self.eye = torch.eye
         self.conj = torch.conj
+        self.cross = torch.cross
 
         self.pi = torch.pi
         self.float64 = torch.float64  # default float precision
@@ -61,10 +62,11 @@ class TorchBackend(GenericBackend):
             else:
                 return i
         o = i
-
+        while type(o) == list or type(o) == tuple:
+            o = o[0]
         types = [type(o), type(i)]
 
-        if (self.raw_type in types):
+        if self.raw_type in types:
             return self.parseList(i)
 
         if not dtype:
@@ -100,7 +102,8 @@ class TorchBackend(GenericBackend):
             if type(tup[i]) is list:
                 tup[i] = self.parseList(tup[i])
                 i -= 1
-
+        if type(tup[0]) is not self.raw_type:
+            return torch.tensor(tup) 
         return torch.stack(tup, dim=dim)
 
     def cross(self, a, b):
@@ -137,41 +140,6 @@ class TorchBackend(GenericBackend):
     def lu_solve(self, p, q):
         return torch.linalg.lu_solve(p[0], p[1], q)
 
-    def block(self, arr):
-        depth = 0
-        if type(arr) is list:
-            if type(arr[0]) is int:
-                arr[0] = torch.tensor([arr[0]])
-                depth = 1
-            elif type(arr[0]) is list:
-                depth = getLsDepth(arr[0])
-            else:
-                depth = len(arr[0].size())
-            for i in range(1, len(arr)):
-                if type(arr[i]) is int:
-                    arr[i] = torch.tensor([arr[i]])
-                elif type(arr[i]) is list:
-                    if getLsDepth(arr[i]) != depth:
-                        raise ValueError(
-                            f"inconsistent depth, {arr[i]}'s depth is not equal to expected depth {depth}")
-                elif len(arr[i].size()) != depth:
-                    raise ValueError(
-                        f"inconsistent depth, {arr[i]}'s depth is not equal to expected depth {depth}")
-                if type(arr[i]) is list and (arr[i] == []):
-                    raise ValueError("there should not have empty list")
-
-            output = []
-            for ar in arr:
-                if type(ar) is list:
-                    unsq = [torch.unsqueeze(t, 0) if len(t.size()) == 1 else t for t in ar]
-                    output.append(torch.cat(unsq, depth))
-                else:
-                    output.append(ar)
-            if depth == 1:
-                return torch.cat(output)
-            else:
-                return torch.cat(output, 1)
-
     def __getattr__(self, name):
         if hasattr(torch, name):
             return getattr(torch, name)
@@ -193,7 +161,36 @@ class TorchBackend(GenericBackend):
         if d is None: d = False
         return torch.argsort(ipt,dim=dim,descending=c,stable=d)
 
+    def block(self,arr):
+        if not isinstance(arr, list):
+            return arr
+        depth = 0
+        for i, item in enumerate(arr):
+            if isinstance(item, int):
+                arr[i] = torch.tensor([item])
+                depth = 1
+            elif isinstance(item, list):
+                if not item:
+                    raise ValueError("Empty lists are not allowed")
+                item_depth = getLsDepth(item)
+                depth = item_depth if i == 0 else depth
+                if item_depth != depth:
+                    raise ValueError(f"Inconsistent depth: {item}'s depth is not equal to expected depth {depth}")
+            else:
+                item_depth = len(item.size())
+                depth = item_depth if i == 0 else depth
+                if item_depth != depth:
+                    raise ValueError(f"Inconsistent depth: {item}'s depth is not equal to expected depth {depth}")
 
+        output = []
+        for ar in arr:
+            if isinstance(ar, list):
+                unsq = [torch.unsqueeze(t, 0) if t.dim() == 1 else t for t in ar]
+                output.append(torch.cat(unsq, depth))
+            else:
+                output.append(ar)
+
+        return torch.cat(output) if depth == 1 else torch.cat(output, 1)
 
 def getLsDepth(ls):
     if type(ls) is list:

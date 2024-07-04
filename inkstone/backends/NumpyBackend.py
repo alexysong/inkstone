@@ -46,6 +46,7 @@ class NumpyBackend(GenericBackend):
         self.fft = sfft
         self.solve = sla.solve
         self.linspace = np.linspace
+        self.cross = np.cross
 
         self.slogdet = np.linalg.slogdet
 
@@ -97,4 +98,10 @@ class NumpyBackend(GenericBackend):
 
     def sort(self,i,dim=-1,des=False,sort_alg='quicksort'):
         return np.sort(i,dim,sort_alg)
+
+    def delete(self, x, idx, axis=None):
+        return np.delete(x,idx, axis=axis)
+
+    def block(self,arr):
+        return np.block(arr)
 

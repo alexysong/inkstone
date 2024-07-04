@@ -10,7 +10,7 @@ class GenericBackend(ABC):
     def __init__(self):
         """
         Define some functions which normally have the same/compatible API.
-        Incompatible APIs will need to be defined as methods below
+        Incompatible APIs will need to be defined as methods below as generic API
         """
         self.raw_type = None
         self.float64 = None
@@ -53,6 +53,7 @@ class GenericBackend(ABC):
         self.solve = None
         self.eye = None
         self.conj = None
+        self.cross = None
 
         self.pi = None
         self.float64 = None  # default float precision
@@ -62,10 +63,35 @@ class GenericBackend(ABC):
 
     @abstractmethod
     def parseData(self, i: any, dtype=None):
+        """
+        Generic data parser api.
+        In numpy, it is np.array(); in pytorch, it is torch.tensor()
+
+        Parameters
+        ----------
+        i:  data with native python data type
+        dtype: specified data type
+
+        Returns parsed data
+        -------
+
+        """
         pass
 
     @abstractmethod
-    def castType(self, i, typ):  # typ(e), avoid collision with keyword
+    def castType(self, i, typ):
+        """
+        Generic API for type converting. In numpy, it is np.ndarray.astype(); In pytorch, it is torch.tensor.to()
+
+        Parameters
+        ----------
+        i: parsed data
+        typ: dtype of backend
+
+        Returns
+        -------
+
+        """
         pass
 
     @abstractmethod
@@ -89,7 +115,7 @@ class GenericBackend(ABC):
     @abstractmethod
     def getSize(self, i):
         """
-        same as np.ndarray.size
+        Generic API for getting number of elements in an array-like data
         :param i: arraylike
         :return: number of elements in i
         """
@@ -97,6 +123,16 @@ class GenericBackend(ABC):
 
     @abstractmethod
     def clone(self, i):
+        """
+        Generic API for cloning an array-like data
+        Parameters
+        ----------
+        i
+
+        Returns
+        -------
+
+        """
         pass
 
     @abstractmethod
@@ -117,6 +153,14 @@ class GenericBackend(ABC):
     def argsort(self, ipt, dim=-1, c=None, d=None):
         pass
 
+    @abstractmethod
+    def delete(self, x, idx, axis=None):
+        pass
+
+    @abstractmethod
+    def block(self, arr):
+        pass
+
 
 from inkstone.backends.NumpyBackend import NumpyBackend
 from inkstone.backends.TorchBackend import TorchBackend
@@ -125,9 +169,14 @@ backends = {
     'numpy': NumpyBackend,
     'torch': TorchBackend
 }
+
 genericBackend = NumpyBackend()
 
 
 def switchTo(str):
     global genericBackend
-    genericBackend = backends[str]()
+    try:
+        genericBackend = backends[str]()
+        print(f"Switched to {str}, {genericBackend.raw_type}")
+    except KeyError:
+        raise NotImplementedError(f'{str} is not implemented')
