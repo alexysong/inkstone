@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-from inkstone.backends.GenericBackend import genericBackend as gb
+from inkstone.backends.BackendGetter import bg
 import time
 # import scipy.sparse as sps
 # import warnings
 
-
-def rsp(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22,gb=gb):
+gb = bg.backend
+def rsp(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
     """
     Take the Redheffer star product (rsp) of two scattering matrices.
 

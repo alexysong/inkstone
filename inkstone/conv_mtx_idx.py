@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-from inkstone.backends.GenericBackend import genericBackend as gb
+from inkstone.backends.BackendGetter import bg
 #import numpy as np
 
 
-def conv_mtx_idx_2d(idx1, idx2, gb=gb):
+def conv_mtx_idx_2d(idx1, idx2, gb=bg.backend):
     """
     Indexing matrix to generate epsilon and mu convolution matrices.
 

@@ -201,3 +201,6 @@ def getLsDepth(ls):
             tmp = tmp[0]
         return depth
     raise ValueError("Not a list")
+
+def getInstance():
+    return TorchBackend()

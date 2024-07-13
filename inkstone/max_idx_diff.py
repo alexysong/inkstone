@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from inkstone.backends.GenericBackend import genericBackend as gb
+from inkstone.backends.BackendGetter import bg
 
 
-def max_idx_diff(idx,gb=gb):
+def max_idx_diff(idx,gb=bg.backend):
     """
     imagine a 2d grid. given a list of integer indices (tuples), calculate the maximum relative difference in x and y in these indices.
 

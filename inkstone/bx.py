@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from inkstone.backends.GenericBackend import genericBackend as gb
+from inkstone.backends.BackendGetter import bg
 # import numpy.linalg as la
 from inkstone.shps import Rect, Para, Disk, Elli, Poly, OneD
 from warnings import warn
@@ -10,7 +10,7 @@ from inkstone.mtr import Mtr
 class Bx:
     # Bx doesn't know what lattice it is in
 
-    def __init__(self, mtr, shp, name=None, outside=None,gb=gb, **kwargs):
+    def __init__(self, mtr, shp, name=None, outside=None,gb=bg.backend, **kwargs):
         """
         A box.
         The box has a name, its `mtr`, its `shp`.
@@ -28,7 +28,7 @@ class Bx:
         kwargs      :
                         other arguments for setting up the shape, to be passed on to `Rect`, `Disk`, `Elli`, `Poly`, or `OneD`.
         """
-
+        self.gb = gb
         self.epsi_ft = None
         self.epsi_inv_ft = None
         self.mu_ft = None
@@ -104,7 +104,7 @@ class Bx:
 
         """
         # t0 = time.process_time()
-        _ft = gb.parseData(self.shp.ft(**kw_gibbs), dtype=gb.complex128)
+        _ft = self.gb.parseData(self.shp.ft(**kw_gibbs), dtype=self.gb.complex128)
         # print(time.process_time()-t0)
 
         # no way of knowing if its material or that of the outer box changed
@@ -119,10 +119,10 @@ class Bx:
             mu_out = self.outside.mtr.mu
             mu_out_inv = self.outside.mtr.mu_inv
         else:
-            epsi_out = gb.eye(3, dtype=gb.complex128)
-            epsi_out_inv = gb.eye(3, dtype=gb.complex128)
-            mu_out = gb.eye(3, dtype=gb.complex128)
-            mu_out_inv = gb.eye(3, dtype=gb.complex128)
+            epsi_out = self.gb.eye(3, dtype=self.gb.complex128)
+            epsi_out_inv = self.gb.eye(3, dtype=self.gb.complex128)
+            mu_out = self.gb.eye(3, dtype=self.gb.complex128)
+            mu_out_inv = self.gb.eye(3, dtype=self.gb.complex128)
         epsi = epsi - epsi_out  # shouldn't do epsi -= epsi_out, which would be in-place change, which will change epsi of the material.
         epsi_inv = epsi_inv - epsi_out_inv
         mu = mu_inv - mu_out

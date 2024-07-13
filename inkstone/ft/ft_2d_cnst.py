@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from inkstone.backends.GenericBackend import genericBackend as gb
+from inkstone.backends.BackendGetter import bg
 
 
-def ft_2d_cnst(ks,gb=gb):
+def ft_2d_cnst(ks,gb=bg.backend):
     """
     calculate the fourier transform of a constant 1. Results in delta function.
 

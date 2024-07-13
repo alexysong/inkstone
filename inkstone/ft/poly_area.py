@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from inkstone.backends.GenericBackend import genericBackend as gb
+from inkstone.backends.BackendGetter import bg
 
 
-def poly_area(vertices,gb=gb):
+def poly_area(vertices,gb=bg.backend):
     """
 
     Parameters

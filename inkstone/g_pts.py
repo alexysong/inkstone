@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from inkstone.backends.GenericBackend import genericBackend as gb
+from inkstone.backends.BackendGetter import bg
 
-def g_pts(num_g, b1, b2, gb=gb):
+def g_pts(num_g, b1, b2, gb=bg.backend):
     """
     given number of lattice points, and two lattice vectors, give the list of all lattice points inside a circle. the total number of lattice points returned is roughly the given number of lattice points.
 

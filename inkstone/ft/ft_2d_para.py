@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from inkstone.backends.GenericBackend import genericBackend as gb
+from inkstone.backends.BackendGetter import bg
 from inkstone.ft.ft_1d_sq import ft_1d_sq
 
 
-def ft_2d_para(a, b, ks, center=(0, 0), shear_angle=90., rotate_angle=0.,gb=gb):
+def ft_2d_para(a, b, ks, center=(0, 0), shear_angle=90., rotate_angle=0.,gb=bg.backend):
     """
     Calculate the fourier transform of a function that is 1 in side a parallelogram and 0 outside.
 

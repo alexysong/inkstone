@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from inkstone.backends.GenericBackend import genericBackend as gb
+from inkstone.backends.BackendGetter import bg
 
 
-def recipro(a1, a2, gb=gb):
+def recipro(a1, a2, gb=bg.backend):
     """
     given two lattice vectors, give two reciprocal lattice vectors
     If one of the lattice vectors is zero, then the returned corresponding reciprocal lattice vector is float('inf').

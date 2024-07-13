@@ -160,23 +160,3 @@ class GenericBackend(ABC):
     @abstractmethod
     def block(self, arr):
         pass
-
-
-from inkstone.backends.NumpyBackend import NumpyBackend
-from inkstone.backends.TorchBackend import TorchBackend
-
-backends = {
-    'numpy': NumpyBackend,
-    'torch': TorchBackend
-}
-
-genericBackend = NumpyBackend()
-
-
-def switchTo(str):
-    global genericBackend
-    try:
-        genericBackend = backends[str]()
-        print(f"Switched to {str}, {genericBackend.raw_type}")
-    except KeyError:
-        raise NotImplementedError(f'{str} is not implemented')

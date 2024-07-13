@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from inkstone.backends.GenericBackend import genericBackend as gb
+from inkstone.backends.BackendGetter import bg
 from typing import List, Union, Tuple, Optional
 from inkstone.ft.ft_1d_sq import ft_1d_sq
 from inkstone.ft.ft_2d_rct import ft_2d_rct
@@ -20,7 +20,7 @@ class Shp:
     def __init__(self,
                  shp: str,
                  ks: List[Union[float, Tuple[float, float]]] =None,
-                 gb=gb,
+                 gb=bg.backend,
                  **kw_gibbs):
         """
         Basic shape.

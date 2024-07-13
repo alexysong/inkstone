@@ -17,11 +17,11 @@ A circular hole of radius 0.2 in each unit cell.
 import sys
 p ='C:/Users/w-a-c/Desktop/inkstone'
 sys.path.append(p)
+from inkstone.backends.BackendGetter import bg
+bg.backend = 'numpy'
+bk = bg.backend
 
-import inkstone.backends.GenericBackend as gb2
-gb2.switchTo('torch')
-from inkstone.backends.GenericBackend import genericBackend as gb
-from inkstone import Inkstone
+from inkstone.simulator import Inkstone
 
 s = Inkstone()
 s.lattice = ((1, 0), (0, 1))
@@ -40,7 +40,7 @@ s.SetExcitation(theta=0, phi=0, s_amplitude=1, p_amplitude=0)
 
 flux_in = []
 flux_out = []
-freq = gb.linspace(0.25, 0.45, 201)
+freq = bk.linspace(0.25, 0.45, 201)
 for i in freq:
     print('Frequency: {:g}'.format(i))
 
@@ -49,9 +49,9 @@ for i in freq:
     flux_in.append(s.GetPowerFlux('in'))
     flux_out.append(s.GetPowerFlux('out'))
 
-incident = gb.parseList([a[0] for a in flux_in])
-reflection = -gb.parseList([a[1] for a in flux_in]) / incident
-transmission = gb.parseList([a[0] for a in flux_out]) / incident
+incident = bk.parseList([a[0] for a in flux_in])
+reflection = -bk.parseList([a[1] for a in flux_in]) / incident
+transmission = bk.parseList([a[0] for a in flux_out]) / incident
 
 #%% plotting
 from matplotlib import pyplot as plt

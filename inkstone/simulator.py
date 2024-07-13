@@ -4,7 +4,7 @@ from warnings import warn
 from collections import OrderedDict
 from typing import Tuple, Optional, List, Dict, Union
 import time
-from inkstone.backends.GenericBackend import genericBackend as gb
+from inkstone.backends.BackendGetter import bg
 
 from inkstone.rsp import rsp, rsp_sa12lu, rsp_sb21lu
 from inkstone.params import Params
@@ -23,7 +23,7 @@ class Inkstone:
                  frequency: Union[float, complex] = None,
                  theta: float = None,
                  phi: float = None,
-                 gb=gb
+                 gb=bg.backend
                  ):
         """
 
@@ -1653,15 +1653,15 @@ class Inkstone:
                                      ['x', 'y', 'z']):
             if c is not None:
                 if hasattr(c, '__len__'):
-                    c = self.gb.parseData(c, dtype=gb.float64)
+                    c = self.gb.parseData(c, dtype=self.gb.float64)
                 else:
-                    c = self.gb.parseData([c], dtype=gb.float64)
+                    c = self.gb.parseData([c], dtype=self.gb.float64)
                 u = c
             elif None in [min, max, n]:
                 warn(s + " points to get fields not defined properly. Default to 0.")
-                u = self.gb.parseData(0.)
+                u = self.gb.parseData(0., dtype=self.gb.float64)
             else:
-                u = self.gb.linspace(min, max, n)
+                u = self.gb.linspace(min, max, n, dtype=self.gb.float64)
             uu.append(u)
 
         x, y, z = uu

@@ -14,7 +14,7 @@ from inkstone.g_pts import g_pts
 from inkstone.g_pts_1d import g_pts_1d
 from inkstone.max_idx_diff import max_idx_diff
 from inkstone.conv_mtx_idx import conv_mtx_idx_2d
-from inkstone.backends.GenericBackend import genericBackend as gb
+from inkstone.backends.BackendGetter import bg
 from line_profiler_pycharm import profile
 
 
@@ -32,7 +32,7 @@ class Params:
                  theta=None,
                  phi=None,
                  show_calc_time = False,
-                 gb=gb
+                 gb=bg.backend
                  ):
         """
 
@@ -179,7 +179,7 @@ class Params:
             val = self.gb.parseData(((val, 0), (0, 0)),self.gb.float64)
             self.is_1d_latt = True
         else:
-            val = [self.gb.parseData(a, dtype=gb.float64) for a in val]
+            val = [self.gb.parseData(a, dtype=self.gb.float64) for a in val]
             a, b = val
             an, bn = self.gb.parseList([self.gb.norm(a), self.gb.norm(b)])
             # if either latt vec is zero, then it is 1D. Make sure it's x-z for layer solver.
@@ -358,7 +358,7 @@ class Params:
     @theta.setter
     def theta(self, val: Union[float, complex]):
         if val is not None:
-            self._theta: self.gb.float64 = self.gb.parseData(val * self.gb.pi / 180.)
+            self._theta = self.gb.parseData(val * self.gb.pi / 180.)
             self._calc_k_pa_inci()
             # self._calc_angles()  # called through _calc_k_pa_inci() - _calc_ks()
         else:
@@ -711,7 +711,7 @@ class Params:
             kx = xx * b1[0] + yy * b2[0]
             ky = xx * b1[1] + yy * b2[1]
             self.ks_ep_mu = list(zip(kx.ravel(), ky.ravel()))# each element is (kx, ky) tuple.
-            self.ks_ep_mu = gb.parseList(self.ks_ep_mu)
+            self.ks_ep_mu = self.gb.parseList(self.ks_ep_mu)
             self.ka_ep_mu = (kx, ky)
 
             # print(t2 - t1)
@@ -1213,9 +1213,9 @@ class Params:
                 if a1n != 0. and a2n != 0.:
                     self._uc_area = self.gb.abs(self.gb.cross(self.latt_vec[0], self.latt_vec[1]))
                 elif a1n == 0.:  # 1D
-                    self._uc_area = gb.parseData(a2n)
+                    self._uc_area = self.gb.parseData(a2n)
                 elif a2n == 0.:
-                    self._uc_area = gb.parseData(a1n)
+                    self._uc_area = self.gb.parseData(a1n)
                 else:
                     raise Exception("Both lattice vectors have zero norms. Can't calculate unit cell area.")
 

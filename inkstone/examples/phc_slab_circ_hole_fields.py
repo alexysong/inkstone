@@ -17,10 +17,10 @@ A circular hole of radius 0.2 in each unit cell.
 import sys
 from project_path import PATH as p
 sys.path.append(p)
-from inkstone.backends.GenericBackend import genericBackend as gb
-import inkstone.backends.GenericBackend as gb2
-gb2.switchTo('torch')
-from inkstone import Inkstone
+from inkstone.backends.BackendGetter import bg
+bg.backend = 'numpy'
+bk = bg.backend
+from inkstone.simulator import Inkstone
 
 s = Inkstone()
 s.lattice = ((1, 0), (0, 1))
@@ -46,9 +46,9 @@ Ex, Ey, Ez, Hx, Hy, Hz = s.GetFields(xmin=-0.5, xmax=0.5, nx=101,
 #%% plotting
 from matplotlib import pyplot as plt
 
-plt.pcolormesh(gb.linspace(-0.5, 0.5, 101),
-               gb.linspace(-0.2, 0.7, 91),
-               gb.abs(Ex[0, :, :]).T, shading='gouraud')
+plt.pcolormesh(bk.linspace(-0.5, 0.5, 101),
+               bk.linspace(-0.2, 0.7, 91),
+               bk.abs(Ex[0, :, :]).T, shading='gouraud')
 plt.xlabel('x')
 plt.ylabel('z')
 plt.colorbar()

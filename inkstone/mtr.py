@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from typing import Tuple, Union, Optional
-from inkstone.backends.GenericBackend import genericBackend as gb
+from inkstone.backends.BackendGetter import bg
 # import numpy.linalg as la
 # from warnings import warn
 
@@ -12,7 +12,7 @@ class Mtr:
                  epsi: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], any],
                  mu: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], any],
                  name=None,
-                 gb=gb):
+                 gb=bg.backend):
         """
         Material.
         """

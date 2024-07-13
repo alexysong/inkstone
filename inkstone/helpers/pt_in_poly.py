@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 from typing import List, Tuple, Union
-from inkstone.backends.GenericBackend import genericBackend as gb
+from inkstone.backends.BackendGetter import bg
 
 def pt_in_poly(vts: List[Tuple[float, float]],
-               pt: Union[any, Tuple[float, float]],gb=gb) -> bool:
+               pt: Union[any, Tuple[float, float]],gb=bg.backend) -> bool:
     """
     Determine if a point is in a polygon
 

@@ -11,18 +11,14 @@ Each rod has side length 0.55.
 ...  |   |   |   |  ...
       ¯¯¯     ¯¯¯
 """
-import sys
 from project_path import PATH as p
+import sys
 
 sys.path.append(p)
-
-from inkstone.backends.GenericBackend import genericBackend as gb
-import inkstone.backends.GenericBackend as gb2
-gb2.switchTo('torch')
-
-from inkstone import Inkstone
-
-
+from inkstone.backends.BackendGetter import bg
+bg.backend = 'numpy'
+bk = bg.backend
+from inkstone.simulator import Inkstone
 
 s = Inkstone()
 s.lattice = 1
@@ -47,9 +43,9 @@ Ex, Ey, Ez, Hx, Hy, Hz = s.GetFields(xmin=-0.5, xmax=0.5, nx=101,
 #%% plotting
 from matplotlib import pyplot as plt
 
-plt.pcolormesh(gb.linspace(-0.5, 0.5, 101),
-            gb.linspace(-0.2, d + 0.2, 101),
-               gb.abs(Ey[0, :, :]).T,
+plt.pcolormesh(bk.linspace(-0.5, 0.5, 101),
+               bk.linspace(-0.2, d + 0.2, 101),
+               bk.abs(Ey[0, :, :]).T,
                shading='gouraud')
 '''       
 import torch

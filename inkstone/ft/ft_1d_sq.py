@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-from inkstone.backends.GenericBackend import genericBackend as gb
+from inkstone.backends.BackendGetter import bg
 
 
-def ft_1d_sq(width, ks, center=0., gb=gb):
+def ft_1d_sq(width, ks, center=0., gb=bg.backend):
     """
     Calculate the Fourier transform of a 1d square function.
 

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from inkstone.backends.GenericBackend import genericBackend as gb
+from inkstone.backends.BackendGetter import bg
 from inkstone.ft.ft_1d_sq import ft_1d_sq
 
 
-def ft_2d_rct(a, b, ks, center=None, angle=0.,gb=gb):
+def ft_2d_rct(a, b, ks, center=None, angle=0.,gb=bg.backend):
     """
 
     Parameters

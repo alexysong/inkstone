@@ -105,3 +105,5 @@ class NumpyBackend(GenericBackend):
     def block(self,arr):
         return np.block(arr)
 
+def getInstance():
+    return NumpyBackend()

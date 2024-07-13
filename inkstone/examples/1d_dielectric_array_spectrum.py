@@ -14,10 +14,11 @@ Each rod has side length 0.55.
 import sys
 from project_path import PATH as p
 sys.path.append(p)
-from inkstone import Inkstone
-from inkstone.backends.GenericBackend import genericBackend as gb
-import inkstone.backends.GenericBackend as gb2
-#gb2.switchTo('torch')
+from inkstone.backends.BackendGetter import bg
+bg.backend = 'numpy'
+bk = bg.backend
+
+from inkstone.simulator import Inkstone
 s = Inkstone()
 s.lattice = 1
 s.num_g = 30
@@ -37,7 +38,7 @@ I = []
 R = []
 T = []
 #freq = torch.linspace(0.2, 0.9, 201)
-freq = gb.linspace(0.2, 0.9, 201)
+freq = bk.linspace(0.2, 0.9, 201)
 for f in freq:
     s.frequency = f
     i, r = s.GetPowerFlux('in')

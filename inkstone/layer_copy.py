@@ -5,12 +5,12 @@ import time
 from inkstone.layer import Layer
 from inkstone.sm import s_1l_1212, s_1l_1221, s_1l_rsp
 from warnings import warn
-from inkstone.backends.GenericBackend import genericBackend as gb
+from inkstone.backends.BackendGetter import bg
 
 
 class LayerCopy:
 
-    def __init__(self, name: str, layer: Layer, thickness: float,gb=gb):
+    def __init__(self, name: str, layer: Layer, thickness: float,gb=bg.backend):
         """
         A dummy layer for layer copies
 
