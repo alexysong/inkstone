@@ -12,7 +12,7 @@ from scipy.special import jn
 from inkstone.ft.poly_area import poly_area
 
 
-def ft_2d_poly_1(vertices, ks):
+def ft_2d_poly_1(vertices, ks, gb=bg):
     """
     Calculate the fourier transform of a function with value 1 inside a polygon and 0 outside. Assuming none of the required k is at (0, 0)
 

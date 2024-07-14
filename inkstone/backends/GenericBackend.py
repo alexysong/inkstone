@@ -160,3 +160,10 @@ class GenericBackend(ABC):
     @abstractmethod
     def block(self, arr):
         pass
+
+    def indexAssign(self, a, idx, b):
+        """
+        For numpy, use index assignment. For differentiation libraries, replace with differentiable version
+        """
+        a[idx] = b
+        return a

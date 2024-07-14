@@ -1,5 +1,6 @@
 from inkstone.backends.NumpyBackend import NumpyBackend
 from inkstone.backends.TorchBackend import TorchBackend
+from inkstone.backends.AutogradBackend import AutogradBackend
 
 
 class BackendGetter:
@@ -7,7 +8,8 @@ class BackendGetter:
         self._backend = None
         self.backends = {
             'numpy': NumpyBackend,
-            'torch': TorchBackend
+            'torch': TorchBackend,
+            'autograd': AutogradBackend,
         }
 
     @property
