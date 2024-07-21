@@ -67,10 +67,6 @@ class AutogradBackend(GenericBackend):
         return anp.cross(a, b)
 
 
-    def laCross(self, a1, a2):
-        return anp.linalg.cross(a1, a2)
-
-
     def getSize(self, i):
         return i.size
 

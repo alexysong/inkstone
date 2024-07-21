@@ -6,7 +6,7 @@ from collections import OrderedDict
 from typing import Optional, Set, Union, Tuple, Dict, List
 import time
 
-from inkstone.backends.BackendGetter import bg
+from inkstone.backends.BackendLoader import bg
 
 from inkstone.ft.ft_2d_cnst import ft_2d_cnst
 from inkstone.sm import s_1l_rsp, s_1l_1212, s_1l_1221

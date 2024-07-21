@@ -14,7 +14,7 @@ from inkstone.g_pts import g_pts
 from inkstone.g_pts_1d import g_pts_1d
 from inkstone.max_idx_diff import max_idx_diff
 from inkstone.conv_mtx_idx import conv_mtx_idx_2d
-from inkstone.backends.BackendGetter import bg
+from inkstone.backends.BackendLoader import bg
 from line_profiler_pycharm import profile
 
 

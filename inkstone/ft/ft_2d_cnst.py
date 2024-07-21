@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from inkstone.backends.BackendGetter import bg
+from inkstone.backends.BackendLoader import bg
 
 
 def ft_2d_cnst(ks,gb=bg.backend):

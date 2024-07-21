@@ -29,7 +29,7 @@ class TorchBackend(GenericBackend):
         self.tan = torch.tan
         self.roll = torch.roll
         self.sum = torch.sum
-        self.dot = torch.dot
+        self.dot = torch.dot #unlike numpy, it supports 1d tensors only, which is fine in inkstone
         self.hsplit = torch.hsplit
         self.repeat = torch.repeat_interleave
         self.reshape = torch.reshape
@@ -45,8 +45,8 @@ class TorchBackend(GenericBackend):
         self.solve = torch.linalg.solve
         self.linspace = torch.linspace
         self.eye = torch.eye
-        self.conj = torch.conj
-        self.cross = torch.cross
+        self.conj = torch.conj_physical
+        self.cross = torch.linalg.cross
 
         self.pi = torch.pi
         self.float64 = torch.float64  # default float precision
@@ -105,13 +105,10 @@ class TorchBackend(GenericBackend):
             return torch.tensor(tup)
         return torch.stack(tup, dim=dim)
 
-    def cross(self, a, b):
-        return torch.cross(torch.tensor((a[0], a[1], 0), dtype=torch.float64),
-                           torch.tensor((b[0], b[1], 0), dtype=torch.float64), dim=-1)[-1]
+  #  def cross(self, a, b):
+   #     return torch.cross(torch.tensor((a[0], a[1], 0), dtype=torch.float64),
+   #                        torch.tensor((b[0], b[1], 0), dtype=torch.float64), dim=-1)[-1]
 
-    def laCross(self, a, b):
-        return torch.linalg.cross(torch.tensor((a[0], a[1], 0), dtype=torch.float64),
-                                  torch.tensor((b[0], b[1], 0), dtype=torch.float64), dim=-1)[-1]
 
     def getSize(self, i):
         #np.prod(i.size(),dtype=np.int32)

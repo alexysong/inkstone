@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from inkstone.backends.BackendGetter import bg
+from inkstone.backends.BackendLoader import bg
 import time
 # import scipy.sparse as sps
 # import warnings

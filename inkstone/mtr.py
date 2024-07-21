@@ -4,7 +4,7 @@ from typing import Tuple, Union, Optional
 
 from line_profiler_pycharm import profile
 
-from inkstone.backends.BackendGetter import bg
+from inkstone.backends.BackendLoader import bg
 # import numpy.linalg as la
 # from warnings import warn
 

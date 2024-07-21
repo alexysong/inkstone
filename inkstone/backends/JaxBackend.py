@@ -93,10 +93,6 @@ class JaxBackend(GenericBackend):
     def cross(self, a, b):
         return jnp.cross(a, b)
 
-    def laCross(self, a1, a2):
-        return jnp.linalg.cross(a1, a2)
-
-
     def getSize(self, i):
         return i.size
 

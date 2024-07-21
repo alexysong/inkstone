@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from inkstone.backends.BackendGetter import bg
+from inkstone.backends.BackendLoader import bg
 
 
 def recipro(a1, a2, gb=bg.backend):

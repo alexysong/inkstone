@@ -12,7 +12,7 @@ class GenericBackend(ABC):
         Define some functions which normally have the same/compatible API.
         Incompatible APIs will need to be defined as methods below as generic API
         """
-
+        self.raw_type = None
         self.abs = None
         self.sqrt = None
         self.arange = None
@@ -99,9 +99,6 @@ class GenericBackend(ABC):
         """
         pass
 
-    @abstractmethod
-    def laCross(self, a, b):
-        pass
 
     @abstractmethod
     def meshgrid(self,a,b):

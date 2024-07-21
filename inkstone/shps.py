@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from inkstone.backends.BackendGetter import bg
+from inkstone.backends.BackendLoader import bg
 from typing import List, Union, Tuple, Optional
 from inkstone.ft.ft_1d_sq import ft_1d_sq
 from inkstone.ft.ft_2d_rct import ft_2d_rct

@@ -17,9 +17,9 @@ import time
 
 sys.path.append(p)
 start_time = time.time()
-from inkstone.backends.BackendGetter import bg
+from inkstone.backends.BackendLoader import bg
 
-bg.set_backend('numpy')
+bg.set_backend('torch')
 bk = bg.backend
 from inkstone.simulator import Inkstone
 
@@ -56,6 +56,6 @@ plt.xlabel('x')
 plt.ylabel('z')
 plt.colorbar()
 
-#plt.show()
+plt.show()
 
 print("--- %s seconds ---" % (time.time() - start_time))

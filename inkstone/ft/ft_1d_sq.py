@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from inkstone.backends.BackendGetter import bg
+from inkstone.backends.BackendLoader import bg
 
 
 def ft_1d_sq(width, ks, center=0., gb=bg.backend):

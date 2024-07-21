@@ -69,7 +69,7 @@ class NumpyBackend(GenericBackend):
         return np.array(tup)
 
     def laCross(self, a, b):
-        return np.linalg.cross(a, b)
+        return np.cross(a, b)
 
     def getSize(self, i):
         return i.size

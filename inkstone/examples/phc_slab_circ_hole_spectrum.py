@@ -17,7 +17,7 @@ A circular hole of radius 0.2 in each unit cell.
 import sys
 p ='C:/Users/w-a-c/Desktop/inkstone'
 sys.path.append(p)
-from inkstone.backends.BackendGetter import bg
+from inkstone.backends.BackendLoader import bg
 bg.set_backend('numpy')
 bk = bg.backend
 

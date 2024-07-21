@@ -1,4 +1,4 @@
-class BackendGetter:
+class BackendLoader:
     def __init__(self):
         self._backend = None
 
@@ -20,4 +20,4 @@ class BackendGetter:
         except ImportError:
             raise NotImplementedError(f'{backend_name} is not implemented')
 
-bg = BackendGetter()
+bg = BackendLoader()
