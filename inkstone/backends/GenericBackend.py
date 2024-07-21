@@ -12,16 +12,11 @@ class GenericBackend(ABC):
         Define some functions which normally have the same/compatible API.
         Incompatible APIs will need to be defined as methods below as generic API
         """
-        self.raw_type = None
-        self.float64 = None
-        self.int32 = None
-        self.complex128 = None
-        self.raw_type = None
+
         self.abs = None
         self.sqrt = None
         self.arange = None
         self.ceil = None
-        # self.meshgrid = torch.meshgrid #see function meshgrid()
         self.where = None
         self.la = None
         self.diag = None
@@ -54,12 +49,12 @@ class GenericBackend(ABC):
         self.eye = None
         self.conj = None
         self.cross = None
+        self.linspace = None
 
         self.pi = None
         self.float64 = None  # default float precision
-        self.int32 = None  # defualt int precision
+        self.int32 = None  # default int precision
         self.complex128 = None  # default complex precision
-        self.linspace = None
 
     @abstractmethod
     def parseData(self, i: any, dtype=None):

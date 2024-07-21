@@ -15,7 +15,7 @@ import sys
 from project_path import PATH as p
 sys.path.append(p)
 from inkstone.backends.BackendGetter import bg
-bg.backend = 'autograd'
+bg.set_backend('autograd')
 bk = bg.backend
 
 from inkstone.simulator import Inkstone
@@ -37,7 +37,7 @@ s.SetExcitation(theta=0, phi=0, s_amplitude=1, p_amplitude=0)
 I = []
 R = []
 T = []
-#freq = torch.linspace(0.2, 0.9, 201)
+
 freq = bk.linspace(0.2, 0.9, 201)
 for f in freq:
     s.frequency = f
@@ -45,7 +45,7 @@ for f in freq:
     I.append(i)
     R.append(-r / i)
     T.append(s.GetPowerFlux('out')[0] / i)
-    print("frequency: {:g}".format(f))
+    #print("frequency: {:g}".format(f))
 
 #%% plotting
 from matplotlib import pyplot as plt

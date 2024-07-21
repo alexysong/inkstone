@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
-
-from inkstone.backends.BackendGetter import bg
 # from numpy import linalg as la
 
 
-def g_pts_1d(num_g, b,gb=bg.backend):
+def g_pts_1d(num_g, b):
     """
     given number of lattice points and one 2D lattice vector, return the list of lattice points and the index of lattice points.
 

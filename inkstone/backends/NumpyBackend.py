@@ -5,16 +5,16 @@ import scipy.linalg as sla
 import scipy.fft as sfft
 from inkstone.backends.GenericBackend import GenericBackend
 
-
 class NumpyBackend(GenericBackend):
+
     def __init__(self):
+
         super().__init__()
         self.raw_type = np.ndarray
         self.abs = np.abs
         self.sqrt = np.sqrt
         self.arange = np.arange
         self.ceil = np.ceil
-        # self.meshgrid = np.meshgrid
         self.where = np.where
         self.la = np.linalg
         self.diag = np.diag
@@ -42,7 +42,6 @@ class NumpyBackend(GenericBackend):
         self.maximum = np.maximum
         self.einsum = np.einsum
         self.lu_factor = sla.lu_factor
-        #    self.lu_solve = sla.lu_solve
         self.fft = sfft
         self.solve = sla.solve
         self.linspace = np.linspace
@@ -56,6 +55,7 @@ class NumpyBackend(GenericBackend):
         self.complex128 = np.complex128
         self.eye = np.eye
     
+
     def parseData(self, i: any, dtype=None):
         return np.array(i, dtype=dtype)
 
@@ -86,7 +86,7 @@ class NumpyBackend(GenericBackend):
         return sla.lu_solve(p, q)
 
     def norm(self, i, dim=None):
-        return sla.norm(i, axis=dim)
+        return np.linalg.norm(i, axis=dim)
 
     def argsort(self, ipt, dim=-1, c=None, d=None):
         if c or d:
@@ -104,6 +104,3 @@ class NumpyBackend(GenericBackend):
 
     def block(self,arr):
         return np.block(arr)
-
-def getInstance():
-    return NumpyBackend()

@@ -724,7 +724,7 @@ class Params:
         if all(isinstance(v, self.gb.raw_type) 
                or v is not None for v in [self._num_g_ac,self.omega,self.ks]):
             # t1 = time.process_time()
-            k_parallel = self.gb.la.norm(self.ks, axis=-1)
+            k_parallel = self.gb.norm(self.ks, -1)
             q02 = self.gb.ones(self._num_g_ac) * self.gb.square(self.omega) - self.gb.square(k_parallel) + 0j
             self._rad_cha_0 = self.gb.where(q02.real > 0)[0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
             q0 = self.gb.sqrt(q02)
@@ -745,10 +745,17 @@ class Params:
                     warn("ccpif not recognized. Default to 'ac'.")
                     q0[(q02.real < 0) * (q0.imag < 0)] *= -1
             else:
-                q0[q0.imag < 0] *= -1
+                #q0[q0.imag < 0] *= -1
+                self.gb.where(q0.imag < 0, -q0, q0)
             # todo: what to do at q02.real == 0 case (Woods)?
-
-            self.q0_0 = self.gb.where(self.gb.abs(q0) == 0.)[0]
+            if self.q0 is None:
+                self.q0_0 = []
+            else:
+                for ele in self.q0:
+                    if self.gb.abs(ele) == 0.:
+                        self.q0_0 = ele
+                        break
+            #self.q0_0 = self.gb.where(self.gb.abs(q0) == 0.)[0]
             print(q0.shape)
             self.q0 = self.gb.concatenate([q0, q0])
             print(self.q0.shape)

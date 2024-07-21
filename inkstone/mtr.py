@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from typing import Tuple, Union, Optional
+
+from line_profiler_pycharm import profile
+
 from inkstone.backends.BackendGetter import bg
 # import numpy.linalg as la
 # from warnings import warn
@@ -8,6 +11,7 @@ from inkstone.backends.BackendGetter import bg
 
 class Mtr:
     # material need to have a name such that user can access it by its name
+    @profile
     def __init__(self,
                  epsi: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], any],
                  mu: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], any],
@@ -108,7 +112,9 @@ class Mtr:
     def epsi(self) -> any:
         return self._epsi
 
+
     @epsi.setter
+    @profile
     def epsi(self, val):
         if type(val) in [float, int, complex, self.gb.int32, self.gb.float64, self.gb.complex128]:
             ep = self.gb.eye(3, dtype=self.gb.complex128) * val

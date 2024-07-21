@@ -25,6 +25,7 @@ class AutogradBackend(GenericBackend):
         self.ones = anp.ones
         self.square = anp.square
         self.concatenate = anp.concatenate
+        self.concatenate = anp.concatenate
         self.conj = anp.conj
         self.exp = anp.exp
         self.sinc = anp.sinc
@@ -77,7 +78,7 @@ class AutogradBackend(GenericBackend):
         return anp.delete(x, idx, axis=axis)
 
     def clone(self, i, keep_grad=False):
-        return np.copy(i, order='C', subok=True)
+        return anp.copy(i, order='C', subok=True)
 
     def triu_indices(self, row, col=None, offset=0):
         if not col:

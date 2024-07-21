@@ -53,7 +53,6 @@ class TorchBackend(GenericBackend):
         self.int32 = torch.int32  # defualt int precision
         self.complex128 = torch.complex128  # default complex precision
 
-
     def parseData(self, i: any, dtype=None):
         if type(i) is self.raw_type:
             # print(i)
@@ -103,7 +102,7 @@ class TorchBackend(GenericBackend):
                 tup[i] = self.parseList(tup[i])
                 i -= 1
         if type(tup[0]) is not self.raw_type:
-            return torch.tensor(tup) 
+            return torch.tensor(tup)
         return torch.stack(tup, dim=dim)
 
     def cross(self, a, b):
@@ -149,7 +148,7 @@ class TorchBackend(GenericBackend):
             raise AttributeError(f"'{self.__name__}' has no attribute '{name}'")
 
     def norm(self, i, dim=None):
-        return torch.norm(i,dim=dim)
+        return torch.linalg.norm(i, dim=dim)
 
     def clone(self, i):
         return i.clone()
@@ -159,9 +158,10 @@ class TorchBackend(GenericBackend):
             warn("The 3rd and 4th argument are for different purpose in torch and numpy")
         if c is None: c = False
         if d is None: d = False
-        return torch.argsort(ipt,dim=dim,descending=c,stable=d)
+        return torch.argsort(ipt, dim=dim, descending=c, stable=d)
 
-    def block(self,arr):
+    # manual implementation of block, at least matches all results on np docs
+    def block(self, arr):
         if not isinstance(arr, list):
             return arr
         depth = 0
@@ -192,6 +192,7 @@ class TorchBackend(GenericBackend):
 
         return torch.cat(output) if depth == 1 else torch.cat(output, 1)
 
+
 def getLsDepth(ls):
     if type(ls) is list:
         depth = 1
@@ -201,6 +202,3 @@ def getLsDepth(ls):
             tmp = tmp[0]
         return depth
     raise ValueError("Not a list")
-
-def getInstance():
-    return TorchBackend()

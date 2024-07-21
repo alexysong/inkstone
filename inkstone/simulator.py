@@ -11,7 +11,6 @@ from inkstone.params import Params
 from inkstone.mtr import Mtr
 from inkstone.layer import Layer
 from inkstone.layer_copy import LayerCopy
-from line_profiler_pycharm import profile
 
 class Inkstone:
     # todo: more tests of magneto-optics and gyro-magnetic
@@ -61,7 +60,6 @@ class Inkstone:
         self.thicknesses_c: List[float] = []
 
         self.materials: Dict[str, Mtr] = {'vacuum': Mtr(1, 1, name='vacuum')}  # materials used
-
         self.layers: OrderedDict[str, Layer] = OrderedDict()  # all layers
 
         self.sm: Optional[Tuple[any, any, any, any]] = None
@@ -71,7 +69,6 @@ class Inkstone:
             Optional[Tuple[int, int, Tuple[any, any, any, any]]]] = []  # the cumulative scattering matrices reversed.
 
         self.gb = gb
-
     @property
     def lattice(self) -> Union[float, Tuple[Tuple[float, float], Tuple[float, float]]]:
         """
@@ -159,7 +156,6 @@ class Inkstone:
     phi.__doc__ += Params.phi.__doc__
 
     @phi.setter
-    @profile
     def phi(self, val):
         if (val is not None) and (val != self.pr.phi):
             self.pr.phi = val
@@ -616,7 +612,6 @@ class Inkstone:
 
 
 
-    @profile
     def SetExcitation(self,
                       theta: Union[float, complex] = None,
                       phi: float = None,
@@ -1933,7 +1928,7 @@ class Inkstone:
                                   channels_in=channels_in, channels_out=channels_out, channels_exclude=channels_exclude)
 
         if sm.any():
-            dets = gb.slogdet(sm)
+            dets = self.gb.slogdet(sm)
         else:
             dets = float('nan')
 

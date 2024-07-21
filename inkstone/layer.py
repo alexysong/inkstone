@@ -346,7 +346,7 @@ class Layer:
                 bx1.outside = bxf
 
                 # find a pt1 that's inside bx1
-                if bx1.shp.shape == 'rectangle' or bx1.shp.shape == 'disk' or bx1.shp.shape == 'ellipse' or bx1.shp.shape== 'parallelogram':
+                if bx1.shp.shape in ['rectangle','disk','ellipse','parallelogram']:
                     pt1: Tuple[float, float] = bx1.shp.center
                 elif bx1.shp.shape == 'polygon':
                     vertices = bx1.shp.vertices

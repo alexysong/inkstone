@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from inkstone.backends.BackendGetter import bg
-#import scipy.linalg as sla
+# import scipy.linalg as sla
 # import scipy.sparse as sps
 from .rsp import rsp_sa21Tlu, rsp_sb12Tlu
 

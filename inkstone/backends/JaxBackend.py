@@ -55,7 +55,7 @@ class JaxBackend(GenericBackend):
         self.j1 = j1
         self.eig = eig
 
-        self.pi = np.pi
+        self.pi = jnp.pi
         self.float64 = jnp.float64
         self.int32 = jnp.int32
         self.complex128 = jnp.complex128
