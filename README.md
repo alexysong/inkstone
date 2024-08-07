@@ -35,7 +35,7 @@ The [examples](examples/) folder contains various self-explaining examples to ge
 ## Dependencies
 
 *   python 3.6+
-*   numpy
+*   numpy < 2.0
 *   scipy
 
 ## Units, conventions, and definitions
@@ -71,6 +71,31 @@ In 2d simulations (1d grating), the space is assumed to be in $x$ and $z$. Here,
 *   Ver 0.3:
 
     Solved the convergence issue at Wood's anomaly. Now the calculation maintains the same convergence, stability, and speed near and at Wood's anomaly.
+
+
+## To Developers
+
+### General info
+Do not use numpy or torch or any similar package for mathmatical operations,
+use `import inkstone.backends.BackendLoader as bl`, then use `bl.backend()`
+as the math function provider, and use it with the same way you use numpy or torch.
+All available APIs are defined in `GenericBackend`
+
+### Inkstone functional development:
+
+If you do not find the function you want in GenericBackend, you should follow the backend development section below to define it by
+yourself, or ask backend developer to implement it.
+
+### Inkstone backend development:
+
+To add new functions, you must define it in `GenericBackend` first, then implement it in 
+its implementations (e.g. `NumpyBackend`, `TorchBackend`), or at least in the backend
+implementation you plan to use.
+
+To add new backend (assume its name "xxx"), you must inherit GenericBackend, and 
+define/implement all attributes/functions claimed there. Name your backend
+'xxxBackend', and put it in the same directory as `GenericBackend`. Then you can simply use it by doing `bg.set_backend('xxx')` without extra coding like `elif` to 
+let program recognise your new backend.
 
 ## Citing
 If you find Inkstone useful for your research, we would appreciate you citing our [paper](https://doi.org/10.1103/PhysRevLett.120.193903). For your convenience, you can use the following BibTex entry:

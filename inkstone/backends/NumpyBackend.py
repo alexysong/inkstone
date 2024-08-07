@@ -54,13 +54,13 @@ class NumpyBackend(GenericBackend):
         self.int32 = np.int32
         self.complex128 = np.complex128
         self.eye = np.eye
-    
 
-    def parseData(self, i: any, dtype=None):
+
+    def parseData(self, i: any, dtype=None, **kwargs):
         return np.array(i, dtype=dtype)
 
-    def meshgrid(self, a, b):
-        return np.meshgrid(a, b)
+    def meshgrid(self, *xi):
+        return np.meshgrid(*xi)
 
     def castType(self, i, typ):  # typ(e), avoid collision with keyword
         return i.astype(typ)
@@ -88,16 +88,15 @@ class NumpyBackend(GenericBackend):
     def norm(self, i, dim=None):
         return np.linalg.norm(i, axis=dim)
 
-    def argsort(self, ipt, dim=-1, c=None, d=None):
-        if c or d:
-            warn("The 3rd and 4th argument are for different purpose in different backends")
-        if c is None: c = 'quicksort'
-        if d is None:
-            return np.argsort(ipt,dim,kind=c)
-        return np.argsort(ipt,dim,kind=c,order=d)
+    def argsort(self, ipt, dim=-1, **kwargs):
+        kind = kwargs.pop('kind',None)
+        order = kwargs.pop('order',None)
+        return np.argsort(ipt,dim,kind=kind,order=order)
 
-    def sort(self,i,dim=-1,des=False,sort_alg='quicksort'):
-        return np.sort(i,dim,sort_alg)
+    def sort(self,i,dim=-1,**kwargs):
+        order = kwargs.pop('order',None)
+        kind = kwargs.pop('kind','quicksort')
+        return np.sort(i,axis=dim,kind=kind,order=order)
 
     def delete(self, x, idx, axis=None):
         return np.delete(x,idx, axis=axis)

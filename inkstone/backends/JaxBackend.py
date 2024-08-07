@@ -47,8 +47,10 @@ class JaxBackend(GenericBackend):
         self.einsum = jnp.einsum
         self.isnan = jnp.isnan
 
+
         self.la = jnp.linalg
         self.sla = jsp.linalg
+
         self.fft = jnp.fft  # only numpy fft used
 
         self.j0 = j0
@@ -61,31 +63,32 @@ class JaxBackend(GenericBackend):
         self.complex128 = jnp.complex128
         self.eye = jnp.eye
 
+    def parseData(self, i: any, dtype=None, **kwargs):
+        #if isinstance(i, jax.Array):  # handle tracer inputs by not passing invalid dtype
+        """
+        JL
+        TODO:
+        Need more robust handling of list of tracer inputs to self.gb.parseData
+        Currently, if o is a JAX tracer, then the above control flow sets dtype = jax tracer.
+        Since JAX does not accept dtype = jax tracer in jnp.array(), it throws an error.
+        Workaround is manually setting the parseData argument dtype whenever JAX throws an error
+        to avoid setting dtype = type(o)
+        Potential fix is to manually check isinstance(o, jax.Array), but that requires the user
+        to have installed JAX, which they may not have if they only want to use one of the other backends.
+        Need to somehow detect innermost o type as tracer and set jnp.array(i, dtype=None) without
+        re-calculating “o” or calculating “o” in cases where it is not needed
 
-    def parseData(self, i: any, dtype=None):
+        This isinstance(i, jax.Array) check loses dtype from the previous control flow, is that
+        acceptable? The dtype is then implicitly set by the dtype of o, i.e. the dtype in the tracer arrays.
+        """
+        return jnp.array(i)
 
-        if isinstance(i, jax.Array):  # handle tracer inputs by not passing invalid dtype
-            """
-            JL
-            TODO:
-            Need more robust handling of list of tracer inputs to self.gb.parseData
-            Currently, if o is a JAX tracer, then the above control flow sets dtype = jax tracer.
-            Since JAX does not accept dtype = jax tracer in jnp.array(), it throws an error.
-            Workaround is manually setting the parseData argument dtype whenever JAX throws an error 
-            to avoid setting dtype = type(o)
-            Potential fix is to manually check isinstance(o, jax.Array), but that requires the user 
-            to have installed JAX, which they may not have if they only want to use one of the other backends.
-            Need to somehow detect innermost o type as tracer and set jnp.array(i, dtype=None) without 
-            re-calculating “o” or calculating “o” in cases where it is not needed
 
-            This isinstance(i, jax.Array) check loses dtype from the previous control flow, is that
-            acceptable? The dtype is then implicitly set by the dtype of o, i.e. the dtype in the tracer arrays.
-            """
-            return jnp.array(i)
+    def parseList(self, tup):
+        return jnp.array(tup)
 
-    def meshgrid(self, a, b):
-        return jnp.meshgrid(a, b)
-
+    def meshgrid(self, *xi):
+        return jnp.meshgrid(*xi)
 
     def castType(self, i, typ):  # typ(e), avoid collision with keyword
         return i.astype(typ)
@@ -99,21 +102,25 @@ class JaxBackend(GenericBackend):
     def delete(self, x, idx, axis=None):
         return jnp.delete(x, idx, axis=axis)
 
-
     def clone(self, i, keep_grad=False):
-         return i
+        return i
+
     def triu_indices(self, row, col=None, offset=0):
         if not col:
             col = row
         return jnp.triu_indices(row, offset, col)
 
-    def argsort(self, a, b=-1, c=None, d=None):
-        return jnp.argsort(a, b, c, d)
+    def argsort(self, a, dim=-1, **kwargs):
+        kind = kwargs.pop('kind',None)
+        order= kwargs.pop('order',None)
+        stable = kwargs.pop('stable',True)
+        return jnp.argsort(a, axis=dim, kind=kind, order=order, stable=stable)
 
-
-    def sort(self, i, dim=-1, des=False, sort_alg='quicksort'):
-        return jnp.sort(i,axis=dim,descending=des)
-
+    def sort(self, i, dim=-1, **kwargs):
+        des = kwargs.pop('des',False)
+        kind = kwargs.pop('kind', None)
+        order = kwargs.pop('order', None)
+        return jnp.sort(i, axis=dim, descending=des,kind=kind,order=order)
 
     def linspace(self, start, end, num=50, required_grad=False):
         return jnp.linspace(start, end, num)
@@ -132,10 +139,18 @@ class JaxBackend(GenericBackend):
     def block(self, arr):
         return jnp.block(arr)
 
+    def lu_solve(self, p, q):
+        return self.sla.lu_solve(p, q)
+
+    def norm(self, p, dim=None):
+        return self.la.norm(p,axis=dim)
+
     def indexAssign(self, a, idx, b):
         """
         For numpy, use index assignment. For differentiation libraries, replace with differentiable version
         """
+        if isinstance(idx, tuple) and isinstance(idx[0],range):
+            for i,j in zip()
         return a.at[idx].set(b)
 
     def assignAndMultiply(self, a, idx, b):
@@ -143,4 +158,3 @@ class JaxBackend(GenericBackend):
         For numpy, multiply in-place with index assignment. For differentiation libraries, replace with differentiable not-in-place version
         """
         return a.at[idx].multiply(b)
-

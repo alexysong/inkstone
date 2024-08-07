@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from inkstone.backends.BackendLoader import bg
+import inkstone.backends.BackendLoader as bl
 
 
-def poly_area(vertices,gb=bg.backend):
+def poly_area(vertices,gb=bl.backend()):
     """
 
     Parameters

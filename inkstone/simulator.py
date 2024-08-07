@@ -4,7 +4,7 @@ from warnings import warn
 from collections import OrderedDict
 from typing import Tuple, Optional, List, Dict, Union
 import time
-from inkstone.backends.BackendLoader import bg
+import inkstone.backends.BackendLoader as bl
 
 from inkstone.rsp import rsp, rsp_sa12lu, rsp_sb21lu
 from inkstone.params import Params
@@ -22,7 +22,7 @@ class Inkstone:
                  frequency: Union[float, complex] = None,
                  theta: float = None,
                  phi: float = None,
-                 gb=bg.backend
+                 gb=bl.backend()
                  ):
         """
 
@@ -1479,7 +1479,8 @@ class Inkstone:
 
         xa, ya = self.gb.hsplit(self.gb.parseList(xy), 2)  # 2d array with one column
 
-        kxa, kya = self.gb.hsplit(self.gb.parseData(self.pr.ks), 2)  # 2d array with one column
+        #kxa, kya = self.gb.hsplit(self.gb.parseData(self.pr.ks), 2)  # 2d array with one column
+        kxa, kya = self.gb.hsplit(self.pr.ks, 2)
 
         phase = xa * kxa.T + ya * kya.T  # shape (len(xy), numg)
 
@@ -1584,11 +1585,12 @@ class Inkstone:
         ll = list(self.layers.keys())
 
         if hasattr(z, "__len__"):
-            za = self.gb.parseData(z)
+            za = z
+            # za = self.gb.parseData(z)
         else:
-            za = self.gb.parseData([z])
+            za = [z]
 
-        Fields = [self.gb.zeros((len(xy), len(za)), dtype=self.gb.complex128) for i in range(6)]
+        Fields = [self.gb.zeros((len(xy), len(za)), dtype=self.gb.complex128) for _ in range(6)]
 
         z_interfaces = self.thicknesses_c[:-1]  # -1 is output with thickness 0
 
@@ -1661,6 +1663,7 @@ class Inkstone:
 
         x, y, z = uu
         xx, yy = self.gb.meshgrid(x, y)
+
         xy = list(zip(xx.ravel(), yy.ravel()))
 
         fields = self.GetFieldsListPoints(xy, z)

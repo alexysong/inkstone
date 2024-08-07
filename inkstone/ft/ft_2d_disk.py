@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from inkstone.backends.BackendLoader import bg
+import inkstone.backends.BackendLoader as bl
 from scipy.special import jn
 
 
 
-def ft_2d_disk(r, ks, center=(0,0),gb=bg.backend): 
+def ft_2d_disk(r, ks, center=(0,0),gb=bl.backend()): 
     """
     calculate the fourier transform of a function, its value is 1 inside a disk, outside its value is 0.
 

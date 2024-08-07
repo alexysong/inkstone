@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from inkstone.backends.BackendLoader import bg
+import inkstone.backends.BackendLoader as bl
 from typing import List, Union, Tuple, Optional
 from inkstone.ft.ft_1d_sq import ft_1d_sq
 from inkstone.ft.ft_2d_rct import ft_2d_rct
@@ -20,7 +20,7 @@ class Shp:
     def __init__(self,
                  shp: str,
                  ks: List[Union[float, Tuple[float, float]]] =None,
-                 gb=bg.backend,
+                 gb=bl.backend(),
                  **kw_gibbs):
         """
         Basic shape.
@@ -88,7 +88,7 @@ class Shp:
         if ks:
             self.ks: List = ks
         self._ft = self.gb.parseData(self._calc_ft(),dtype=self.gb.complex128)
-        s = 1
+        s = self.gb.parseData(1, dtype=self.gb.complex128)
         self.use_gibbs_correction(**kw_gibbs)
         if self._if_gibbs_corr:
             s = self.gb.parseData(gibbs_corr(self.ks, **self._kw_gibbs))

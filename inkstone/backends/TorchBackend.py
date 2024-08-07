@@ -29,7 +29,7 @@ class TorchBackend(GenericBackend):
         self.tan = torch.tan
         self.roll = torch.roll
         self.sum = torch.sum
-        self.dot = torch.dot #unlike numpy, it supports 1d tensors only, which is fine in inkstone
+        self.dot = torch.dot  #unlike numpy, it supports 1d tensors only, which is fine in inkstone
         self.hsplit = torch.hsplit
         self.repeat = torch.repeat_interleave
         self.reshape = torch.reshape
@@ -50,15 +50,21 @@ class TorchBackend(GenericBackend):
 
         self.pi = torch.pi
         self.float64 = torch.float64  # default float precision
-        self.int32 = torch.int32  # defualt int precision
+        self.int32 = torch.int32  # default int precision
         self.complex128 = torch.complex128  # default complex precision
 
-    def parseData(self, i: any, dtype=None):
+    def parseData(self, i: any, dtype=None, **kwargs):
+        req_grad = False
+        try:
+            req_grad = kwargs['requires_grad']
+        except KeyError:
+            pass
+
         if type(i) is self.raw_type:
-            # print(i)
             if dtype is not None and dtype != i.dtype:
-                return self.castType(i, dtype)
+                raise Exception("Do not use this function to change dtype")
             else:
+                print("Already parsed")
                 return i
         o = i
         while type(o) == list or type(o) == tuple:
@@ -80,11 +86,15 @@ class TorchBackend(GenericBackend):
                 dtype = self.complex128
             else:
                 dtype = type(o)
-        return torch.tensor(i, dtype=dtype)
+        return torch.tensor(i, dtype=dtype,requires_grad=req_grad)
 
-    def meshgrid(self, a, b):
-        # Implement PyTorch-specific custom function
-        return torch.meshgrid(a, b, indexing='xy')
+    def meshgrid(self, *tensors):
+        """
+        torch.meshgrid(*tensors) currently has the same behavior as calling numpy.meshgrid(*arrays, indexing=’ij’).
+
+        In the future torch.meshgrid will transition to indexing=’xy’ as the default.
+       """
+        return torch.meshgrid(*tensors, indexing='xy')
 
     def castType(self, i, typ):  # typ(e), avoid collision with keyword
         return i.to(typ)
@@ -105,10 +115,9 @@ class TorchBackend(GenericBackend):
             return torch.tensor(tup)
         return torch.stack(tup, dim=dim)
 
-  #  def cross(self, a, b):
-   #     return torch.cross(torch.tensor((a[0], a[1], 0), dtype=torch.float64),
-   #                        torch.tensor((b[0], b[1], 0), dtype=torch.float64), dim=-1)[-1]
-
+    #  def cross(self, a, b):
+    #     return torch.cross(torch.tensor((a[0], a[1], 0), dtype=torch.float64),
+    #                        torch.tensor((b[0], b[1], 0), dtype=torch.float64), dim=-1)[-1]
 
     def getSize(self, i):
         #np.prod(i.size(),dtype=np.int32)
@@ -145,17 +154,20 @@ class TorchBackend(GenericBackend):
             raise AttributeError(f"'{self.__name__}' has no attribute '{name}'")
 
     def norm(self, i, dim=None):
-        return torch.linalg.norm(i, dim=dim)
+        return torch.linalg.vector_norm(i,dim=dim)
 
     def clone(self, i):
         return i.clone()
 
-    def argsort(self, ipt, dim=-1, c=None, d=None):
-        if c or d:
-            warn("The 3rd and 4th argument are for different purpose in torch and numpy")
-        if c is None: c = False
-        if d is None: d = False
-        return torch.argsort(ipt, dim=dim, descending=c, stable=d)
+    def argsort(self, ipt, dim=-1, **kwargs):
+        descending = kwargs.pop('descending', False)
+        stable = kwargs.pop('stable', True)
+        return torch.argsort(ipt, dim=dim, descending=descending, stable=stable)
+
+    def sort(self,a,axis=-1, **kwargs):
+        des = kwargs.pop('descending',False)
+        stable = kwargs.pop('stable', True)
+        return torch.sort(a, dim=axis, descending=des, stable=stable)
 
     # manual implementation of block, at least matches all results on np docs
     def block(self, arr):

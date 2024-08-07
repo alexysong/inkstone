@@ -57,9 +57,9 @@ class GenericBackend(ABC):
         self.complex128 = None  # default complex precision
 
     @abstractmethod
-    def parseData(self, i: any, dtype=None):
+    def parseData(self, i: any, dtype=None, **kwargs):
         """
-        Generic data parser api.
+        Generic data parser api for user inputs.
         In numpy, it is np.array(); in pytorch, it is torch.tensor()
 
         Parameters
@@ -101,7 +101,17 @@ class GenericBackend(ABC):
 
 
     @abstractmethod
-    def meshgrid(self,a,b):
+    def meshgrid(self, *xi):
+        """
+
+        Parameters
+        ----------
+        xi 1-D arrays representing the coordinates of a grid.
+
+        Returns
+        -------
+
+        """
         pass
 
     @abstractmethod
@@ -142,7 +152,11 @@ class GenericBackend(ABC):
         pass
 
     @abstractmethod
-    def argsort(self, ipt, dim=-1, c=None, d=None):
+    def argsort(self, ipt, dim=-1, **kwargs):
+        pass
+
+    @abstractmethod
+    def sort(self,a,axis=-1, **kwargs):
         pass
 
     @abstractmethod

@@ -7,12 +7,12 @@ Reference:
 K. McInturff and P.S. Simon, "The Fourier transform of linearly varying functions with polygonal support", IEEE Trans. Ann. Prop.  39, 1441 (1991)
 """
 
-from inkstone.backends.BackendLoader import bg
+import inkstone.backends.BackendLoader as bl
 from scipy.special import jn
 from inkstone.ft.poly_area import poly_area
 
 
-def ft_2d_poly_1(vertices, ks, gb=bg):
+def ft_2d_poly_1(vertices, ks, gb=bl.backend()):
     """
     Calculate the fourier transform of a function with value 1 inside a polygon and 0 outside. Assuming none of the required k is at (0, 0)
 
@@ -57,7 +57,7 @@ def ft_2d_poly_1(vertices, ks, gb=bg):
     return s.tolist()
 
 
-def ft_2d_poly(vertices, ks,gb=bg.backend):
+def ft_2d_poly(vertices, ks,gb=bl.backend()):
     """
     Calculate the Fourier transform of a function with value 1 inside a polygon shape and 0 outside.
 

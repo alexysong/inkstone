@@ -6,7 +6,7 @@ from collections import OrderedDict
 from typing import Optional, Set, Union, Tuple, Dict, List
 import time
 
-from inkstone.backends.BackendLoader import bg
+import inkstone.backends.BackendLoader as bl
 
 from inkstone.ft.ft_2d_cnst import ft_2d_cnst
 from inkstone.sm import s_1l_rsp, s_1l_1212, s_1l_1221
@@ -19,7 +19,7 @@ from inkstone.helpers.pt_in_poly import pt_in_poly
 class Layer:
     # todo: for uniform layer should use sparse matrices, faster less memory
 
-    def __init__(self, name, thickness, material_bg, materials, params,gb=bg.backend, **kwargs):
+    def __init__(self, name, thickness, material_bg, materials, params,gb=bl.backend(), **kwargs):
         """
         A layer.
 
@@ -313,12 +313,11 @@ class Layer:
 
         bx_areas = self.gb.parseData([a.shp.area for a in bxs])
         idx = self.gb.argsort(bx_areas).tolist()
+        # wcai: unnecessary numpy array conversion on list of str
+        # also invalid on other backends like torch
         bx_names = [a.name for a in bxs]
         bx_name_sorted = [bx_names[i] for i in idx]
-        if type(bx_name_sorted) is str:
-            bx_name_sorted = [bx_name_sorted]
-        else:
-            print(type(bx_name_sorted))
+
         # a fictional bx with background material of this layer.
         bxf = Bx(self.materials[self.material_bg], 'polygon', name='the cell', vertices=[(0, 0), (1, 0), (0, 1)])
 
@@ -1094,7 +1093,6 @@ class Layer:
             # where w is 0, vh's column is 0
 
             # normalize such that the larger norm of v and vh's each column is 1
-            
             vn = self.gb.norm(v, 0)
             vhn = self.gb.norm(vh,0)
             nm = self.gb.maximum(vn, vhn)

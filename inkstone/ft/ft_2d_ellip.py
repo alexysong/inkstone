@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from inkstone.backends.BackendLoader import bg
+import inkstone.backends.BackendLoader as bl
 from scipy.special import jn
 
 
-def ft_2d_ellip(a, b, ks, center=None, angle=0.,gb=bg.backend):
+def ft_2d_ellip(a, b, ks, center=None, angle=0.,gb=bl.backend()):
     """
     Calculate the fourier transform of a function with value 1 inside a ellipse and 0 outside.
 

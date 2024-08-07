@@ -2,6 +2,7 @@
 
 ###for testing only
 import sys
+
 sys.path.append("C:/Users/w-a-c/Desktop/inkstone")
 ###----------------
 
@@ -14,9 +15,7 @@ from inkstone.g_pts import g_pts
 from inkstone.g_pts_1d import g_pts_1d
 from inkstone.max_idx_diff import max_idx_diff
 from inkstone.conv_mtx_idx import conv_mtx_idx_2d
-from inkstone.backends.BackendLoader import bg
-from line_profiler_pycharm import profile
-
+import inkstone.backends.BackendLoader as bl
 
 
 class Params:
@@ -31,8 +30,8 @@ class Params:
                  omega=None,
                  theta=None,
                  phi=None,
-                 show_calc_time = False,
-                 gb=bg.backend
+                 show_calc_time=False,
+                 gb=bl.backend()
                  ):
         """
 
@@ -50,14 +49,16 @@ class Params:
                             phi is the angle between the in-plane projection of k and the x axis. Rotating from kx axis phi degrees ccw around z axis to arrive at the kx of incident wave.
         """
 
-        self.gs: Optional[List[Tuple[float, float]]] = None  # list of g points for E and H fields. Added by k_pa_inci to get the ks, i.e. k points for E and H
+        self.gs: Optional[List[Tuple[
+            float, float]]] = None  # list of g points for E and H fields. Added by k_pa_inci to get the ks, i.e. k points for E and H
         self.idx_g: Optional[List[Tuple[int, int]]] = None  # list of g points indices
         self.idx_conv_mtx: Optional[any] = None  # indexing array to for constructing convolution matrices.
         self.ks: Optional[List[Tuple[float, float]]] = None  # list of k points for E and H fields.
         self.idx_g_ep_mu: Optional[List[Tuple[int, int]]] = None
         self.idxa_g_ep_mu: Optional[Tuple[any, any]] = None  # The g indices for ep and mu.
         self.idx_g_ep_mu_used: Optional[List[Tuple[int, int]]] = None  # the actually used epsilon and mu grid points
-        self.ks_ep_mu: Optional[List[Tuple[float, float]]] = None  # list of k points where epsi and mu Fourier components are to be calculated
+        self.ks_ep_mu: Optional[List[
+            Tuple[float, float]]] = None  # list of k points where epsi and mu Fourier components are to be calculated
         self.ka_ep_mu: Optional[Tuple[any, any]] = None  # The k points for ep and mu, Tuple of meshgrid (kx, ky).
         self.Kx: Optional[any] = None  # the diagonals of the Big diagonal matrix
         self.Ky: Optional[any] = None  # the diagonals of the Big diagonal matrix
@@ -70,13 +71,18 @@ class Params:
         self.phif: Optional[any] = None  # E field eigen mode in fic material, shape (2num_g, 2num_g)
         self.psif: Optional[any] = None  # H field eigen mode in fic material, shape (2num_g, 2num_g)
         self.q0: Optional[any] = None  # 1d array, eigen propagation constant in z direction in vacuum, length 2*num_g
-        self.q0_half: Optional[any] = None  # 1d array, eigen propagation constant in z direction in vacuum, length num_g
-        self.q0_0: Optional[any] = None  # 1d array, containing idxs to the idx_g list which q0 is 0, i.e. parallel to surface
+        self.q0_half: Optional[
+            any] = None  # 1d array, eigen propagation constant in z direction in vacuum, length num_g
+        self.q0_0: Optional[
+            any] = None  # 1d array, containing idxs to the idx_g list which q0 is 0, i.e. parallel to surface
         self.q0_inv: Optional[any] = None  # 1d array, 1./q0, elementwise inversion of q0, length 2*num_g
-        self.P0_val: Optional[Tuple[any, any, any, any]] = None  # Tuple of 4, each is an ndarray of size num_g, containing the diagonal elements of the 4 blocks of P0.
-        self.Q0_val: Optional[Tuple[any, any, any, any]] = None  # Tuple of 4, each is an ndarray of size num_g, containing the diagonal elements of the 4 blocks of Q0.
+        self.P0_val: Optional[Tuple[
+            any, any, any, any]] = None  # Tuple of 4, each is an ndarray of size num_g, containing the diagonal elements of the 4 blocks of P0.
+        self.Q0_val: Optional[Tuple[
+            any, any, any, any]] = None  # Tuple of 4, each is an ndarray of size num_g, containing the diagonal elements of the 4 blocks of Q0.
         self.im0: Optional[Tuple[any, any]] = None  # vacuum interface matrix
-        self.sm0: Optional[Tuple[any, any, any, any]] = None  # vacuum scattering matrix, (s11_0, s12_0, s21_0, s22_0), each of s_ij has side length 2*num_g
+        self.sm0: Optional[Tuple[
+            any, any, any, any]] = None  # vacuum scattering matrix, (s11_0, s12_0, s21_0, s22_0), each of s_ij has side length 2*num_g
         self._rad_cha_0: Optional[List[int]] = None
 
         self.ccnif = "physical"
@@ -85,7 +91,7 @@ class Params:
         self.__num_g_actual: Optional[int] = None  # actual number of G points used.
         self._num_g_input: Optional[int] = None  # number of G points input by user
         self._omega: Optional[complex] = None
-        self._k_pa_inci: Optional[Tuple[Tuple[float, float], Tuple[float, float]]] = None  # incident in-plane k
+        self._k_pa_inci: Optional[Tuple[Tuple[float, float]], Tuple[float, float]] = None  # incident in-plane k
         self._kii: Optional[Union[float, complex]] = None
         self._kio: Optional[Union[float, complex]] = None
         self._frequency: Optional[complex] = None
@@ -126,7 +132,7 @@ class Params:
         self._out_is_vac: Optional[bool] = None
         self._out_is_iso_nonvac: Optional[bool] = None
         self._ind_out: Optional[Union[float, complex]] = None
-        
+
         self.gb = gb
 
         # property initialization can change other attributes hence must be after initialization of other attributes.
@@ -145,7 +151,8 @@ class Params:
 
     @property
     def ai(self):
-        warn("`ai` and `bo` are not stored in Params anymore. Please use `Inkstone.ai` and `Inkstone.bo` to retrieve them.")
+        warn(
+            "`ai` and `bo` are not stored in Params anymore. Please use `Inkstone.ai` and `Inkstone.bo` to retrieve them.")
         return self._ai
 
     @ai.setter
@@ -154,7 +161,8 @@ class Params:
 
     @property
     def bo(self):
-        warn("`ai` and `bo` are not stored in Params anymore. Please use `Inkstone.ai` and `Inkstone.bo` to retrieve them.")
+        warn(
+            "`ai` and `bo` are not stored in Params anymore. Please use `Inkstone.ai` and `Inkstone.bo` to retrieve them.")
         return self.bo
 
     @bo.setter
@@ -176,7 +184,8 @@ class Params:
     @latt_vec.setter
     def latt_vec(self, val: Union[float, Tuple[Tuple[float, float], Tuple[float, float]]]):
         if type(val) is not tuple:
-            val = self.gb.parseData(((val, 0), (0, 0)),self.gb.float64)
+            # wcai: early backend conversion to ensure following math operation will work (like torch only work with tensor)
+            val = self.gb.parseData(((val, 0), (0, 0)), self.gb.float64)
             self.is_1d_latt = True
         else:
             val = [self.gb.parseData(a, dtype=self.gb.float64) for a in val]
@@ -184,22 +193,21 @@ class Params:
             an, bn = self.gb.parseList([self.gb.norm(a), self.gb.norm(b)])
             # if either latt vec is zero, then it is 1D. Make sure it's x-z for layer solver.
             if an == 0:
-                val =self.gb.parseData(((bn, 0), (0, 0)),dtype=self.gb.float64)
+                val = self.gb.parseData(((bn, 0), (0, 0)), dtype=self.gb.float64)
                 self.is_1d_latt = True
                 warn("2D structure (in-plane 1D), non-uniform direction is rotated to x axis.")
             if bn == 0:
                 val_old = val
-                val = self.gb.parseData(((an, 0), (0, 0)),dtype=self.gb.float64)
+                val = self.gb.parseData(((an, 0), (0, 0)), dtype=self.gb.float64)
                 self.is_1d_latt = True
                 if val_old != val:
                     warn("2D structure (in-plane 1D), non-uniform direction is rotated to x axis.")
-        self._latt_vec: Union[Tuple[Tuple[float, float], Tuple[float, float]]] = self.gb.parseData(val)
+        self._latt_vec: Union[Tuple[Tuple[float, float], Tuple[float, float]]] = val
         self._recipr_vec: Tuple[Tuple[float, float], Tuple[float, float]] = recipro(val[0], val[1], gb=self.gb)
         self.if_2d()
         self._calc_gs()
         self._calc_uc_area()
 
- 
         # self._calc_ks_ep_mu()  # called through _calc_gs -> _calc_ks
 
     @property
@@ -260,8 +268,8 @@ class Params:
     @omega.setter
     def omega(self, val: Union[float, complex]):
         if val is not None:
-            self._omega = self.gb.parseData(val, dtype=self.gb.complex128)
-            self._frequency = self.gb.parseData(val / self.gb.pi / 2.)
+            self._omega = self.gb.parseData(val)
+            self._frequency = val / self.gb.pi / 2.
             # self.q0_contain_0 = False
             # self._calc_gs()  # recalculating gs because some g may be possibly removed in previous runs to remove Wood's anomaly.
             self._calc_kii()
@@ -358,7 +366,7 @@ class Params:
     @theta.setter
     def theta(self, val: Union[float, complex]):
         if val is not None:
-            self._theta = self.gb.parseData(val * self.gb.pi / 180.)
+            self._theta = val * self.gb.pi / 180.
             self._calc_k_pa_inci()
             # self._calc_angles()  # called through _calc_k_pa_inci() - _calc_ks()
         else:
@@ -376,7 +384,6 @@ class Params:
         return phi
 
     @phi.setter
-    @profile
     def phi(self, val: float):
         if val is not None:
             self._phi: float = self.gb.parseData(val * self.gb.pi / 180.)
@@ -454,7 +461,8 @@ class Params:
             order = [order]
         for od in order:
             if not (od in self.idx_g):
-                raise Exception('The incident order you specified is not within the order list. Possible solution is to reduce order or increase the number of G points.')
+                raise Exception(
+                    'The incident order you specified is not within the order list. Possible solution is to reduce order or increase the number of G points.')
         self._incident_orders = order
         # considered allowing 1d several orders. But then ambiguity:is [0, 1] 2d order (0, 1) or is it two 1d orders 0 and 1?
 
@@ -469,16 +477,19 @@ class Params:
             order_back = [order_back]
         for od in order_back:
             if not (od in self.idx_g):
-                raise Exception('The incident order you specified is not within the order list. Possible solution is to reduce order or increase the number of G points.')
+                raise Exception(
+                    'The incident order you specified is not within the order list. Possible solution is to reduce order or increase the number of G points.')
         self._incident_orders_bk = order_back
 
         # convert s and p amplitudes to lists (can be empty list)
         amp = []
-        for amps, selfamps, od in zip([[s_amplitude, p_amplitude], [s_amplitude_back, p_amplitude_back]], [[self._s_amps, self._p_amps], [self._s_amps_bk, self._p_amps_bk]], [self._incident_orders, self._incident_orders_bk]):
+        for amps, selfamps, od in zip([[s_amplitude, p_amplitude], [s_amplitude_back, p_amplitude_back]],
+                                      [[self._s_amps, self._p_amps], [self._s_amps_bk, self._p_amps_bk]],
+                                      [self._incident_orders, self._incident_orders_bk]):
             for a, s in zip(amps, selfamps):
                 if a is None:
                     if s is None:
-                        a = [0. for i in range(len(od))]
+                        a = [0.]*len(od)
                     else:
                         a = s
                 elif not hasattr(a, "__len__"):
@@ -490,10 +501,13 @@ class Params:
         self._p_amps_bk = amp[3]
 
         if (len(self._incident_orders) != len(self._s_amps)) or (len(self._incident_orders) != len(self._p_amps)):
-            raise Exception("The list length of the incident s amplitudes, p amplitudes, and incident orders are not equal.")
+            raise Exception(
+                "The list length of the incident s amplitudes, p amplitudes, and incident orders are not equal.")
 
-        if (len(self._incident_orders_bk) != len(self._s_amps_bk)) or (len(self._incident_orders_bk) != len(self._p_amps_bk)):
-            raise Exception("The list length of the backside incident s amplitudes, p amplitudes, and incident orders are not equal.")
+        if (len(self._incident_orders_bk) != len(self._s_amps_bk)) or (
+                len(self._incident_orders_bk) != len(self._p_amps_bk)):
+            raise Exception(
+                "The list length of the backside incident s amplitudes, p amplitudes, and incident orders are not equal.")
 
         # self._calc_ai_bo_3d()
 
@@ -564,15 +578,14 @@ class Params:
             self._ind_out = val
             self._calc_kio()
 
-    @profile
     def _calc_k_pa_inci(self):
         """calculate incident kx and ky"""
         if (self._theta is not None) and (self._phi is not None) and (self.kii is not None):
-            kx = self.kii.real * self.gb.cos(self.gb.pi/2 - self._theta) * self.gb.cos(self._phi)
-            ky = self.kii.real * self.gb.cos(self.gb.pi/2 - self._theta) * self.gb.sin(self._phi)
+            kx = self.kii.real * self.gb.cos(self.gb.pi / 2 - self._theta) * self.gb.cos(self._phi)
+            ky = self.kii.real * self.gb.cos(self.gb.pi / 2 - self._theta) * self.gb.sin(self._phi)
             # This is where it determines that the (kx, ky) of the structure is determined by the incident region's refractive index, theta and phi, not the output region.
 
-            self._k_pa_inci = [kx, ky]
+            self._k_pa_inci = (kx, ky)
             self._calc_ks()  # called in `k_pa_inci` setter
 
             # todo: complex kx ky also gives answers, but the physical meaning is different
@@ -581,7 +594,7 @@ class Params:
         """ calculate E and H Fourier components g points """
         if self._num_g_input and self.recipr_vec:
             b1, b2 = self.recipr_vec
-            b1n, b2n = [self.gb.la.norm(b) for b in [b1, b2]]
+            b1n, b2n = [self.gb.norm(b) for b in [b1, b2]]
             if b1n != float('inf') and b2n != float('inf'):
                 self.gs, self.idx_g = g_pts(self._num_g_input, self.recipr_vec[0], self.recipr_vec[1])
             elif b1n == float('inf'):
@@ -648,10 +661,10 @@ class Params:
         self._calc_ks()
         self._calc_conv_mtx_idx()
 
-    @profile
     def _calc_ks(self):
         if self.gs and (self.k_pa_inci is not None):
-            self.ks = self.gb.parseData([[g[0] + self.k_pa_inci[0], g[1] + self.k_pa_inci[1]] for g in self.gs], dtype=self.gb.float64)
+            self.ks = self.gb.parseData([(g[0] + self.k_pa_inci[0], g[1] + self.k_pa_inci[1]) for g in self.gs],
+                                        dtype=self.gb.float64)
             self._calc_Km()
             self._calc_q0()
             self._calc_ks_ep_mu()
@@ -661,9 +674,9 @@ class Params:
         """Calculate Kx Ky arrays"""
         if self.ks is not None:
             # t1 = time.process_time()
-            ksa = self.gb.parseData(self.ks,dtype=self.gb.float64)  # shape (NumG, 2)
-            kx = ksa[:, 0]
-            ky = ksa[:, 1]
+            #ksa = self.gb.parseData(self.ks, dtype=self.gb.float64)  # shape (NumG, 2)
+            kx = self.ks[:, 0]
+            ky = self.ks[:, 1]
             self.Kx = kx
             self.Ky = ky
 
@@ -675,22 +688,21 @@ class Params:
     def _calc_conv_mtx_idx(self):
         if self.idx_g:
             self.idx_conv_mtx = conv_mtx_idx_2d(self.idx_g, self.idx_g, gb=self.gb)
-            
-            reshaped_tensor = self.gb.reshape(self.idx_conv_mtx, [self._num_g_ac ** 2, 2])
-            tuple_list = [(int(i), int(j)) for i, j in reshaped_tensor]
-            self.idx_g_ep_mu_used = list(set(tuple_list))
-           # self.idx_g_ep_mu_used = list(set([(i, j) for (i, j) in self.idx_conv_mtx.reshape(self._num_g_ac ** 2, 2)]))  # The first element of each tuple is in physical "x" direction
 
-    @profile
+            #reshaped_tensor = self.gb.reshape(self.idx_conv_mtx, [self._num_g_ac ** 2, 2])
+            #tuple_list = [(int(i), int(j)) for i, j in reshaped_tensor]
+            #self.idx_g_ep_mu_used = list(set(tuple_list))
+            self.idx_g_ep_mu_used = list(set([(i, j) for (i, j) in self.idx_conv_mtx.reshape(self._num_g_ac ** 2, 2)]))  # The first element of each tuple is in physical "x" direction
+
     def _calc_ks_ep_mu(self):
         if self.idx_g:
             # t1 = time.process_time()
 
-            m, n = max_idx_diff(self.idx_g,self.gb)
+            m, n = max_idx_diff(self.idx_g, self.gb)
             self.mmax = m
             self.nmax = n
-            x = self.gb.arange(-m, m+1)
-            y = self.gb.arange(-n, n+1)
+            x = self.gb.arange(-m, m + 1)
+            y = self.gb.arange(-n, n + 1)
             xx, yy = self.gb.meshgrid(x, y)
 
             # t2 = time.process_time()
@@ -701,16 +713,16 @@ class Params:
             # t3 = time.process_time()
 
             b1, b2 = self.recipr_vec
-            b1n, b2n = [self.gb.la.norm(b) for b in [b1, b2]]
+            b1n, b2n = [self.gb.norm(b) for b in [b1, b2]]
             # if one of them is infinity, this is a 1D structure. set it to 0 such that they don't appear in ks_ep_mu
             if b1n == float('inf'):
-                b1 = self.gb.parseData([0, 0])
+                b1 = self.gb.parseData((0, 0))
             if b2n == float('inf'):
-                b2 = self.gb.parseData([0, 0])
+                b2 = self.gb.parseData((0, 0))
 
             kx = xx * b1[0] + yy * b2[0]
             ky = xx * b1[1] + yy * b2[1]
-            self.ks_ep_mu = list(zip(kx.ravel(), ky.ravel()))# each element is (kx, ky) tuple.
+            self.ks_ep_mu = list(zip(kx.ravel(), ky.ravel()))  # each element is (kx, ky) tuple.
             self.ks_ep_mu = self.gb.parseList(self.ks_ep_mu)
             self.ka_ep_mu = (kx, ky)
 
@@ -719,16 +731,20 @@ class Params:
             # print(time.process_time() - t3)
             # print('_calc_ks_ep_mu', time.process_time()-t1)
 
-    @profile
     def _calc_q0(self):
-        if all(isinstance(v, self.gb.raw_type) 
-               or v is not None for v in [self._num_g_ac,self.omega,self.ks]):
+        if all(isinstance(v, self.gb.raw_type)
+               or v is not None for v in [self._num_g_ac, self.omega, self.ks]):
             # t1 = time.process_time()
-            k_parallel = self.gb.norm(self.ks, -1)
+            k_parallel = self.gb.norm(self.ks,dim=-1)
             q02 = self.gb.ones(self._num_g_ac) * self.gb.square(self.omega) - self.gb.square(k_parallel) + 0j
-            self._rad_cha_0 = self.gb.where(q02.real > 0)[0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
+            self._rad_cha_0 = self.gb.where(q02.real > 0)[
+                0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
             q0 = self.gb.sqrt(q02)
-            if self.omega.imag < 0:
+            try:
+                omega_img = self.omega.imag
+            except RuntimeError: # tensor doesn't has img if it's not of complex dtype
+                omega_img = 0.0
+            if omega_img < 0:
                 if self.ccnif == "physical":
                     q0[(q02.real < 0) * (q0.imag < 0)] *= -1
                 elif self.ccnif == "ac":
@@ -736,7 +752,7 @@ class Params:
                 else:
                     warn("ccnif not recognized. Default to 'physical'.")
                     q0[(q02.real < 0) * (q0.imag < 0)] *= -1
-            elif self.omega.imag > 0:
+            elif omega_img > 0:
                 if self.ccpif == "ac":
                     q0[(q02.real < 0) * (q0.imag < 0)] *= -1
                 elif self.ccpif == "physical":
@@ -748,22 +764,16 @@ class Params:
                 #q0[q0.imag < 0] *= -1
                 self.gb.where(q0.imag < 0, -q0, q0)
             # todo: what to do at q02.real == 0 case (Woods)?
-            if self.q0 is None:
-                self.q0_0 = []
-            else:
-                for ele in self.q0:
-                    if self.gb.abs(ele) == 0.:
-                        self.q0_0 = ele
-                        break
+            self.q0_0 = self.gb.where(self.gb.abs(q0) == 0.)[0]
             #self.q0_0 = self.gb.where(self.gb.abs(q0) == 0.)[0]
-            print(q0.shape)
+            #print(q0.shape)
             self.q0 = self.gb.concatenate([q0, q0])
-            print(self.q0.shape)
+            #print(self.q0.shape)
             self.q0_half = q0
             # print('_calc_q0', time.process_time() - t1)
 
-         #   with self.gb.errstate(divide='ignore', invalid='ignore'):
-            self.q0_inv = 1. / self.q0 #seems default behavior is set to inf
+            #   with self.gb.errstate(divide='ignore', invalid='ignore'):
+            self.q0_inv = 1. / self.q0  #seems default behavior is set to inf
             #ii = self.gb.where(self.q0 == 0.)
             #self.q0_inv[ii] = float('inf')
 
@@ -805,7 +815,6 @@ class Params:
             # self._calc_phi0_psi0()  # logically, should call this, however, the only place calling _calc_P0Q0() is _calc_Km(), which is only called at _calc_ks(). There, after _calc_Km(), _calc_q0() is called, which calls this.
             # self._calc_phif_psif()
 
-    @profile
     def _calc_phi0_psi0(self):
         if (self.Q0_val is not None) and (self.q0 is not None) and (self._num_g_ac is not None):
             # t1 = time.process_time()
@@ -814,7 +823,6 @@ class Params:
             # Kx = self.Kx.copy()
             # Ky = self.Ky.copy()
             # k_norm = self.gb.sqrt(self.gb.conj(Kx) * Kx + self.gb.conj(Ky) * Ky)
-
 
             # # Wood stable as eigen
             # Tx = Kx  # term with x subscript
@@ -862,15 +870,15 @@ class Params:
             # self.phi0_2x2s = self.gb.inputParser([[Ty, jwTxq],
             #                           [-Tx, jwTyq]])
 
-
             # with normalization
             q0h = self.q0_half
+
             ng = self._num_g_ac
             o = self.omega
 
-            ksa = self.gb.parseData(self.ks)
-            Kx = ksa[:, 0]
-            Ky = ksa[:, 1]
+            #ksa = self.gb.parseData(self.ks)
+            Kx = self.ks[:, 0]
+            Ky = self.ks[:, 1]
             # Kx = self.Kx.copy()
             # Ky = self.Ky.copy()
             k_norm = self.gb.sqrt(self.gb.conj(Kx) * Kx + self.gb.conj(Ky) * Ky)
@@ -894,12 +902,15 @@ class Params:
             # c2[:, i_knz] = -1j / o * self.gb.inputParser([Kx[i_knz] * Ky[i_knz] / q0h[i_knz], (-self.gb.square(Kx[i_knz]) - self.gb.square(q0h[i_knz])) / q0h[i_knz]])  # should not be |Kx|^2
             c1[:, i_kez] = self.gb.parseData([[1.], [0.]])
             c2[:, i_kez] = self.gb.parseData([[0.], [1.]])
+
             cphi = self.gb.cos(self._phi)
             sphi = self.gb.sin(self._phi)
             c1[:, ii] = self.gb.parseList([[sphi], [-cphi]])
             c2[:, ii] = self.gb.parseList([[cphi], [sphi]])
 
-            k_norm = self.gb.castType(k_norm, self.gb.complex128) #compatible dtype with c1f,c2f assignment below
+            c1 = self.gb.castType(c1, self.gb.complex128)
+            c2 = self.gb.castType(c2, self.gb.complex128)
+            k_norm = self.gb.castType(k_norm, self.gb.complex128)  #compatible dtype with c1f,c2f assignment below
             c1f[i_qlw] = o / q0h[i_qlw] / k_norm[i_qlw]
             c2f[i_qlw] = 1j / k_norm[i_qlw]
 
@@ -915,15 +926,12 @@ class Params:
             c1f[ii] = 1.
             c2f[ii] = 1j * q0h[ii] / o
 
-            c1 = self.gb.castType(c1,self.gb.complex128)
-            c2 = self.gb.castType(c2,self.gb.complex128)
-            
             c1 *= c1f
             c2 *= c2f
 
             r1 = range(ng)
             r2 = range(ng, 2 * ng)
-            phi0 = self.gb.zeros((2*ng, 2*ng), dtype=self.gb.complex128)
+            phi0 = self.gb.zeros((2 * ng, 2 * ng), dtype=self.gb.complex128)
             psi0 = self.gb.clone(phi0)
             phi0[r1, r1] = c1[0, :]
             phi0[r2, r1] = c1[1, :]
@@ -972,12 +980,13 @@ class Params:
             r2 = range(ng, 2 * ng)
 
             # attention! phif is assumed to be identity in interface calculations. if need to change the form, you need to change coding there, not just changing phif here.
-            # phif[r2, r2] = -1.
+            phif[r2, r2] = -1.
 
             # attention! If need to change this form, note in interface matrix calculations this form is assumed to speed up things. Need to change coding there, not just changing psif here.
             psif[r2, r1] = 1.j
+            #self.gb.indexAssign(psif, (r2, r1), 1.j)
             psif[r1, r2] = -1.j
-
+            #self.gb.indexAssign(psif, (r1, r2), -1.j)
             self.phif = phif
             self.psif = psif
 
@@ -1017,7 +1026,8 @@ class Params:
     def _calc_psi0(self):
         warn('This method is deprecated. Use `_calc_phi0_psi0` instead.', category=DeprecationWarning)
 
-        if (self.Q0_val is not None) and (self.q0 is not None) and (self._num_g_ac is not None) and ((self.Kx is not None) and (self.Ky is not None)):
+        if (self.Q0_val is not None) and (self.q0 is not None) and (self._num_g_ac is not None) and (
+                (self.Kx is not None) and (self.Ky is not None)):
             # t1 = time.process_time()
 
             # if not self.q0_contain_0:
@@ -1220,9 +1230,9 @@ class Params:
                 if a1n != 0. and a2n != 0.:
                     self._uc_area = self.gb.abs(self.gb.cross(self.latt_vec[0], self.latt_vec[1]))
                 elif a1n == 0.:  # 1D
-                    self._uc_area = self.gb.parseData(a2n)
+                    self._uc_area = a2n
                 elif a2n == 0.:
-                    self._uc_area = self.gb.parseData(a1n)
+                    self._uc_area = a1n
                 else:
                     raise Exception("Both lattice vectors have zero norms. Can't calculate unit cell area.")
 
@@ -1231,21 +1241,21 @@ class Params:
         calculate cos(vartheta), sin(vartheta), cos(phi), sin(phi) for all relevant orders, where vartheta = pi/2-theta
         Used in calculating ai bo. Recording these cos and sin allow for high-order incidence.
         """
-        if all(isinstance(v,self.gb.raw_type) or v is not None
-            for v in [self.ks,self.num_g,self._theta,self._phi,self.kii]):
+        if all(isinstance(v, self.gb.raw_type) or v is not None
+               for v in [self.ks, self.num_g, self._theta, self._phi, self.kii]):
             # t1 = time.process_time()
 
             idxa = self.gb.parseData(self.idx_g)
-            ksa = self.gb.parseData(self.ks)
-            k_pa = self.gb.la.norm(ksa, axis=-1)  # norm of in-plane momentum
+            #ksa = self.gb.parseData(self.ks)
+            k_pa = self.gb.norm(self.ks, -1)  # norm of in-plane momentum
             i0 = (k_pa == 0.)
             ib = (k_pa != 0.)
             ii = (idxa[:, 0] == 0) & (idxa[:, 1] == 0)
 
             cphi = self.gb.zeros(self._num_g_ac, dtype=self.gb.complex128)
             sphi = self.gb.zeros(self._num_g_ac, dtype=self.gb.complex128)
-            cphi[ib] = self.gb.castType(ksa[ib, 0] / k_pa[ib], self.gb.complex128)
-            sphi[ib] = self.gb.castType(ksa[ib, 1] / k_pa[ib], self.gb.complex128)
+            cphi[ib] = self.gb.castType(self.ks[ib, 0] / k_pa[ib], self.gb.complex128)
+            sphi[ib] = self.gb.castType(self.ks[ib, 1] / k_pa[ib], self.gb.complex128)
             cphi[i0] = 1.
             sphi[i0] = 0.
             cphi[ii] = self.gb.cos(self._phi)
@@ -1253,9 +1263,9 @@ class Params:
 
             cthe = k_pa / self.kii.real + 0j  # this is always positive
             # when omega complex, k_parallel is still calc as real
-            sthe = self.gb.sqrt(1 - cthe**2 + 0j)
-            cthe[ii] = self.gb.cos(self.gb.pi/2 - self._theta)
-            sthe[ii] = self.gb.sin(self.gb.pi/2 - self._theta)
+            sthe = self.gb.sqrt(1 - cthe ** 2 + 0j)
+            cthe[ii] = self.gb.cos(self.gb.pi / 2 - self._theta)
+            sthe[ii] = self.gb.sin(self.gb.pi / 2 - self._theta)
             # todo: theta could be None (e.g. setting Excitation By Eigen)
 
             self.cos_phis = list(cphi)
@@ -1268,7 +1278,8 @@ class Params:
                 # todo: self.kio is updated in solving stage as which layer is output is determined then. But all `Params` data should be calculated at setting structure stage.
                 # when omega complex, k_parallel is still calc as real
                 sthe_bk = self.gb.sqrt(1 - cthe_bk ** 2 + 0j)
-                cthe_bk[ii] = self.gb.cos(self.gb.pi / 2 - self._theta)  # incorrect, out region could have different refractive index
+                cthe_bk[ii] = self.gb.cos(
+                    self.gb.pi / 2 - self._theta)  # incorrect, out region could have different refractive index
                 sthe_bk[ii] = self.gb.sin(self.gb.pi / 2 - self._theta)
                 self.cos_phis_bk = self.cos_phis.copy()
                 self.sin_phis_bk = self.sin_phis.copy()
@@ -1287,7 +1298,8 @@ class Params:
         o = self.omega
 
         aibo = [self.ai, self.bo]
-        for ii, (sa, pa, od) in enumerate([[self._s_amps, self._p_amps, self._incident_orders], [self._s_amps_bk, self._p_amps_bk, self._incident_orders_bk]]):
+        for ii, (sa, pa, od) in enumerate([[self._s_amps, self._p_amps, self._incident_orders],
+                                           [self._s_amps_bk, self._p_amps_bk, self._incident_orders_bk]]):
             if self._num_g_ac:
                 ab = self.gb.zeros(2 * self._num_g_ac) + 0j
                 if (sa or pa) and od and self.idx_g and \
@@ -1295,11 +1307,12 @@ class Params:
                     # find the index of the input orders in the g list
                     idx = [i for order in od for i, j in enumerate(self.idx_g) if j == order]
                     for i, jj in enumerate(idx):
-                    # for i in range(len(idx)):
+                        # for i in range(len(idx)):
                         if (jj in self.q0_0):
                             # todo: need to handle this and document it.
                             #  if user specify 90 degree incidence, this is activated
-                            warn('You are specifying incidence in a channel that is parallel to the surface of the structure. \n In this case, only specific field configuration is allowed.')
+                            warn(
+                                'You are specifying incidence in a channel that is parallel to the surface of the structure. \n In this case, only specific field configuration is allowed.')
                             ab[jj] = sa[i]
                             ab[jj + self._num_g_ac] = pa[i]
                         else:
@@ -1318,8 +1331,9 @@ class Params:
                             ex = -s * self.sin_phis[jj] + p * self.sin_varthetas[jj] * self.cos_phis[jj]  # e_x
                             ey = s * self.cos_phis[jj] + p * self.sin_varthetas[jj] * self.sin_phis[jj]  # e_y
                             phi_2x2 = self.phi0_2x2s[:, :, jj]
-                            phi_2x2_i = 1 / self.gb.la.det(phi_2x2) * self.gb.parseData([[phi_2x2[1, 1], -phi_2x2[0, 1]],
-                                                                        [-phi_2x2[1, 0], phi_2x2[0, 0]]])
+                            phi_2x2_i = 1 / self.gb.la.det(phi_2x2) * self.gb.parseData(
+                                [[phi_2x2[1, 1], -phi_2x2[0, 1]],
+                                 [-phi_2x2[1, 0], phi_2x2[0, 0]]])
                             # v = la.solve(phi_2x2, self.gb.inputParser([ex, ey]))
                             v = phi_2x2_i @ self.gb.parseData([ex, ey])
                             ab[jj] = v[0]
@@ -1328,4 +1342,3 @@ class Params:
                 aibo[ii] = ab
         self.ai, self.bo = aibo
         # print('_calc_ai_bo_3d', time.process_time() - t1)
-

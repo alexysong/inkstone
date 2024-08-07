@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from inkstone.backends.BackendLoader import bg
+import inkstone.backends.BackendLoader as bl
 # import numpy.linalg as la
 from inkstone.shps import Rect, Para, Disk, Elli, Poly, OneD
 from warnings import warn
@@ -10,7 +10,7 @@ from inkstone.mtr import Mtr
 class Bx:
     # Bx doesn't know what lattice it is in
 
-    def __init__(self, mtr, shp, name=None, outside=None,gb=bg.backend, **kwargs):
+    def __init__(self, mtr, shp, name=None, outside=None,gb=bl.backend(), **kwargs):
         """
         A box.
         The box has a name, its `mtr`, its `shp`.
@@ -37,6 +37,7 @@ class Bx:
         self.mtr = mtr
         self.name = name
 
+        # wcai: if -> dict, optimise redundant if-elif
         shape_classes = {
             'rectangle': Rect,
             'parallelogram': Para,
@@ -81,6 +82,7 @@ class Bx:
         -------
 
         """
+        # wcai: if ks may cause errors on other backends
         if ks is not None:
             self.ks = ks
         ep, ei, mu, mi = self._calc_ft(**kw_gibbs)
@@ -160,6 +162,7 @@ class Bx:
 
         """
         # todo: what self.shp is is conditional; when refactoring this is a problem.
+        # wcai: optimise if statements with redundant None-checking and attribute assignment
         shape_attributes = {
             'rectangle': ['center', 'angle', 'side_lengths'],
             'parallelogram': ['center', 'angle', 'shear_angle', 'side_lengths'],

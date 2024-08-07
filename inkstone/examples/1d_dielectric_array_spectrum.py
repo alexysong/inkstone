@@ -14,9 +14,9 @@ Each rod has side length 0.55.
 import sys
 from project_path import PATH as p
 sys.path.append(p)
-from inkstone.backends.BackendLoader import bg
+import inkstone.backends.BackendLoader as bl
 bg.set_backend('autograd')
-bk = bg.backend
+bk = bl.backend()
 
 from inkstone.simulator import Inkstone
 s = Inkstone()

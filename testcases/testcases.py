@@ -261,7 +261,6 @@ class TestBackendComparison(unittest.TestCase):
         torch_result = self.torch_backend.clone(torch.from_numpy(x))
         self.assert_close(np_result, torch_result)
         self.assertFalse(np.may_share_memory(x, np_result))
-
     def test_triu_indices(self):
         np_result = self.np_backend.triu_indices(5, 5, 1)
         torch_result = self.torch_backend.triu_indices(5, 5, 1)

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-from inkstone.backends.BackendLoader import bg
+import inkstone.backends.BackendLoader as bl
 # import scipy.linalg as sla
 # import scipy.sparse as sps
 from .rsp import rsp_sa21Tlu, rsp_sb12Tlu
 
-gb = bg.backend
+gb = bl.backend()
 def s_1l(thickness, ql, al0, bl0):
     """
     calculate the scattering matrix of 1 layer.

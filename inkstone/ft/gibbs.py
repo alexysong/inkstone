@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from inkstone.backends.BackendLoader import bg
+import inkstone.backends.BackendLoader as bl
 from typing import List, Union, Tuple, Optional
 from warnings import warn
 
@@ -10,7 +10,7 @@ def gibbs_corr(ks: List[Union[float, Tuple[float, float], Tuple[float, float, fl
                method: str = 'Gaussian',
                order: float = 1.,
                factor: float = 1.,
-               gb=bg.backend) -> List[Union[float, Tuple[float, float], Tuple[float, float, float]]]:
+               gb=bl.backend()) -> List[Union[float, Tuple[float, float], Tuple[float, float, float]]]:
     """
     Calculate the correction factor to mitigate Gibbs phenomenon.
     options are either Lanczos or Gaussian.

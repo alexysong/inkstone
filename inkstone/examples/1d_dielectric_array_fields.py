@@ -17,10 +17,10 @@ import time
 
 sys.path.append(p)
 start_time = time.time()
-from inkstone.backends.BackendLoader import bg
+import inkstone.backends.BackendLoader as bl
 
-bg.set_backend('torch')
-bk = bg.backend
+bl.set_backend('torch')
+bk = bl.backend()
 from inkstone.simulator import Inkstone
 
 s = Inkstone()
@@ -44,6 +44,7 @@ s.SetExcitation(theta=0., phi=0., s_amplitude=1, p_amplitude=0)
 Ex, Ey, Ez, Hx, Hy, Hz = s.GetFields(xmin=-0.5, xmax=0.5, nx=101,
                                      y=0.,
                                      zmin=-0.2, zmax=d + 0.2, nz=101)
+
 
 #%% plotting
 from matplotlib import pyplot as plt
