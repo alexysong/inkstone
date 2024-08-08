@@ -5,18 +5,17 @@ import inkstone.backends.BackendLoader as bl
 # import numpy.linalg as la
 # from warnings import warn
 
-
+gb = bl.backend()
 class Mtr:
     # material need to have a name such that user can access it by its name
     def __init__(self,
                  epsi: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], any],
                  mu: Union[Union[float, complex], Tuple[Union[float, complex], Union[float, complex], Union[float, complex]], any],
                  name=None,
-                 gb=bl.backend()):
+                 ):
         """
         Material.
         """
-        self.gb = gb
         self._epsi: Optional[any] = None
         self._mu: Optional[any] = None
         self._epsi_inv: Optional[any] = None
@@ -111,15 +110,15 @@ class Mtr:
 
     @epsi.setter
     def epsi(self, val):
-        if type(val) in [float, int, complex, self.gb.int32, self.gb.float64, self.gb.complex128]:
-            ep = self.gb.eye(3, dtype=self.gb.complex128) * val
+        if type(val) in [float, int, complex, gb.int32, gb.float64, gb.complex128]:
+            ep = gb.eye(3, dtype=gb.complex128) * val
             self._epsi = ep + 0j
             self.ep_is_diagonal = True
             self.ep_is_isotropic = True
             self.ep_is_vac = val == 1.
            
-        elif self.gb.parseData(val).ndim == 1 and self.gb.getSize(self.gb.parseData(val)) == 3:
-            ep = self.gb.diag(val) + 0j
+        elif gb.parseData(val).ndim == 1 and gb.getSize(gb.parseData(val)) == 3:
+            ep = gb.diag(val) + 0j
             self._epsi = ep + 0j
             self.ep_is_diagonal = True
             self.ep_is_isotropic = check_iso(ep)
@@ -128,7 +127,7 @@ class Mtr:
                 self.ep_is_vac = True
             else:
                 self.ep_is_vac = False
-        elif (type(val) is not self.gb.raw_type) or val.shape != (3, 3):
+        elif (type(val) is not gb.raw_type) or val.shape != (3, 3):
             raise ValueError('data format for epsilon is incorrect.')
         else:
             ep = val
@@ -154,9 +153,9 @@ class Mtr:
         adbc = v[0, 0] * v[1, 1] - v[0, 1] * v[1, 0]
         if adbc == 0 or v[2, 2] == 0:
             raise Exception('Singular permittivity tensor.')
-        ei = self.gb.parseList([[v[1, 1] / adbc, -v[0, 1] / adbc, self.gb.parseData(0)],
-                       [-v[1, 0] / adbc, v[0, 0] / adbc, self.gb.parseData(0)],
-                       [self.gb.parseData(0), self.gb.parseData(0), 1 / v[2, 2]]])
+        ei = gb.parseList([[v[1, 1] / adbc, -v[0, 1] / adbc, gb.parseData(0)],
+                       [-v[1, 0] / adbc, v[0, 0] / adbc, gb.parseData(0)],
+                       [gb.parseData(0), gb.parseData(0), 1 / v[2, 2]]])
         self._epsi_inv = ei
 
     @property
@@ -165,8 +164,8 @@ class Mtr:
 
     @mu.setter
     def mu(self, val):
-        if type(val) in [float, int, complex, self.gb.float64, self.gb.complex128]:
-            mu = self.gb.eye(3, dtype=self.gb.complex128) * val
+        if type(val) in [float, int, complex, gb.float64, gb.complex128]:
+            mu = gb.eye(3, dtype=gb.complex128) * val
             self._mu = mu + 0j
             self.mu_is_diagonal = True
             self.mu_is_isotropic = True
@@ -174,8 +173,8 @@ class Mtr:
                 self.mu_is_vac = True
             else:
                 self.mu_is_vac = False
-        elif self.gb.parseData(val).ndim == 1 and self.gb.getSize(self.gb.parseData(val)) == 3:
-            mu = self.gb.diag(val) + 0j
+        elif gb.parseData(val).ndim == 1 and gb.getSize(gb.parseData(val)) == 3:
+            mu = gb.diag(val) + 0j
             self._mu = mu + 0j
             self.mu_is_diagonal = True
             if check_iso(mu):
@@ -186,7 +185,7 @@ class Mtr:
                 self.mu_is_vac = True
             else:
                 self.mu_is_vac = False
-        elif (type(val) is not self.gb.raw_type) or val.shape != (3, 3):
+        elif (type(val) is not gb.raw_type) or val.shape != (3, 3):
             raise ValueError('data format for mu is incorrect.')
         else:
             mu = val
@@ -212,9 +211,9 @@ class Mtr:
         adbc = v[0, 0] * v[1, 1] - v[0, 1] * v[1, 0]
         if adbc == 0 or v[2, 2] == 0:
             raise Exception('Singular permittivity tensor.')
-        mi = self.gb.parseList([[v[1, 1] / adbc, -v[0, 1] / adbc, self.gb.parseData(0)],
-                       [-v[1, 0] / adbc, v[0, 0] / adbc, self.gb.parseData(0)],
-                       [self.gb.parseData(0), self.gb.parseData(0), 1 / v[2, 2]]])
+        mi = gb.parseList([[v[1, 1] / adbc, -v[0, 1] / adbc, gb.parseData(0)],
+                       [-v[1, 0] / adbc, v[0, 0] / adbc, gb.parseData(0)],
+                       [gb.parseData(0), gb.parseData(0), 1 / v[2, 2]]])
         self._mu_inv = mi
 
     @property

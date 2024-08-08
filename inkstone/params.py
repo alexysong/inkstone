@@ -1,11 +1,4 @@
 # -*- coding: utf-8 -*-
-
-###for testing only
-import sys
-
-sys.path.append("C:/Users/w-a-c/Desktop/inkstone")
-###----------------
-
 # import scipy.fft as fft
 from typing import Tuple, List, Union, Optional
 # import time
@@ -16,7 +9,7 @@ from inkstone.g_pts_1d import g_pts_1d
 from inkstone.max_idx_diff import max_idx_diff
 from inkstone.conv_mtx_idx import conv_mtx_idx_2d
 import inkstone.backends.BackendLoader as bl
-
+gb=bl.backend()
 
 class Params:
     """
@@ -31,7 +24,6 @@ class Params:
                  theta=None,
                  phi=None,
                  show_calc_time=False,
-                 gb=bl.backend()
                  ):
         """
 
@@ -133,8 +125,6 @@ class Params:
         self._out_is_iso_nonvac: Optional[bool] = None
         self._ind_out: Optional[Union[float, complex]] = None
 
-        self.gb = gb
-
         # property initialization can change other attributes hence must be after initialization of other attributes.
         if latt_vec is not None:
             self.latt_vec = latt_vec
@@ -185,25 +175,24 @@ class Params:
     def latt_vec(self, val: Union[float, Tuple[Tuple[float, float], Tuple[float, float]]]):
         if type(val) is not tuple:
             # wcai: early backend conversion to ensure following math operation will work (like torch only work with tensor)
-            val = self.gb.parseData(((val, 0), (0, 0)), self.gb.float64)
+            val = gb.parseData(((val, 0), (0, 0)), gb.float64)
             self.is_1d_latt = True
         else:
-            val = [self.gb.parseData(a, dtype=self.gb.float64) for a in val]
             a, b = val
-            an, bn = self.gb.parseList([self.gb.norm(a), self.gb.norm(b)])
+            an, bn = gb.parseList([gb.norm(a), gb.norm(b)])
             # if either latt vec is zero, then it is 1D. Make sure it's x-z for layer solver.
             if an == 0:
-                val = self.gb.parseData(((bn, 0), (0, 0)), dtype=self.gb.float64)
+                val = gb.parseData(((bn, 0), (0, 0)), dtype=gb.float64)
                 self.is_1d_latt = True
                 warn("2D structure (in-plane 1D), non-uniform direction is rotated to x axis.")
             if bn == 0:
                 val_old = val
-                val = self.gb.parseData(((an, 0), (0, 0)), dtype=self.gb.float64)
+                val = gb.parseData(((an, 0), (0, 0)), dtype=gb.float64)
                 self.is_1d_latt = True
                 if val_old != val:
                     warn("2D structure (in-plane 1D), non-uniform direction is rotated to x axis.")
         self._latt_vec: Union[Tuple[Tuple[float, float], Tuple[float, float]]] = val
-        self._recipr_vec: Tuple[Tuple[float, float], Tuple[float, float]] = recipro(val[0], val[1], gb=self.gb)
+        self._recipr_vec: Tuple[Tuple[float, float], Tuple[float, float]] = recipro(val[0], val[1], gb=gb)
         self.if_2d()
         self._calc_gs()
         self._calc_uc_area()
@@ -257,7 +246,7 @@ class Params:
     @frequency.setter
     def frequency(self, val: Union[float, complex]):
         if val is not None:
-            self.omega = val * self.gb.pi * 2.
+            self.omega = val * gb.pi * 2.
             self._frequency = val
 
     @property
@@ -268,8 +257,8 @@ class Params:
     @omega.setter
     def omega(self, val: Union[float, complex]):
         if val is not None:
-            self._omega = self.gb.parseData(val)
-            self._frequency = val / self.gb.pi / 2.
+            self._omega = gb.parseData(val)
+            self._frequency = val / gb.pi / 2.
             # self.q0_contain_0 = False
             # self._calc_gs()  # recalculating gs because some g may be possibly removed in previous runs to remove Wood's anomaly.
             self._calc_kii()
@@ -333,7 +322,7 @@ class Params:
         if self.k_pa_inci is not None:
             kx, ky = self.k_pa_inci
             if kx == 0. and ky == 0.:
-                self._theta = self.gb.dataParser(0.)
+                self._theta = gb.dataParser(0.)
                 # self.theta = 0.
                 if self.phi is None:
                     warn("Both kx and ky are zero, but phi is not specified. Now defaulting to phi = 0.", UserWarning)
@@ -341,15 +330,15 @@ class Params:
                     # self.phi = 0.
                 # else:
                 #     warn("Both kx and ky are zero. In this case incident angle phi need to be set explicitly. Using the existing phi value.", UserWarning)
-                #     # self._phi = phi / 180. * self.gb.pi
+                #     # self._phi = phi / 180. * gb.pi
                 #     # self.phi = phi
             else:
-                kn = self.gb.sqrt(self.gb.abs(kx) ** 2 + self.gb.abs(ky) ** 2)
-                self._phi = self.gb.arccos(kx / kn)
-                # self.phi = self.gb.arccos(kx / kn) * 180. / self.gb.pi
+                kn = gb.sqrt(gb.abs(kx) ** 2 + gb.abs(ky) ** 2)
+                self._phi = gb.arccos(kx / kn)
+                # self.phi = gb.arccos(kx / kn) * 180. / gb.pi
                 if self.kii is not None:
-                    self._theta = self.gb.arcsin(kn / self.kii.real)
-                    # self.theta = self.gb.arcsin(kn / self.kii.real) * 180. / self.gb.pi
+                    self._theta = gb.arcsin(kn / self.kii.real)
+                    # self.theta = gb.arcsin(kn / self.kii.real) * 180. / gb.pi
 
             self._calc_ks()
             # self._calc_angles()  # called through _calc_ks()
@@ -358,7 +347,7 @@ class Params:
     def theta(self) -> Union[float, complex]:
         """he angle between incident k and z axis, in degrees, range: [0, pi/2]"""
         if self._theta is not None:
-            theta = self._theta / self.gb.pi * 180.
+            theta = self._theta / gb.pi * 180.
         else:
             theta = None
         return theta
@@ -366,7 +355,7 @@ class Params:
     @theta.setter
     def theta(self, val: Union[float, complex]):
         if val is not None:
-            self._theta = val * self.gb.pi / 180.
+            self._theta = val * gb.pi / 180.
             self._calc_k_pa_inci()
             # self._calc_angles()  # called through _calc_k_pa_inci() - _calc_ks()
         else:
@@ -378,7 +367,7 @@ class Params:
     def phi(self) -> float:
         """ the angle between the in-plane projection of k and the x axis in degrees. Rotating from kx axis phi degrees ccw around z axis to arrive at the kx of incident wave. """
         if self._phi is not None:
-            phi = self._phi / self.gb.pi * 180.
+            phi = self._phi / gb.pi * 180.
         else:
             phi = None
         return phi
@@ -386,7 +375,7 @@ class Params:
     @phi.setter
     def phi(self, val: float):
         if val is not None:
-            self._phi: float = self.gb.parseData(val * self.gb.pi / 180.)
+            self._phi: float = gb.parseData(val * gb.pi / 180.)
             self._calc_k_pa_inci()
             # self._calc_angles()  # called through _calc_k_pa_inci() -  _calc_ks()
         else:
@@ -581,8 +570,8 @@ class Params:
     def _calc_k_pa_inci(self):
         """calculate incident kx and ky"""
         if (self._theta is not None) and (self._phi is not None) and (self.kii is not None):
-            kx = self.kii.real * self.gb.cos(self.gb.pi / 2 - self._theta) * self.gb.cos(self._phi)
-            ky = self.kii.real * self.gb.cos(self.gb.pi / 2 - self._theta) * self.gb.sin(self._phi)
+            kx = self.kii.real * gb.cos(gb.pi / 2 - self._theta) * gb.cos(self._phi)
+            ky = self.kii.real * gb.cos(gb.pi / 2 - self._theta) * gb.sin(self._phi)
             # This is where it determines that the (kx, ky) of the structure is determined by the incident region's refractive index, theta and phi, not the output region.
 
             self._k_pa_inci = (kx, ky)
@@ -594,7 +583,7 @@ class Params:
         """ calculate E and H Fourier components g points """
         if self._num_g_input and self.recipr_vec:
             b1, b2 = self.recipr_vec
-            b1n, b2n = [self.gb.norm(b) for b in [b1, b2]]
+            b1n, b2n = [gb.norm(b) for b in [b1, b2]]
             if b1n != float('inf') and b2n != float('inf'):
                 self.gs, self.idx_g = g_pts(self._num_g_input, self.recipr_vec[0], self.recipr_vec[1])
             elif b1n == float('inf'):
@@ -663,8 +652,8 @@ class Params:
 
     def _calc_ks(self):
         if self.gs and (self.k_pa_inci is not None):
-            self.ks = self.gb.parseData([(g[0] + self.k_pa_inci[0], g[1] + self.k_pa_inci[1]) for g in self.gs],
-                                        dtype=self.gb.float64)
+            self.ks = gb.parseData([(g[0] + self.k_pa_inci[0], g[1] + self.k_pa_inci[1]) for g in self.gs],
+                                        dtype=gb.float64)
             self._calc_Km()
             self._calc_q0()
             self._calc_ks_ep_mu()
@@ -674,7 +663,7 @@ class Params:
         """Calculate Kx Ky arrays"""
         if self.ks is not None:
             # t1 = time.process_time()
-            #ksa = self.gb.parseData(self.ks, dtype=self.gb.float64)  # shape (NumG, 2)
+            #ksa = gb.parseData(self.ks, dtype=gb.float64)  # shape (NumG, 2)
             kx = self.ks[:, 0]
             ky = self.ks[:, 1]
             self.Kx = kx
@@ -687,9 +676,9 @@ class Params:
 
     def _calc_conv_mtx_idx(self):
         if self.idx_g:
-            self.idx_conv_mtx = conv_mtx_idx_2d(self.idx_g, self.idx_g, gb=self.gb)
+            self.idx_conv_mtx = conv_mtx_idx_2d(self.idx_g, self.idx_g)
 
-            #reshaped_tensor = self.gb.reshape(self.idx_conv_mtx, [self._num_g_ac ** 2, 2])
+            #reshaped_tensor = gb.reshape(self.idx_conv_mtx, [self._num_g_ac ** 2, 2])
             #tuple_list = [(int(i), int(j)) for i, j in reshaped_tensor]
             #self.idx_g_ep_mu_used = list(set(tuple_list))
             self.idx_g_ep_mu_used = list(set([(i, j) for (i, j) in self.idx_conv_mtx.reshape(self._num_g_ac ** 2, 2)]))  # The first element of each tuple is in physical "x" direction
@@ -698,12 +687,12 @@ class Params:
         if self.idx_g:
             # t1 = time.process_time()
 
-            m, n = max_idx_diff(self.idx_g, self.gb)
+            m, n = max_idx_diff(self.idx_g, gb)
             self.mmax = m
             self.nmax = n
-            x = self.gb.arange(-m, m + 1)
-            y = self.gb.arange(-n, n + 1)
-            xx, yy = self.gb.meshgrid(x, y)
+            x = gb.arange(-m, m + 1)
+            y = gb.arange(-n, n + 1)
+            xx, yy = gb.meshgrid(x, y)
 
             # t2 = time.process_time()
 
@@ -713,17 +702,17 @@ class Params:
             # t3 = time.process_time()
 
             b1, b2 = self.recipr_vec
-            b1n, b2n = [self.gb.norm(b) for b in [b1, b2]]
+            b1n, b2n = [gb.norm(b) for b in [b1, b2]]
             # if one of them is infinity, this is a 1D structure. set it to 0 such that they don't appear in ks_ep_mu
             if b1n == float('inf'):
-                b1 = self.gb.parseData((0, 0))
+                b1 = gb.parseData((0, 0))
             if b2n == float('inf'):
-                b2 = self.gb.parseData((0, 0))
+                b2 = gb.parseData((0, 0))
 
             kx = xx * b1[0] + yy * b2[0]
             ky = xx * b1[1] + yy * b2[1]
             self.ks_ep_mu = list(zip(kx.ravel(), ky.ravel()))  # each element is (kx, ky) tuple.
-            self.ks_ep_mu = self.gb.parseList(self.ks_ep_mu)
+            self.ks_ep_mu = gb.parseList(self.ks_ep_mu)
             self.ka_ep_mu = (kx, ky)
 
             # print(t2 - t1)
@@ -732,14 +721,14 @@ class Params:
             # print('_calc_ks_ep_mu', time.process_time()-t1)
 
     def _calc_q0(self):
-        if all(isinstance(v, self.gb.raw_type)
+        if all(isinstance(v, gb.raw_type)
                or v is not None for v in [self._num_g_ac, self.omega, self.ks]):
             # t1 = time.process_time()
-            k_parallel = self.gb.norm(self.ks,dim=-1)
-            q02 = self.gb.ones(self._num_g_ac) * self.gb.square(self.omega) - self.gb.square(k_parallel) + 0j
-            self._rad_cha_0 = self.gb.where(q02.real > 0)[
+            k_parallel = gb.norm(self.ks,dim=-1)
+            q02 = gb.ones(self._num_g_ac) * gb.square(self.omega) - gb.square(k_parallel) + 0j
+            self._rad_cha_0 = gb.where(q02.real > 0)[
                 0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
-            q0 = self.gb.sqrt(q02)
+            q0 = gb.sqrt(q02)
             try:
                 omega_img = self.omega.imag
             except RuntimeError: # tensor doesn't has img if it's not of complex dtype
@@ -762,19 +751,19 @@ class Params:
                     q0[(q02.real < 0) * (q0.imag < 0)] *= -1
             else:
                 #q0[q0.imag < 0] *= -1
-                self.gb.where(q0.imag < 0, -q0, q0)
+                gb.where(q0.imag < 0, -q0, q0)
             # todo: what to do at q02.real == 0 case (Woods)?
-            self.q0_0 = self.gb.where(self.gb.abs(q0) == 0.)[0]
-            #self.q0_0 = self.gb.where(self.gb.abs(q0) == 0.)[0]
+            self.q0_0 = gb.where(gb.abs(q0) == 0.)[0]
+            #self.q0_0 = gb.where(gb.abs(q0) == 0.)[0]
             #print(q0.shape)
-            self.q0 = self.gb.concatenate([q0, q0])
+            self.q0 = gb.concatenate([q0, q0])
             #print(self.q0.shape)
             self.q0_half = q0
             # print('_calc_q0', time.process_time() - t1)
 
-            #   with self.gb.errstate(divide='ignore', invalid='ignore'):
+            #   with gb.errstate(divide='ignore', invalid='ignore'):
             self.q0_inv = 1. / self.q0  #seems default behavior is set to inf
-            #ii = self.gb.where(self.q0 == 0.)
+            #ii = gb.where(self.q0 == 0.)
             #self.q0_inv[ii] = float('inf')
 
             # self._calc_psi0()
@@ -801,15 +790,15 @@ class Params:
 
             # # for debugging
             # ng = self._num_g_ac
-            # self.P0 = self.gb.zeros((2*ng, 2*ng), dtype=self.gb.complex128)
+            # self.P0 = gb.zeros((2*ng, 2*ng), dtype=gb.complex128)
             # r1 = range(ng)
             # r2 = range(ng, 2 * ng)
             # self.P0[r1, r1] = P11
             # self.P0[r2, r1] = P21
             # self.P0[r1, r2] = P12
             # self.P0[r2, r2] = P22
-            # self.P0 = self.gb.block([[self.gb.diag(P11), self.gb.diag(P12)],
-            #                     [self.gb.diag(P21), self.gb.diag(P22)]])
+            # self.P0 = gb.block([[gb.diag(P11), gb.diag(P12)],
+            #                     [gb.diag(P21), gb.diag(P22)]])
 
             # self._calc_psi0()
             # self._calc_phi0_psi0()  # logically, should call this, however, the only place calling _calc_P0Q0() is _calc_Km(), which is only called at _calc_ks(). There, after _calc_Km(), _calc_q0() is called, which calls this.
@@ -822,7 +811,7 @@ class Params:
             # o = self.omega
             # Kx = self.Kx.copy()
             # Ky = self.Ky.copy()
-            # k_norm = self.gb.sqrt(self.gb.conj(Kx) * Kx + self.gb.conj(Ky) * Ky)
+            # k_norm = gb.sqrt(gb.conj(Kx) * Kx + gb.conj(Ky) * Ky)
 
             # # Wood stable as eigen
             # Tx = Kx  # term with x subscript
@@ -830,28 +819,28 @@ class Params:
             #
             # # for small k just use [1, 0], [0, 1] as eigen.
             # skc = 0.5  # small k criterion
-            # small_k = self.gb.where(k_norm < (skc * self.gb.abs(o)))[0]
+            # small_k = gb.where(k_norm < (skc * gb.abs(o)))[0]
             # Tx[small_k] = 0.
             # Ty[small_k] = 1.
             # t_norm = k_norm.copy()  # term norm
             # t_norm[small_k] = 1.
             #
-            # Txm = self.gb.diag(Tx)
-            # Tym = self.gb.diag(Ty)
+            # Txm = gb.diag(Tx)
+            # Tym = gb.diag(Ty)
             # jwTxq = 1j / o * Tx * self.q0_half
             # jwTyq = 1j / o * Ty * self.q0_half
             #
             # # for small k, need separate calc here
             # jwTxq[small_k] = -1j / o * Kx[small_k] * Ky[small_k] / self.q0_half[small_k]
-            # jwTyq[small_k] = -1j / o * (-self.gb.conj(Kx[small_k])*Kx[small_k] - self.gb.conj(self.q0_half[small_k])*self.q0_half[small_k]) / self.q0_half[small_k]
+            # jwTyq[small_k] = -1j / o * (-gb.conj(Kx[small_k])*Kx[small_k] - gb.conj(self.q0_half[small_k])*self.q0_half[small_k]) / self.q0_half[small_k]
             #
-            # jwTxqm = self.gb.diag(jwTxq)
-            # jwTyqm = self.gb.diag(jwTyq)
+            # jwTxqm = gb.diag(jwTxq)
+            # jwTyqm = gb.diag(jwTyq)
             #
             # ng = self._num_g_ac
             # r1 = range(ng)
             # r2 = range(ng, 2 * ng)
-            # phi0 = self.gb.zeros((2*ng, 2*ng), dtype=self.gb.complex128)
+            # phi0 = gb.zeros((2*ng, 2*ng), dtype=gb.complex128)
             # psi0 = phi0.copy()
             # phi0[r1, r1] = Ty
             # phi0[r2, r1] = -Tx
@@ -862,12 +851,12 @@ class Params:
             # psi0[r1, r2] = Ty
             # psi0[r2, r2] = -Tx
             #
-            # # phi0 = self.gb.block([[Tym, jwTxqm],
+            # # phi0 = gb.block([[Tym, jwTxqm],
             # #                  [-Txm, jwTyqm]])
-            # # psi0 = self.gb.block([[jwTxqm, Tym],
+            # # psi0 = gb.block([[jwTxqm, Tym],
             # #                  [jwTyqm, -Txm]])
             #
-            # self.phi0_2x2s = self.gb.inputParser([[Ty, jwTxq],
+            # self.phi0_2x2s = gb.inputParser([[Ty, jwTxq],
             #                           [-Tx, jwTyq]])
 
             # with normalization
@@ -876,41 +865,41 @@ class Params:
             ng = self._num_g_ac
             o = self.omega
 
-            #ksa = self.gb.parseData(self.ks)
+            #ksa = gb.parseData(self.ks)
             Kx = self.ks[:, 0]
             Ky = self.ks[:, 1]
             # Kx = self.Kx.copy()
             # Ky = self.Ky.copy()
-            k_norm = self.gb.sqrt(self.gb.conj(Kx) * Kx + self.gb.conj(Ky) * Ky)
+            k_norm = gb.sqrt(gb.conj(Kx) * Kx + gb.conj(Ky) * Ky)
 
             # skc = 0.05
-            # i_knz = self.gb.where(k_norm < (skc * self.gb.abs(o)))[0]
-            i_kez = self.gb.where(k_norm == 0.)[0]
-            # i_qsw = self.gb.where((self.gb.abs(q0h) <= self.gb.abs(o)) * (k_norm >= (skc * self.gb.abs(o))))[0]
-            i_qsw = self.gb.where((self.gb.abs(q0h) < self.gb.abs(o)))[0]
-            i_qlw = self.gb.where(self.gb.abs(q0h) > self.gb.abs(o))[0]
+            # i_knz = gb.where(k_norm < (skc * gb.abs(o)))[0]
+            i_kez = gb.where(k_norm == 0.)[0]
+            # i_qsw = gb.where((gb.abs(q0h) <= gb.abs(o)) * (k_norm >= (skc * gb.abs(o))))[0]
+            i_qsw = gb.where((gb.abs(q0h) < gb.abs(o)))[0]
+            i_qlw = gb.where(gb.abs(q0h) > gb.abs(o))[0]
             # when allowing imaginary/complex kx, ky: when ky = i kx, q = omega, but k_norm is not zero. But this case doesn't matter. as long as k_norm not zero, it can be divided.
-            idxa = self.gb.parseData(self.idx_g)
+            idxa = gb.parseData(self.idx_g)
             ii = (idxa[:, 0] == 0) & (idxa[:, 1] == 0)
 
-            c1 = self.gb.parseList([Ky, -Kx])
-            c2 = self.gb.parseList([Kx, Ky])
-            c1f = self.gb.ones(ng, dtype=self.gb.complex128)
-            c2f = self.gb.clone(c1f)
+            c1 = gb.parseList([Ky, -Kx])
+            c2 = gb.parseList([Kx, Ky])
+            c1f = gb.ones(ng, dtype=gb.complex128)
+            c2f = gb.clone(c1f)
 
-            # c1[:, i_knz] = self.gb.inputParser([[1.], [0.]])
-            # c2[:, i_knz] = -1j / o * self.gb.inputParser([Kx[i_knz] * Ky[i_knz] / q0h[i_knz], (-self.gb.square(Kx[i_knz]) - self.gb.square(q0h[i_knz])) / q0h[i_knz]])  # should not be |Kx|^2
-            c1[:, i_kez] = self.gb.parseData([[1.], [0.]])
-            c2[:, i_kez] = self.gb.parseData([[0.], [1.]])
+            # c1[:, i_knz] = gb.inputParser([[1.], [0.]])
+            # c2[:, i_knz] = -1j / o * gb.inputParser([Kx[i_knz] * Ky[i_knz] / q0h[i_knz], (-gb.square(Kx[i_knz]) - gb.square(q0h[i_knz])) / q0h[i_knz]])  # should not be |Kx|^2
+            c1[:, i_kez] = gb.parseData([[1.], [0.]])
+            c2[:, i_kez] = gb.parseData([[0.], [1.]])
 
-            cphi = self.gb.cos(self._phi)
-            sphi = self.gb.sin(self._phi)
-            c1[:, ii] = self.gb.parseList([[sphi], [-cphi]])
-            c2[:, ii] = self.gb.parseList([[cphi], [sphi]])
+            cphi = gb.cos(self._phi)
+            sphi = gb.sin(self._phi)
+            c1[:, ii] = gb.parseList([[sphi], [-cphi]])
+            c2[:, ii] = gb.parseList([[cphi], [sphi]])
 
-            c1 = self.gb.castType(c1, self.gb.complex128)
-            c2 = self.gb.castType(c2, self.gb.complex128)
-            k_norm = self.gb.castType(k_norm, self.gb.complex128)  #compatible dtype with c1f,c2f assignment below
+            c1 = gb.castType(c1, gb.complex128)
+            c2 = gb.castType(c2, gb.complex128)
+            k_norm = gb.castType(k_norm, gb.complex128)  #compatible dtype with c1f,c2f assignment below
             c1f[i_qlw] = o / q0h[i_qlw] / k_norm[i_qlw]
             c2f[i_qlw] = 1j / k_norm[i_qlw]
 
@@ -931,8 +920,8 @@ class Params:
 
             r1 = range(ng)
             r2 = range(ng, 2 * ng)
-            phi0 = self.gb.zeros((2 * ng, 2 * ng), dtype=self.gb.complex128)
-            psi0 = self.gb.clone(phi0)
+            phi0 = gb.zeros((2 * ng, 2 * ng), dtype=gb.complex128)
+            psi0 = gb.clone(phi0)
             phi0[r1, r1] = c1[0, :]
             phi0[r2, r1] = c1[1, :]
             phi0[r1, r2] = c2[0, :]
@@ -942,21 +931,21 @@ class Params:
             psi0[r1, r2] = c1[0, :]
             psi0[r2, r2] = c1[1, :]
 
-            self.phi0_2x2s = self.gb.moveaxis(self.gb.parseList([c1, c2]), 0, 1)
+            self.phi0_2x2s = gb.moveaxis(gb.parseList([c1, c2]), 0, 1)
 
             # # debugging,  check if phi is eigen and consistent with psi
             # psi00 = -1j * self.P0 @ phi0 / self.q0
-            # diff = self.gb.abs(psi00 - psi0).max()
+            # diff = gb.abs(psi00 - psi0).max()
             # print('psi0 diff {:g}'.format(diff))
             #
             # check_eigen = self.P0 @ self.P0 @ phi0
-            # diff1 = self.gb.abs(check_eigen + phi0 * self.q0 * self.q0).max()
+            # diff1 = gb.abs(check_eigen + phi0 * self.q0 * self.q0).max()
             # print('check eigen {:g}'.format(diff1))
 
             # # original
-            # phi0 = self.gb.eye(2 * self._num_g_ac, 2 * self._num_g_ac, dtype=self.gb.complex128)
+            # phi0 = gb.eye(2 * self._num_g_ac, 2 * self._num_g_ac, dtype=gb.complex128)
             # ng = self._num_g_ac
-            # psi0 = self.gb.zeros((2 * ng, 2 * ng), dtype=self.gb.complex128)
+            # psi0 = gb.zeros((2 * ng, 2 * ng), dtype=gb.complex128)
             # r1 = range(ng)
             # r2 = range(ng, 2 * ng)
             # q0_inv = self.q0_inv
@@ -973,8 +962,8 @@ class Params:
         if self._num_g_ac:
             ng = self._num_g_ac
 
-            phif = self.gb.eye(2 * ng, 2 * ng, dtype=self.gb.complex128)
-            psif = self.gb.zeros((2 * ng, 2 * ng), dtype=self.gb.complex128)
+            phif = gb.eye(2 * ng, 2 * ng, dtype=gb.complex128)
+            psif = gb.zeros((2 * ng, 2 * ng), dtype=gb.complex128)
 
             r1 = range(ng)
             r2 = range(ng, 2 * ng)
@@ -984,23 +973,23 @@ class Params:
 
             # attention! If need to change this form, note in interface matrix calculations this form is assumed to speed up things. Need to change coding there, not just changing psif here.
             psif[r2, r1] = 1.j
-            #self.gb.indexAssign(psif, (r2, r1), 1.j)
+            #gb.indexAssign(psif, (r2, r1), 1.j)
             psif[r1, r2] = -1.j
-            #self.gb.indexAssign(psif, (r1, r2), -1.j)
+            #gb.indexAssign(psif, (r1, r2), -1.j)
             self.phif = phif
             self.psif = psif
 
             # # for debugging
-            # phif2 = self.gb.eye(2 * ng, 2 * ng, dtype=self.gb.complex128)
-            # psif2 = self.gb.zeros((2 * ng, 2 * ng), dtype=self.gb.complex128)
+            # phif2 = gb.eye(2 * ng, 2 * ng, dtype=gb.complex128)
+            # psif2 = gb.zeros((2 * ng, 2 * ng), dtype=gb.complex128)
             # phif2[r2, r2] = -1.  # attention! this was for debugging, but note since phif=eye, it is omitted in certain calculations
             # psif2[r2, r1] = 1.
             # psif2[r1, r2] = -1.
             # self.phif2 = phif2
             # self.psif2 = psif2
 
-            # phif3 = self.gb.zeros((2 * ng, 2 * ng), dtype=self.gb.complex128)
-            # psif3 = self.gb.zeros((2 * ng, 2 * ng), dtype=self.gb.complex128)
+            # phif3 = gb.zeros((2 * ng, 2 * ng), dtype=gb.complex128)
+            # psif3 = gb.zeros((2 * ng, 2 * ng), dtype=gb.complex128)
             # phif3[r1, r1] = 1.
             # phif3[r2, r1] = 1j
             # phif3[r1, r2] = -1j
@@ -1011,7 +1000,7 @@ class Params:
             # self.psif3 = psif3
 
             # if self.P0_val is not None:
-            #     phif4 = self.gb.random.rand(2*ng, 2*ng)
+            #     phif4 = gb.random.rand(2*ng, 2*ng)
             #     psif4 = -1j * self.P0 @ phif4 * self.q0_inv
             #     self.phif4 = phif4
             #     self.psif4 = psif4
@@ -1021,7 +1010,7 @@ class Params:
     def _calc_phi0(self):
         warn('This method is deprecated. Use `_calc_phi0_psi0` instead.', category=DeprecationWarning)
         if self._num_g_ac:
-            self.phi0 = self.gb.eye(2 * self._num_g_ac, 2 * self._num_g_ac, dtype=self.gb.complex128)
+            self.phi0 = gb.eye(2 * self._num_g_ac, 2 * self._num_g_ac, dtype=gb.complex128)
 
     def _calc_psi0(self):
         warn('This method is deprecated. Use `_calc_phi0_psi0` instead.', category=DeprecationWarning)
@@ -1032,7 +1021,7 @@ class Params:
 
             # if not self.q0_contain_0:
             ng = self._num_g_ac
-            psi0 = self.gb.zeros((2 * ng, 2 * ng), dtype=self.gb.complex128)
+            psi0 = gb.zeros((2 * ng, 2 * ng), dtype=gb.complex128)
             r1 = range(ng)
             r2 = range(ng, 2 * ng)
             q0_inv = self.q0_inv
@@ -1043,14 +1032,14 @@ class Params:
                 psi0[r2, r2] = -1j * self.Q0_val[3] * q0_inv[ng:]
 
                 # # at Wood P is singular so this solving doesn't work.
-                # _P = [self.gb.diag(Qv) for Qv in self.Q0_val]
-                # P = self.gb.block([[_P[0], _P[1]],
+                # _P = [gb.diag(Qv) for Qv in self.Q0_val]
+                # P = gb.block([[_P[0], _P[1]],
                 #               [_P[2], _P[3]]])
-                # psi0 = 1j * la.solve(P, self.phi0) @ self.gb.diag(self.q0)
+                # psi0 = 1j * la.solve(P, self.phi0) @ gb.diag(self.q0)
 
             o = self.omega
-            cn = self.gb.where(self.gb.abs(self.q0) == 0.)[0]
-            cn1 = self.gb.where(self.gb.abs(self.q0) < 1e-2)[0]  # for debugging
+            cn = gb.where(gb.abs(self.q0) == 0.)[0]
+            cn1 = gb.where(gb.abs(self.q0) < 1e-2)[0]  # for debugging
 
             # # test setting zeros an ones
             # for ii in cn:
@@ -1070,7 +1059,7 @@ class Params:
             #                 self.phi0[ii+ng, ii] = -1.
             #
             #         else:
-            #             psi0[ii, ii] = 1. * self.gb.sign(self.Ky[ii])
+            #             psi0[ii, ii] = 1. * gb.sign(self.Ky[ii])
             #             psi0[ii+ng, ii] = 0.
             #
             #         # if (self.Ky[ii] == 0) or (self.Kx[ii] == 0):
@@ -1097,7 +1086,7 @@ class Params:
             #                 self.phi0[ii-ng, ii] = -0.
             #
             #         else:
-            #             psi0[ii, ii] = 1. * self.gb.sign(self.Kx[iim])
+            #             psi0[ii, ii] = 1. * gb.sign(self.Kx[iim])
             #             psi0[ii-ng, ii] = 0.
             #
             #         # if (self.Ky[iim] == 0) or (self.Kx[iim] == 0):
@@ -1198,8 +1187,8 @@ class Params:
 
     def _calc_im0(self):
         if self._num_g_ac:
-            a0 = self.gb.diag(2 * self.gb.ones(2 * self._num_g_ac))
-            b0 = self.gb.zeros((2 * self._num_g_ac, 2 * self._num_g_ac))
+            a0 = gb.diag(2 * gb.ones(2 * self._num_g_ac))
+            b0 = gb.zeros((2 * self._num_g_ac, 2 * self._num_g_ac))
             self.im0 = (a0, b0)
 
     def _calc_s_0(self):
@@ -1207,8 +1196,8 @@ class Params:
         # todo: change into sparse to save memory
         if self._num_g_ac:
             # t1 = time.process_time()
-            s11_0 = self.gb.zeros((2 * self._num_g_ac, 2 * self._num_g_ac), dtype=self.gb.complex128)
-            s12_0 = self.gb.eye(2 * self._num_g_ac, dtype=self.gb.complex128)
+            s11_0 = gb.zeros((2 * self._num_g_ac, 2 * self._num_g_ac), dtype=gb.complex128)
+            s12_0 = gb.eye(2 * self._num_g_ac, dtype=gb.complex128)
             s21_0 = s12_0
             s22_0 = s11_0
             self.sm0 = (s11_0, s12_0, s21_0, s22_0)
@@ -1222,13 +1211,13 @@ class Params:
     def _calc_uc_area(self):
         if type(self.latt_vec) is not None or self.latt_vec is not None:
             #print(type(self.latt_vec))
-            if not isinstance(self.latt_vec, (tuple, self.gb.raw_type)):
+            if not isinstance(self.latt_vec, (tuple, gb.raw_type)):
                 self._uc_area = self.latt_vec
             else:
                 a1, a2 = self.latt_vec
-                a1n, a2n = [self.gb.la.norm(a) for a in [a1, a2]]
+                a1n, a2n = [gb.la.norm(a) for a in [a1, a2]]
                 if a1n != 0. and a2n != 0.:
-                    self._uc_area = self.gb.abs(self.gb.cross(self.latt_vec[0], self.latt_vec[1]))
+                    self._uc_area = gb.abs(gb.cross(self.latt_vec[0], self.latt_vec[1]))
                 elif a1n == 0.:  # 1D
                     self._uc_area = a2n
                 elif a2n == 0.:
@@ -1241,31 +1230,31 @@ class Params:
         calculate cos(vartheta), sin(vartheta), cos(phi), sin(phi) for all relevant orders, where vartheta = pi/2-theta
         Used in calculating ai bo. Recording these cos and sin allow for high-order incidence.
         """
-        if all(isinstance(v, self.gb.raw_type) or v is not None
+        if all(isinstance(v, gb.raw_type) or v is not None
                for v in [self.ks, self.num_g, self._theta, self._phi, self.kii]):
             # t1 = time.process_time()
 
-            idxa = self.gb.parseData(self.idx_g)
-            #ksa = self.gb.parseData(self.ks)
-            k_pa = self.gb.norm(self.ks, -1)  # norm of in-plane momentum
+            idxa = gb.parseData(self.idx_g)
+            #ksa = gb.parseData(self.ks)
+            k_pa = gb.norm(self.ks, -1)  # norm of in-plane momentum
             i0 = (k_pa == 0.)
             ib = (k_pa != 0.)
             ii = (idxa[:, 0] == 0) & (idxa[:, 1] == 0)
 
-            cphi = self.gb.zeros(self._num_g_ac, dtype=self.gb.complex128)
-            sphi = self.gb.zeros(self._num_g_ac, dtype=self.gb.complex128)
-            cphi[ib] = self.gb.castType(self.ks[ib, 0] / k_pa[ib], self.gb.complex128)
-            sphi[ib] = self.gb.castType(self.ks[ib, 1] / k_pa[ib], self.gb.complex128)
+            cphi = gb.zeros(self._num_g_ac, dtype=gb.complex128)
+            sphi = gb.zeros(self._num_g_ac, dtype=gb.complex128)
+            cphi[ib] = gb.castType(self.ks[ib, 0] / k_pa[ib], gb.complex128)
+            sphi[ib] = gb.castType(self.ks[ib, 1] / k_pa[ib], gb.complex128)
             cphi[i0] = 1.
             sphi[i0] = 0.
-            cphi[ii] = self.gb.cos(self._phi)
-            sphi[ii] = self.gb.sin(self._phi)
+            cphi[ii] = gb.cos(self._phi)
+            sphi[ii] = gb.sin(self._phi)
 
             cthe = k_pa / self.kii.real + 0j  # this is always positive
             # when omega complex, k_parallel is still calc as real
-            sthe = self.gb.sqrt(1 - cthe ** 2 + 0j)
-            cthe[ii] = self.gb.cos(self.gb.pi / 2 - self._theta)
-            sthe[ii] = self.gb.sin(self.gb.pi / 2 - self._theta)
+            sthe = gb.sqrt(1 - cthe ** 2 + 0j)
+            cthe[ii] = gb.cos(gb.pi / 2 - self._theta)
+            sthe[ii] = gb.sin(gb.pi / 2 - self._theta)
             # todo: theta could be None (e.g. setting Excitation By Eigen)
 
             self.cos_phis = list(cphi)
@@ -1277,10 +1266,10 @@ class Params:
                 cthe_bk = k_pa / self.kio.real + 0j  # this is always positive
                 # todo: self.kio is updated in solving stage as which layer is output is determined then. But all `Params` data should be calculated at setting structure stage.
                 # when omega complex, k_parallel is still calc as real
-                sthe_bk = self.gb.sqrt(1 - cthe_bk ** 2 + 0j)
-                cthe_bk[ii] = self.gb.cos(
-                    self.gb.pi / 2 - self._theta)  # incorrect, out region could have different refractive index
-                sthe_bk[ii] = self.gb.sin(self.gb.pi / 2 - self._theta)
+                sthe_bk = gb.sqrt(1 - cthe_bk ** 2 + 0j)
+                cthe_bk[ii] = gb.cos(
+                    gb.pi / 2 - self._theta)  # incorrect, out region could have different refractive index
+                sthe_bk[ii] = gb.sin(gb.pi / 2 - self._theta)
                 self.cos_phis_bk = self.cos_phis.copy()
                 self.sin_phis_bk = self.sin_phis.copy()
                 self.cos_varthetas_bk = list(cthe)
@@ -1301,7 +1290,7 @@ class Params:
         for ii, (sa, pa, od) in enumerate([[self._s_amps, self._p_amps, self._incident_orders],
                                            [self._s_amps_bk, self._p_amps_bk, self._incident_orders_bk]]):
             if self._num_g_ac:
-                ab = self.gb.zeros(2 * self._num_g_ac) + 0j
+                ab = gb.zeros(2 * self._num_g_ac) + 0j
                 if (sa or pa) and od and self.idx_g and \
                         self.sin_phis and self.sin_varthetas and self.cos_phis and self.cos_varthetas:
                     # find the index of the input orders in the g list
@@ -1331,11 +1320,11 @@ class Params:
                             ex = -s * self.sin_phis[jj] + p * self.sin_varthetas[jj] * self.cos_phis[jj]  # e_x
                             ey = s * self.cos_phis[jj] + p * self.sin_varthetas[jj] * self.sin_phis[jj]  # e_y
                             phi_2x2 = self.phi0_2x2s[:, :, jj]
-                            phi_2x2_i = 1 / self.gb.la.det(phi_2x2) * self.gb.parseData(
+                            phi_2x2_i = 1 / gb.la.det(phi_2x2) * gb.parseData(
                                 [[phi_2x2[1, 1], -phi_2x2[0, 1]],
                                  [-phi_2x2[1, 0], phi_2x2[0, 0]]])
-                            # v = la.solve(phi_2x2, self.gb.inputParser([ex, ey]))
-                            v = phi_2x2_i @ self.gb.parseData([ex, ey])
+                            # v = la.solve(phi_2x2, gb.inputParser([ex, ey]))
+                            v = phi_2x2_i @ gb.parseData([ex, ey])
                             ab[jj] = v[0]
                             ab[jj + self._num_g_ac] = v[1]
 

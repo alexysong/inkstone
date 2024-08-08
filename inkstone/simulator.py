@@ -11,6 +11,7 @@ from inkstone.params import Params
 from inkstone.mtr import Mtr
 from inkstone.layer import Layer
 from inkstone.layer_copy import LayerCopy
+gb=bl.backend()
 
 class Inkstone:
     # todo: more tests of magneto-optics and gyro-magnetic
@@ -22,7 +23,6 @@ class Inkstone:
                  frequency: Union[float, complex] = None,
                  theta: float = None,
                  phi: float = None,
-                 gb=bl.backend()
                  ):
         """
 
@@ -68,7 +68,6 @@ class Inkstone:
         self.csmsr: List[
             Optional[Tuple[int, int, Tuple[any, any, any, any]]]] = []  # the cumulative scattering matrices reversed.
 
-        self.gb = gb
     @property
     def lattice(self) -> Union[float, Tuple[Tuple[float, float], Tuple[float, float]]]:
         """
@@ -142,8 +141,8 @@ class Inkstone:
     @theta.setter
     def theta(self, val):
         if (val is not None) and (val != self.pr.theta):
-            if val is not self.gb.raw_type:
-                val = self.gb.parseData(val)
+            if val is not gb.raw_type:
+                val = gb.parseData(val)
             self.pr.theta = val
             for layer_name, layer in self.layers.items():
                 layer.if_mod = True
@@ -347,7 +346,7 @@ class Inkstone:
         """
         Reconstruct layer permittivity and permeability profile
 
-        Returns xx, yy, epsilon, mu. xx and yy are the results of `self.gb.meshgrid`. The shape of epsilon and mu are (ny, nx, 3, 3), where the last two axis is the tensor at the spatial locations.
+        Returns xx, yy, epsilon, mu. xx and yy are the results of `gb.meshgrid`. The shape of epsilon and mu are (ny, nx, 3, 3), where the last two axis is the tensor at the spatial locations.
 
         Use `matplotlib.pyplot.pcolormesh` to plot the reconstruction. For example to plot the (0, 0) element of the permittivity profile,
 
@@ -745,13 +744,13 @@ class Inkstone:
                 if _n is not None:
                     if not hasattr(_n, "__len__"):
                         _n = [_n]
-                    _n = self.gb.parseData(_n)
+                    _n = gb.parseData(_n)
 
                     if _a is None:
                         raise Exception('You input eigen number but not its amplitude.')
                     elif not hasattr(_a, "__len__"):
                         _a = [_a]
-                    _a = self.gb.parseData(_a)
+                    _a = gb.parseData(_a)
 
                     if len(_a) != len(_n):
                         raise Exception('The length of the amplitudes and the eigen numbers are not the same.')
@@ -782,14 +781,14 @@ class Inkstone:
                 'Uniform isotropic medium. You can use `SetExcitation()` which works with theta, phi, s and p wave amplitudes.',
                 UserWarning)
             # Note: should not reinvent the wheel. Could just call SetExcitation() from here, but then possible confusion in self.pr.iesbe and self.pr.iesbtpsp.
-            kn = self.gb.sqrt(self.gb.abs(kx) ** 2 + self.gb.abs(ky) ** 2)
+            kn = gb.sqrt(gb.abs(kx) ** 2 + gb.abs(ky) ** 2)
             if kn != 0.:
-                self.pr._phi = self.gb.arccos(
+                self.pr._phi = gb.arccos(
                     kx / kn)  # not setting property self.pr.phi to avoid double calling stuff like self.pr._calc_ks()
             else:
                 warn("At normal incidence, phi is uncertain and default to 0.")
                 self.pr._phi = 0.
-            self.pr._theta = self.gb.arcsin(kn / self.pr.kii.real)
+            self.pr._theta = gb.arcsin(kn / self.pr.kii.real)
             # problem: in this case, not sure which eigen is s and p, when user sets ai, user doesn't know the eigen which is not solved yet.
             # logically, whether or not isotropic, should delete theta phi. However, uniform layer's eigen choice depend on theta phi (1.  s and p happen to give Wood stability 2 eigen choosing s and p is user friendly, and ai bo simple).
             # if kx=ky=0, ambiguity in phi still. In the code, the internally chosen eigen decides the effective phi. It could even be the two degenerate eigen are chosen to be not orthonormal, hence phi not defined. But then again as of [202310] The eigens in uniform isotropic is chosen by s and p using cos(phi) and sin(phi)
@@ -801,7 +800,7 @@ class Inkstone:
 
         aibo = []
         for z, n in zip([a, ab], [en, enb]):
-            i = self.gb.zeros(2 * self.pr.num_g, dtype=self.gb.complex128)
+            i = gb.zeros(2 * self.pr.num_g, dtype=gb.complex128)
             i[n] = z
             aibo.append(i)
             # todo: is this done?
@@ -846,7 +845,7 @@ class Inkstone:
                                                                         self.pr.sin_varthetas_bk,
                                                                         self.pr.cos_varthetas_bk]]):
                 if self.pr._num_g_ac:
-                    ab = self.gb.zeros(2 * self.pr._num_g_ac, dtype=self.gb.complex128) + 0j
+                    ab = gb.zeros(2 * self.pr._num_g_ac, dtype=gb.complex128) + 0j
                     if (sa or pa) and od and self.pr.idx_g and \
                             sphi and cphi and sthe and cthe:
                         # find the index of the input orders in the g list
@@ -879,8 +878,8 @@ class Inkstone:
                                 # with new calc that removed convergence problem at Wood
                                 ex = -s * sp + p * st * cp  # e_x
                                 ey = s * cp + p * st * sp  # e_y
-                                phi_2x2 = self.gb.castType(layer_inci.phil_2x2s[:, :, jj], self.gb.complex128)
-                                v = self.gb.la.solve(phi_2x2, self.gb.parseList([ex, ey]))
+                                phi_2x2 = gb.castType(layer_inci.phil_2x2s[:, :, jj], gb.complex128)
+                                v = gb.la.solve(phi_2x2, gb.parseList([ex, ey]))
                                 ab[jj] = v[0]
                                 ab[jj + self.pr._num_g_ac] = v[1]
 
@@ -928,7 +927,7 @@ class Inkstone:
                 #
                 # al0 = layer.iml0[0]
                 # bl0 = layer.iml0[1]
-                # I = self.gb.diag(self.gb.ones(2 * self.pr.num_g, dtype=self.gb.complex128))  # identity
+                # I = gb.diag(gb.ones(2 * self.pr.num_g, dtype=gb.complex128))  # identity
                 # # csm
                 # sc11, sc12, sc21, sc22 = csm
                 # # csm of previous layer
@@ -968,7 +967,7 @@ class Inkstone:
 
                 # with fic material, no use of al0, bl0, using a0l and b0l instead
                 # works with either vac or fic gap layers
-                I = self.gb.diag(self.gb.ones(2 * self.pr.num_g, dtype=self.gb.complex128))  # identity
+                I = gb.diag(gb.ones(2 * self.pr.num_g, dtype=gb.complex128))  # identity
                 # csm of previous layer
                 scp11, scp12, scp21, scp22 = csmp
                 # csmr of next layer
@@ -976,22 +975,22 @@ class Inkstone:
 
                 a, b = layer.imfl
                 # ia = la.inv(a)
-                aTlu = self.gb.lu_factor(a.T)
-                aTlu2 = (self.gb.clone(aTlu[0]), self.gb.clone(aTlu[1]))
+                aTlu = gb.lu_factor(a.T)
+                aTlu2 = (gb.clone(aTlu[0]), gb.clone(aTlu[1]))
                 a1 = aTlu2[0]
-                a1[self.gb.triu_indices(a1.shape[0])] *= 0.5
+                a1[gb.triu_indices(a1.shape[0])] *= 0.5
 
-                alu = self.gb.lu_factor(a)
-                alu2 = (self.gb.clone(alu[0]), self.gb.clone(alu[1]))
+                alu = gb.lu_factor(a)
+                alu2 = (gb.clone(alu[0]), gb.clone(alu[1]))
                 a1 = alu2[0]
-                a1[self.gb.triu_indices(a1.shape[0])] *= 0.5
+                a1[gb.triu_indices(a1.shape[0])] *= 0.5
 
-                ab = self.gb.lu_solve(alu, b)
+                ab = gb.lu_solve(alu, b)
 
                 # alu = sla.lu_factor(a)
                 # aib = sla.lu_solve(alu, b)
                 # sl11 = b @ ia
-                sl11 = self.gb.lu_solve(aTlu, b.T).T
+                sl11 = gb.lu_solve(aTlu, b.T).T
                 # sl12 = a - b @ ia @ b
                 sl12 = 0.5 * (a - b @ ab)
                 sl21 = alu2
@@ -999,7 +998,7 @@ class Inkstone:
 
                 ql = layer.ql
                 thickness = layer.thickness
-                f = self.gb.exp(1j * ql * thickness)
+                f = gb.exp(1j * ql * thickness)
 
                 sr11 = sl22
                 sr12 = sl21
@@ -1023,8 +1022,8 @@ class Inkstone:
                 sa = scp21 @ self.ai
                 sb = scin12 @ self.bo
                 # try:
-                al = self.gb.solve((I - (scp22 * f) @ (scin11 * f)), (sa + (scp22 * f) @ sb))
-                bl = self.gb.solve((I - (scin11 * f) @ (scp22 * f)), ((scin11 * f) @ sa + sb))
+                al = gb.solve((I - (scp22 * f) @ (scin11 * f)), (sa + (scp22 * f) @ sb))
+                bl = gb.solve((I - (scin11 * f) @ (scp22 * f)), ((scin11 * f) @ sa + sb))
                 # except Exception as e:
                 #     warn('Singular matrix in calculating al and bl.')
                 #     print(la.cond((I - (scp22 * f) @ (scin11 * f))))
@@ -1357,11 +1356,11 @@ class Inkstone:
 
         """
         if z is None:
-            za = self.gb.parseData([0.])
+            za = gb.parseData([0.])
         elif hasattr(z, "__len__"):
-            za = self.gb.parseData(z)
+            za = gb.parseData(z)
         else:
-            za = self.gb.parseData([z])
+            za = gb.parseData([z])
 
         t = self.layers[layer].thickness
         if self.layers[layer].in_mid_out == 'in':
@@ -1383,11 +1382,11 @@ class Inkstone:
         qla = self.layers[layer].ql[:, None]  # 1-column 2d array of length 2num_g
         d = self.layers[layer].thickness
 
-        ef = phil * al @ self.gb.exp(
+        ef = phil * al @ gb.exp(
             1j * qla * za)  # todo: for incident/output region, z too negative and high order ql cause overflow. this is the wave exponential decaying towards the slab
-        eb = phil * bl @ self.gb.exp(1j * qla * (d - za))
-        hf = psil * al @ self.gb.exp(1j * qla * za)
-        hb = -psil * bl @ self.gb.exp(1j * qla * (d - za))
+        eb = phil * bl @ gb.exp(1j * qla * (d - za))
+        hf = psil * al @ gb.exp(1j * qla * za)
+        hb = -psil * bl @ gb.exp(1j * qla * (d - za))
         exf, exb, hxf, hxb = [a[:self.pr.num_g, :] for a in [ef, eb, hf, hb]]
         eyf, eyb, hyf, hyb = [a[self.pr.num_g:, :] for a in [ef, eb, hf, hb]]
         Kx = self.pr.Kx
@@ -1431,7 +1430,7 @@ class Inkstone:
             order = [order]
         elif type(order[0]) is int:
             order = [(o, 0) for o in order]
-        idx = self.gb.parseData([self.pr.idx_g.index(o) for o in order])
+        idx = gb.parseData([self.pr.idx_g.index(o) for o in order])
 
         result = [f[idx] for f in [exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb]]
 
@@ -1477,19 +1476,19 @@ class Inkstone:
         ex, ey, ez, hx, hy, hz = [a + b for a, b in
                                   [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
 
-        xa, ya = self.gb.hsplit(self.gb.parseList(xy), 2)  # 2d array with one column
+        xa, ya = gb.hsplit(gb.parseList(xy), 2)  # 2d array with one column
 
-        #kxa, kya = self.gb.hsplit(self.gb.parseData(self.pr.ks), 2)  # 2d array with one column
-        kxa, kya = self.gb.hsplit(self.pr.ks, 2)
+        #kxa, kya = gb.hsplit(gb.parseData(self.pr.ks), 2)  # 2d array with one column
+        kxa, kya = gb.hsplit(self.pr.ks, 2)
 
         phase = xa * kxa.T + ya * kya.T  # shape (len(xy), numg)
 
-        Ex, Ey, Ez = [(self.gb.exp(1j * phase) @ e) for e in [ex, ey, ez]]  # shape (len(xy), len(z))
+        Ex, Ey, Ez = [(gb.exp(1j * phase) @ e) for e in [ex, ey, ez]]  # shape (len(xy), len(z))
 
-        Hx, Hy, Hz = [(-1j * self.gb.exp(1j * phase) @ h) for h in [hx, hy, hz]]  # shape (len(xy), len(z))
+        Hx, Hy, Hz = [(-1j * gb.exp(1j * phase) @ h) for h in [hx, hy, hz]]  # shape (len(xy), len(z))
 
         # else:
-        #     Ex, Ey, Ez, Hx, Hy, Hz = [self.gb.nan*self.gb.zeros((len(xy), len(z))) for i in range(6)]
+        #     Ex, Ey, Ez, Hx, Hy, Hz = [gb.nan*gb.zeros((len(xy), len(z))) for i in range(6)]
 
         return Ex, Ey, Ez, Hx, Hy, Hz
 
@@ -1537,19 +1536,19 @@ class Inkstone:
                                      ['x', 'y', 'z']):
             if c is not None:
                 if hasattr(c, '__len__'):
-                    c = self.gb.parseData(c)
+                    c = gb.parseData(c)
                 else:
-                    c = self.gb.parseData([c])
+                    c = gb.parseData([c])
                 u = c
             elif min is None or max is None or n is None:
                 warn(s + " points to get fields not defined properly. Default to 0.")
                 u = 0.
             else:
-                u = self.gb.linspace(min, max, n)
+                u = gb.linspace(min, max, n)
             uu.append(u)
         x, y, z = uu
 
-        xx, yy = self.gb.meshgrid(x, y)
+        xx, yy = gb.meshgrid(x, y)
         xy = list(zip(xx.ravel(), yy.ravel()))
 
         fields = self.GetLayerFieldsListPoints(layer, xy, z)
@@ -1586,11 +1585,11 @@ class Inkstone:
 
         if hasattr(z, "__len__"):
             za = z
-            # za = self.gb.parseData(z)
+            # za = gb.parseData(z)
         else:
             za = [z]
 
-        Fields = [self.gb.zeros((len(xy), len(za)), dtype=self.gb.complex128) for _ in range(6)]
+        Fields = [gb.zeros((len(xy), len(za)), dtype=gb.complex128) for _ in range(6)]
 
         z_interfaces = self.thicknesses_c[:-1]  # -1 is output with thickness 0
 
@@ -1650,19 +1649,19 @@ class Inkstone:
                                      ['x', 'y', 'z']):
             if c is not None:
                 if hasattr(c, '__len__'):
-                    c = self.gb.parseData(c, dtype=self.gb.float64)
+                    c = gb.parseData(c, dtype=gb.float64)
                 else:
-                    c = self.gb.parseData([c], dtype=self.gb.float64)
+                    c = gb.parseData([c], dtype=gb.float64)
                 u = c
             elif None in [min, max, n]:
                 warn(s + " points to get fields not defined properly. Default to 0.")
-                u = self.gb.parseData(0., dtype=self.gb.float64)
+                u = gb.parseData(0., dtype=gb.float64)
             else:
-                u = self.gb.linspace(min, max, n, dtype=self.gb.float64)
+                u = gb.linspace(min, max, n, dtype=gb.float64)
             uu.append(u)
 
         x, y, z = uu
-        xx, yy = self.gb.meshgrid(x, y)
+        xx, yy = gb.meshgrid(x, y)
 
         xy = list(zip(xx.ravel(), yy.ravel()))
 
@@ -1704,11 +1703,11 @@ class Inkstone:
         ex, ey, ez, hx, hy, hz = [a + b for a, b in
                                   [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
 
-        sf = -1.j / 4. * ((self.gb.einsum('i...,i...', ex.conj(), hyf) - self.gb.einsum('i...,i...', ey.conj(), hxf))
-                          - (self.gb.einsum('i...,i...', hy.conj(), exf) - self.gb.einsum('i...,i...', hx.conj(),
+        sf = -1.j / 4. * ((gb.einsum('i...,i...', ex.conj(), hyf) - gb.einsum('i...,i...', ey.conj(), hxf))
+                          - (gb.einsum('i...,i...', hy.conj(), exf) - gb.einsum('i...,i...', hx.conj(),
                                                                                           eyf)))  # 1d array of length len(z)
-        sb = -1.j / 4. * ((self.gb.einsum('i...,i...', ex.conj(), hyb) - self.gb.einsum('i...,i...', ey.conj(), hxb))
-                          - (self.gb.einsum('i...,i...', hy.conj(), exb) - self.gb.einsum('i...,i...', hx.conj(), eyb)))
+        sb = -1.j / 4. * ((gb.einsum('i...,i...', ex.conj(), hyb) - gb.einsum('i...,i...', ey.conj(), hxb))
+                          - (gb.einsum('i...,i...', hy.conj(), exb) - gb.einsum('i...,i...', hx.conj(), eyb)))
 
         if sf.size == 1:
             sf = sf[0].real
@@ -1770,7 +1769,7 @@ class Inkstone:
             order = [(o, 0) for o in order]
         else:
             raise ('Incorrect datatype for input argument `order`.', RuntimeError)
-        idx = self.gb.parseData([self.pr.idx_g.index(o) for o in order])
+        idx = gb.parseData([self.pr.idx_g.index(o) for o in order])
 
         exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)
 
@@ -1839,7 +1838,7 @@ class Inkstone:
         self.solve()
         sm_b = self.sm
 
-        sm = self.gb.block([[sm_b[0], sm_b[1]],
+        sm = gb.block([[sm_b[0], sm_b[1]],
                             [sm_b[2], sm_b[3]]])
 
         rci = []
@@ -1931,7 +1930,7 @@ class Inkstone:
                                   channels_in=channels_in, channels_out=channels_out, channels_exclude=channels_exclude)
 
         if sm.any():
-            dets = self.gb.slogdet(sm)
+            dets = gb.slogdet(sm)
         else:
             dets = float('nan')
 

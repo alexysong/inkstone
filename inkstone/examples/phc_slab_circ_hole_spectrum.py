@@ -18,7 +18,7 @@ import sys
 p ='C:/Users/w-a-c/Desktop/inkstone'
 sys.path.append(p)
 import inkstone.backends.BackendLoader as bl
-bg.set_backend('numpy')
+bl.set_backend('numpy')
 bk = bl.backend()
 
 from inkstone.simulator import Inkstone

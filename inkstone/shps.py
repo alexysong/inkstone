@@ -11,7 +11,7 @@ from inkstone.ft.ft_2d_poly import ft_2d_poly
 from inkstone.ft.poly_area import poly_area
 from inkstone.ft.gibbs import gibbs_corr
 
-
+gb=bl.backend()
 class Shp:
     # Shp doesn't know what lattice it is in
     # Shape recalculate its fourier series at read time (when accessing self.ft()).
@@ -20,7 +20,6 @@ class Shp:
     def __init__(self,
                  shp: str,
                  ks: List[Union[float, Tuple[float, float]]] =None,
-                 gb=bl.backend(),
                  **kw_gibbs):
         """
         Basic shape.
@@ -46,7 +45,6 @@ class Shp:
         self.ks = ks  # list of k points to calculate Fourier series
         self.use_gibbs_correction(**kw_gibbs)
         
-        self.gb = gb
 
     @property
     def ks(self) -> List[Union[float, Tuple[float, float]]]:
@@ -87,11 +85,11 @@ class Shp:
         """
         if ks:
             self.ks: List = ks
-        self._ft = self.gb.parseData(self._calc_ft(),dtype=self.gb.complex128)
-        s = self.gb.parseData(1, dtype=self.gb.complex128)
+        self._ft = gb.parseData(self._calc_ft(),dtype=gb.complex128)
+        s = gb.parseData(1, dtype=gb.complex128)
         self.use_gibbs_correction(**kw_gibbs)
         if self._if_gibbs_corr:
-            s = self.gb.parseData(gibbs_corr(self.ks, **self._kw_gibbs))
+            s = gb.parseData(gibbs_corr(self.ks, **self._kw_gibbs))
         ft = (self._ft * s).tolist()
         self._ft = ft
         return self._ft
@@ -156,7 +154,7 @@ class OneD(Shp):
     @ks.setter
     def ks(self, val: List[Union[float, Tuple[float, float]]]):
         if val is not None:
-            if type(val[0]) is self.gb.raw_type and self.gb.getSize(val[0]) == 2:
+            if type(val[0]) is gb.raw_type and gb.getSize(val[0]) == 2:
                 for v in val:
                     if v[0] != 0:
                         self._ks: List[float] = [k[0] for k in val]
@@ -352,7 +350,7 @@ class Elli(Shp):
     def half_lengths(self, val):
         # assume when setting side lengths it must have been changed. no `If` which is slow.
         self._half_lengths = val
-        self.area = self.gb.pi * val[0] * val[1]
+        self.area = gb.pi * val[0] * val[1]
 
     @property
     def center(self):
@@ -408,7 +406,7 @@ class Disk(Shp):
     def radius(self, val):
         # assume when setting side lengths it must have been changed. no `If` which is slow.
         self._radius = val
-        self.area = self.gb.pi * val ** 2
+        self.area = gb.pi * val ** 2
 
     @property
     def center(self):

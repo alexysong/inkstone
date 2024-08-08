@@ -92,10 +92,12 @@ class GenericBackend(ABC):
     @abstractmethod
     def parseList(self, tup):
         """
-        Convert list of data to data of list, e.g. [tensor(1), tensor(2)] => tensor([1,2])
+        Primarily for torch. For other backends that support native list, it
+        works same as parseData.
+        Convert list of tensor to tensor list, e.g. [tensor(1), tensor(2)] => tensor([1,2])
 
-        :param tup: a list of data
-        :return: a data of list
+        :param tup: a list of tensor
+        :return: tensor list
         """
         pass
 

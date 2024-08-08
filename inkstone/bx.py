@@ -6,11 +6,11 @@ from warnings import warn
 from typing import Tuple
 from inkstone.mtr import Mtr
 
-
+gb = bl.backend()
 class Bx:
     # Bx doesn't know what lattice it is in
 
-    def __init__(self, mtr, shp, name=None, outside=None,gb=bl.backend(), **kwargs):
+    def __init__(self, mtr, shp, name=None, outside=None, **kwargs):
         """
         A box.
         The box has a name, its `mtr`, its `shp`.
@@ -28,7 +28,6 @@ class Bx:
         kwargs      :
                         other arguments for setting up the shape, to be passed on to `Rect`, `Disk`, `Elli`, `Poly`, or `OneD`.
         """
-        self.gb = gb
         self.epsi_ft = None
         self.epsi_inv_ft = None
         self.mu_ft = None
@@ -106,7 +105,7 @@ class Bx:
 
         """
         # t0 = time.process_time()
-        _ft = self.gb.parseData(self.shp.ft(**kw_gibbs), dtype=self.gb.complex128)
+        _ft = gb.parseData(self.shp.ft(**kw_gibbs), dtype=gb.complex128)
         # print(time.process_time()-t0)
 
         # no way of knowing if its material or that of the outer box changed
@@ -115,16 +114,17 @@ class Bx:
         epsi_inv = self.mtr.epsi_inv
         mu = self.mtr.mu
         mu_inv = self.mtr.mu_inv
+
         if self.outside:
             epsi_out = self.outside.mtr.epsi
             epsi_out_inv = self.outside.mtr.epsi_inv
             mu_out = self.outside.mtr.mu
             mu_out_inv = self.outside.mtr.mu_inv
         else:
-            epsi_out = self.gb.eye(3, dtype=self.gb.complex128)
-            epsi_out_inv = self.gb.eye(3, dtype=self.gb.complex128)
-            mu_out = self.gb.eye(3, dtype=self.gb.complex128)
-            mu_out_inv = self.gb.eye(3, dtype=self.gb.complex128)
+            epsi_out = gb.eye(3, dtype=gb.complex128)
+            epsi_out_inv = gb.eye(3, dtype=gb.complex128)
+            mu_out = gb.eye(3, dtype=gb.complex128)
+            mu_out_inv = gb.eye(3, dtype=gb.complex128)
         epsi = epsi - epsi_out  # shouldn't do epsi -= epsi_out, which would be in-place change, which will change epsi of the material.
         epsi_inv = epsi_inv - epsi_out_inv
         mu = mu_inv - mu_out
@@ -138,9 +138,8 @@ class Bx:
         # t2 = time.process_time()
         # print('ndarray time', t2-t1)
         # t1 = time.process_time()
-        ep, ei, mu, mi = [[a for a in em] for em in [ep, ei, mu, mi]]
+        # ep, ei, mu, mi = [[a for a in em] for em in [ep, ei, mu, mi]]
         # print('convert to list time', time.process_time()-t1)
-
         return ep, ei, mu, mi
 
     def set_shape(self, width=None, center=None, angle=None, shear_angle=None, half_lengths=None,

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-
+# todo: consisten vjp phase
 """
 Dielectric array, with permittivity 12.
 Period is 1
