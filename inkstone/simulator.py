@@ -881,7 +881,7 @@ class Inkstone:
                                 phi_2x2 = gb.castType(layer_inci.phil_2x2s[:, :, jj], gb.complex128)
                                 v = gb.la.solve(phi_2x2, gb.parseList([ex, ey]))
                                 ab = gb.indexAssign(ab, jj, v[0])
-                                ab = gb.indexAssign(ab, jj+self.pr._num_g_ac, v[1])
+                                ab = gb.indexAssign(ab, jj + self.pr._num_g_ac, v[1])
 
                 aibo.append(ab)
         else:
@@ -1601,7 +1601,7 @@ class Inkstone:
             if za_l.any() or za_l.size: # TODO: do other .any() type checks need to account for array of zeros?
                 fields = self.GetLayerFieldsListPoints(ll[idx], xy, za_l)
                 for f_idx, f in enumerate(fields):
-                    Fields[f_idx] = self.gb.indexAssign(Fields[f_idx], (slice(None),iin), f) # jax might not like differentiating this
+                    Fields[f_idx] = gb.indexAssign(Fields[f_idx], (slice(None),iin), f) # jax might not like differentiating this
 
         Ex, Ey, Ez, Hx, Hy, Hz = Fields
 

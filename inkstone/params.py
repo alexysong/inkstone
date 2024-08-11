@@ -678,10 +678,10 @@ class Params:
         if self.idx_g:
             self.idx_conv_mtx = conv_mtx_idx_2d(self.idx_g, self.idx_g)
 
-            #reshaped_tensor = gb.reshape(self.idx_conv_mtx, [self._num_g_ac ** 2, 2])
-            #tuple_list = [(int(i), int(j)) for i, j in reshaped_tensor]
-            #self.idx_g_ep_mu_used = list(set(tuple_list))
-            self.idx_g_ep_mu_used = list(set([(i, j) for (i, j) in self.idx_conv_mtx.reshape(self._num_g_ac ** 2, 2)]))  # The first element of each tuple is in physical "x" direction
+            reshaped_tensor = gb.reshape(self.idx_conv_mtx, [self._num_g_ac ** 2, 2])
+            tuple_list = [(int(i), int(j)) for i, j in reshaped_tensor]
+            self.idx_g_ep_mu_used = list(set(tuple_list))
+            #self.idx_g_ep_mu_used = list(set([(i, j) for (i, j) in self.idx_conv_mtx.reshape(self._num_g_ac ** 2, 2)]))  # The first element of each tuple is in physical "x" direction
 
     def _calc_ks_ep_mu(self):
         if self.idx_g:
@@ -889,19 +889,23 @@ class Params:
 
             # c1[:, i_knz] = gb.inputParser([[1.], [0.]])
             # c2[:, i_knz] = -1j / o * gb.inputParser([Kx[i_knz] * Ky[i_knz] / q0h[i_knz], (-gb.square(Kx[i_knz]) - gb.square(q0h[i_knz])) / q0h[i_knz]])  # should not be |Kx|^2
-            c1[:, i_kez] = gb.parseData([[1.], [0.]])
-            c2[:, i_kez] = gb.parseData([[0.], [1.]])
+            c1 = gb.indexAssign(c1, (slice(None), i_kez), gb.parseData([[1.], [0.]]))
+            c2 = gb.indexAssign(c2, (slice(None), i_kez), gb.parseData([[0.], [1.]]))
 
             cphi = gb.cos(self._phi)
             sphi = gb.sin(self._phi)
-            c1[:, ii] = gb.parseList([[sphi], [-cphi]])
-            c2[:, ii] = gb.parseList([[cphi], [sphi]])
+            c1 = gb.indexAssign(c1, (slice(None), ii),
+                                     gb.parseData([[sphi], [-cphi]]))
+            c2 = gb.indexAssign(c2, (slice(None), ii),
+                                     gb.parseData([[cphi], [sphi]]))
 
             c1 = gb.castType(c1, gb.complex128)
             c2 = gb.castType(c2, gb.complex128)
             k_norm = gb.castType(k_norm, gb.complex128)  #compatible dtype with c1f,c2f assignment below
-            c1f[i_qlw] = o / q0h[i_qlw] / k_norm[i_qlw]
-            c2f[i_qlw] = 1j / k_norm[i_qlw]
+            #c1f[i_qlw] = o / q0h[i_qlw] / k_norm[i_qlw]
+            #c2f[i_qlw] = 1j / k_norm[i_qlw]
+            c1f = gb.indexAssign(c1f,i_qlw, o / q0h[i_qlw] / k_norm[i_qlw])
+            c2f = gb.indexAssign(c2f,i_qlw, 1j / k_norm[i_qlw])
 
             c1f = gb.indexAssign(c1f, i_qsw, 1. / k_norm[i_qsw])
             c2f = gb.indexAssign(c2f, i_qsw, 1j / o * q0h[i_qsw] / k_norm[i_qsw])
@@ -969,8 +973,8 @@ class Params:
             r2 = gb.arange(ng, 2 * ng)
 
             # attention! phif is assumed to be identity in interface calculations. if need to change the form, you need to change coding there, not just changing phif here.
-            phif[r2, r2] = -1.
-
+            #phif[r2, r2] = -1.
+            phif = gb.indexAssign(phif,(r2,r2),-1.)
             # attention! If need to change this form, note in interface matrix calculations this form is assumed to speed up things. Need to change coding there, not just changing psif here.
             psif = gb.indexAssign(psif, (r2,r1), 1.j)
             psif = gb.indexAssign(psif, (r1,r2), -1.j)
@@ -1253,7 +1257,7 @@ class Params:
             cthe = k_pa / self.kii.real + 0j  # this is always positive
             # when omega complex, k_parallel is still calc as real
             sthe = gb.sqrt(1 - cthe**2 + 0j)
-            sthe = gb.indexAssign(sthe, gb.isnan(sthe), 0) # to convert jax sqrt(tracer(0)) nans to 0
+#            sthe = gb.indexAssign(sthe, gb.isnan(sthe), 0) # to convert jax sqrt(tracer(0)) nans to 0
             cthe = gb.indexAssign(cthe, ii, gb.cos(gb.pi/2 - self._theta))
             sthe = gb.indexAssign(sthe, ii, gb.sin(gb.pi/2 - self._theta))
             # todo: theta could be None (e.g. setting Excitation By Eigen)
@@ -1268,7 +1272,7 @@ class Params:
                 # todo: self.kio is updated in solving stage as which layer is output is determined then. But all `Params` data should be calculated at setting structure stage.
                 # when omega complex, k_parallel is still calc as real
                 sthe_bk = gb.sqrt(1 - cthe_bk**2 + 0j)
-                sthe_bk = gb.indexAssign(sthe_bk, gb.isnan(sthe_bk), 0) # to convert jax sqrt(tracer(0)) nans to 0
+                #sthe_bk = gb.indexAssign(sthe_bk, gb.isnan(sthe_bk), 0) # to convert jax sqrt(tracer(0)) nans to 0
                 cthe_bk = gb.indexAssign(cthe_bk, ii, gb.cos(gb.pi / 2 - self._theta)) # incorrect, out region could have different refractive index
                 sthe_bk = gb.indexAssign(sthe_bk, ii, gb.sin(gb.pi / 2 - self._theta))
                 self.cos_phis_bk = self.cos_phis.copy()

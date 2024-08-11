@@ -415,7 +415,7 @@ class Layer:
         # calculate the Fourier components of the background material.
         mtr = self.materials[self.material_bg]
         epsi_bg, epsi_bg_inv, mu_bg, mu_bg_inv = [mtr.epsi, mtr.epsi_inv, mtr.mu, mtr.mu_inv]  # complex 3x3 tensors
-        d = gb.parseData(ft_2d_cnst(self.pr.ks_ep_mu), dtype=gb.complex128)
+        d = ft_2d_cnst(self.pr.ks_ep_mu)
 
         ep, ei, mu, mi = [t[None, :, :] * d[:, None, None] for t in [epsi_bg, epsi_bg_inv, mu_bg, mu_bg_inv]]   # each is complex ((2mmax+1)x(2nmax+1), 3, 3) shape
 
@@ -565,7 +565,7 @@ class Layer:
         Q21 = -o * epxx + 1. / o * Ky[:, None] * mizz * Ky
         Q22 = -o * epxy - 1. / o * Ky[:, None] * mizz * Kx
 
-        P = self.gb.block([[P11, P12],
+        P = gb.block([[P11, P12],
                       [P21, P22]])
         Q = gb.block([[Q11, Q12],
                       [Q21, Q22]])
@@ -732,7 +732,7 @@ class Layer:
                     warn("ccpif not recognized. Default to 'ac'.")
                     w = gb.assignAndMultiply(w, (w2.real < 0) * (w.imag < 0), -1)
             else:
-                w = gb.assignAndMultiply(w, w.imag<0, -1)
+                w = gb.assignAndMultiply(w, w.imag < 0, -1)
 
         return w
 

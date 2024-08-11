@@ -19,7 +19,7 @@ sys.path.append(p)
 start_time = time.time()
 import inkstone.backends.BackendLoader as bl
 
-bl.set_backend('torch')
+bl.set_backend('numpy')
 bk = bl.backend()
 from inkstone.simulator import Inkstone
 

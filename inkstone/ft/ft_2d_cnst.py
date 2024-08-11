@@ -21,5 +21,4 @@ def ft_2d_cnst(ks,gb=bl.backend()):
     idx_0 = gb.where(ks_nm == 0)[0]  # index to where k is (0, 0)
     s = 1j * gb.zeros(gb.getSize(ks_nm))
     s = gb.indexAssign(s, idx_0, 1.)
-
-    return s
+    return gb.castType(s, gb.complex128)

@@ -175,3 +175,7 @@ class GenericBackend(ABC):
         """
         a[idx] = b
         return a
+
+    def assignAndMultiply(self, a, idx, b):
+        a[idx] *= b
+        return a

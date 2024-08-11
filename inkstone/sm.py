@@ -303,7 +303,7 @@ def s_1l_1212(a, b):
     alu = gb.lu_factor(a)
     alu2 = (gb.clone(alu[0]), gb.clone(alu[1]))
     a1 = alu2[0]
-    a1[gb.triu_indices(a1.shape[0])] *= 0.5
+    a1 = gb.assignAndMultiply(a1, gb.triu_indices(a1.shape[0]), 0.5)
     ab = gb.lu_solve(alu, b)
 
     s11 = gb.lu_solve(aTlu, b.T).T
@@ -342,7 +342,7 @@ def s_1l_1221(a, b):
     aTlu = gb.lu_factor(a.T)
     aTlu2 = (gb.clone(aTlu[0]), gb.clone(aTlu[1]))
     at1 = aTlu2[0]
-    at1[gb.triu_indices(at1.shape[0])] *= 0.5
+    at1 = gb.assignAndMultiply(at1, gb.triu_indices(at1.shape[0]), 0.5)
     ab = gb.lu_solve(alu, b)
 
     s11 = - ab

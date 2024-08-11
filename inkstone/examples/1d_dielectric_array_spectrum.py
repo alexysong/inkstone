@@ -15,7 +15,7 @@ import sys
 from project_path import PATH as p
 sys.path.append(p)
 import inkstone.backends.BackendLoader as bl
-bl.set_backend('numpy')
+bl.set_backend('jax')
 bk = bl.backend()
 
 from inkstone.simulator import Inkstone

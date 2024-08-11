@@ -38,8 +38,8 @@ def ft_2d_disk(r, ks, center=(0,0),gb=bl.backend()):
 
     s = 1j * gb.zeros(gb.getSize(ks_nm), dtype=gb.complex128)
 
-    s = gb.indexAssign(s, idx_i, 2 * gb.pi * r * gb.j1(r * ks_nm1) / ks_nm1 * gb.exp(-1j * ksa1 @ cent))
-    s = gb.indexAssign(s, idx_0, gb.pi * r**2)
+    s = gb.indexAssign(s, idx_i, 2 * gb.pi * r * jn(1, r * ks_nm1) / ks_nm1 * gb.exp(-1j * ksa1 @ cent))
+    s = gb.indexAssign(s, idx_0, gb.pi * r ** 2)
 
     return s
 

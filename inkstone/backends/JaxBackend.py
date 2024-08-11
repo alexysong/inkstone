@@ -2,7 +2,7 @@
 
 import jax
 import jaxlib
-from inkstone.primitives.primitives import j0, j1, eig
+from inkstone.primitives import j0, j1, eig
 from inkstone.backends.GenericBackend import GenericBackend
 
 jax.config.update("jax_enable_x64", True)
@@ -46,6 +46,9 @@ class JaxBackend(GenericBackend):
         self.maximum = jnp.maximum
         self.einsum = jnp.einsum
         self.isnan = jnp.isnan
+        self.linspace = jnp.linspace
+        self.lu_factor = jsp.linalg.lu_factor
+        self.solve = jsp.linalg.solve
 
 
         self.la = jnp.linalg
@@ -149,8 +152,6 @@ class JaxBackend(GenericBackend):
         """
         For numpy, use index assignment. For differentiation libraries, replace with differentiable version
         """
-        if isinstance(idx, tuple) and isinstance(idx[0],range):
-            for i,j in zip()
         return a.at[idx].set(b)
 
     def assignAndMultiply(self, a, idx, b):
