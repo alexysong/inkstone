@@ -54,5 +54,5 @@ def ft_2d_para(a, b, ks, center=(0, 0), shear_angle=90., rotate_angle=0.,gb=bl.b
 
     s = gb.exp(-1j * cen @ ksa.T) * sx * sy
 
-    return s.tolist()
+    return s
 

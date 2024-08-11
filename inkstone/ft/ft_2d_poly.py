@@ -54,7 +54,7 @@ def ft_2d_poly_1(vertices, ks, gb=bl.backend()):
 
     s = coef * gb.sum(term1, axis=0)
 
-    return s.tolist()
+    return s
 
 
 def ft_2d_poly(vertices, ks,gb=bl.backend()):
@@ -87,8 +87,8 @@ def ft_2d_poly(vertices, ks,gb=bl.backend()):
     a = poly_area(vertices)
 
     s = 1j * gb.zeros(ks_nm.size)
-    s[idx_i] = s1
-    s[idx_0] = a
+    s = gb.indexAssign(s, idx_i, s1)
+    s = gb.indexAssign(s, idx_0, a)
 
-    return s.tolist()
+    return s
 

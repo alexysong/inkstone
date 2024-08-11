@@ -5,7 +5,7 @@ from scipy.special import jn
 
 
 
-def ft_2d_disk(r, ks, center=(0,0),gb=bl.backend()): 
+def ft_2d_disk(r, ks, center=(0,0),gb=bl.backend()):
     """
     calculate the fourier transform of a function, its value is 1 inside a disk, outside its value is 0.
 
@@ -37,9 +37,9 @@ def ft_2d_disk(r, ks, center=(0,0),gb=bl.backend()):
     cent = gb.parseData(center)
 
     s = 1j * gb.zeros(gb.getSize(ks_nm), dtype=gb.complex128)
- 
-    s[idx_i] = 2 * gb.pi * r * jn(1, r * ks_nm1) / ks_nm1 * gb.exp(-1j * (ksa1 @ cent))
-    s[idx_0] = gb.pi * r**2
 
-    return s.tolist()
+    s = gb.indexAssign(s, idx_i, 2 * gb.pi * r * gb.j1(r * ks_nm1) / ks_nm1 * gb.exp(-1j * ksa1 @ cent))
+    s = gb.indexAssign(s, idx_0, gb.pi * r**2)
+
+    return s
 

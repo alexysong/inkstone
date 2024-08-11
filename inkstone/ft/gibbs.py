@@ -61,6 +61,6 @@ def gibbs_corr(ks: List[Union[float, Tuple[float, float], Tuple[float, float, fl
         else:
             s = gb.exp(-ma**2)
 
-    return s.tolist()
+    return s
 
 

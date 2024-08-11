@@ -322,7 +322,7 @@ class Params:
         if self.k_pa_inci is not None:
             kx, ky = self.k_pa_inci
             if kx == 0. and ky == 0.:
-                self._theta = gb.dataParser(0.)
+                self._theta = gb.parseData(0.)
                 # self.theta = 0.
                 if self.phi is None:
                     warn("Both kx and ky are zero, but phi is not specified. Now defaulting to phi = 0.", UserWarning)
@@ -735,23 +735,23 @@ class Params:
                 omega_img = 0.0
             if omega_img < 0:
                 if self.ccnif == "physical":
-                    q0[(q02.real < 0) * (q0.imag < 0)] *= -1
+                    q0 = gb.assignAndMultiply(q0, (q02.real<0)*(q0.imag<0), -1)
                 elif self.ccnif == "ac":
-                    q0[(q02.real < 0) * (q0.imag > 0)] *= -1
+                    q0 = gb.assignAndMultiply(q0, (q02.real<0)*(q0.imag>0), -1)
                 else:
                     warn("ccnif not recognized. Default to 'physical'.")
-                    q0[(q02.real < 0) * (q0.imag < 0)] *= -1
+                    q0 = gb.assignAndMultiply(q0, (q02.real<0)*(q0.imag<0), -1)
             elif omega_img > 0:
                 if self.ccpif == "ac":
-                    q0[(q02.real < 0) * (q0.imag < 0)] *= -1
+                    q0 = gb.assignAndMultiply(q0, (q02.real<0)*(q0.imag<0), -1)
                 elif self.ccpif == "physical":
-                    q0[(q02.real < 0) * (q0.imag > 0)] *= -1
+                    q0 = gb.assignAndMultiply(q0, (q02.real<0)*(q0.imag>0), -1)
                 else:
                     warn("ccpif not recognized. Default to 'ac'.")
-                    q0[(q02.real < 0) * (q0.imag < 0)] *= -1
+                    q0 = gb.assignAndMultiply(q0, (q02.real<0)*(q0.imag<0), -1)
             else:
                 #q0[q0.imag < 0] *= -1
-                gb.where(q0.imag < 0, -q0, q0)
+                q0 = gb.where(q0.imag < 0, -q0, q0)
             # todo: what to do at q02.real == 0 case (Woods)?
             self.q0_0 = gb.where(gb.abs(q0) == 0.)[0]
             #self.q0_0 = gb.where(gb.abs(q0) == 0.)[0]
@@ -903,33 +903,33 @@ class Params:
             c1f[i_qlw] = o / q0h[i_qlw] / k_norm[i_qlw]
             c2f[i_qlw] = 1j / k_norm[i_qlw]
 
-            c1f[i_qsw] = 1. / k_norm[i_qsw]
-            c2f[i_qsw] = 1j / o * q0h[i_qsw] / k_norm[i_qsw]
+            c1f = gb.indexAssign(c1f, i_qsw, 1. / k_norm[i_qsw])
+            c2f = gb.indexAssign(c2f, i_qsw, 1j / o * q0h[i_qsw] / k_norm[i_qsw])
 
             # c1f[i_knz] = 1.
             # c2f[i_knz] = 1.
 
-            c1f[i_kez] = 1.
-            c2f[i_kez] = 1j * q0h[i_kez] / o
+            c1f = gb.indexAssign(c1f, i_kez, 1.)
+            c2f = gb.indexAssign(c2f, i_kez, 1j * q0h[i_kez] / o)
 
-            c1f[ii] = 1.
-            c2f[ii] = 1j * q0h[ii] / o
+            c1f = gb.indexAssign(c1f, ii, 1.)
+            c2f = gb.indexAssign(c2f, ii, 1j * q0h[ii] / o)
 
             c1 *= c1f
             c2 *= c2f
 
-            r1 = range(ng)
-            r2 = range(ng, 2 * ng)
-            phi0 = gb.zeros((2 * ng, 2 * ng), dtype=gb.complex128)
+            r1 = gb.arange(ng)
+            r2 = gb.arange(ng, 2 * ng)
+            phi0 = gb.zeros((2*ng, 2*ng), dtype=gb.complex128)
             psi0 = gb.clone(phi0)
-            phi0[r1, r1] = c1[0, :]
-            phi0[r2, r1] = c1[1, :]
-            phi0[r1, r2] = c2[0, :]
-            phi0[r2, r2] = c2[1, :]
-            psi0[r1, r1] = c2[0, :]
-            psi0[r2, r1] = c2[1, :]
-            psi0[r1, r2] = c1[0, :]
-            psi0[r2, r2] = c1[1, :]
+            phi0 = gb.indexAssign(phi0, (r1,r1), c1[0,:])
+            phi0 = gb.indexAssign(phi0, (r2,r1), c1[1,:])
+            phi0 = gb.indexAssign(phi0, (r1,r2), c2[0,:])
+            phi0 = gb.indexAssign(phi0, (r2,r2), c2[1,:])
+            psi0 = gb.indexAssign(psi0, (r1,r1), c2[0,:])
+            psi0 = gb.indexAssign(psi0, (r2,r1), c2[1,:])
+            psi0 = gb.indexAssign(psi0, (r1,r2), c1[0,:])
+            psi0 = gb.indexAssign(psi0, (r2,r2), c1[1,:])
 
             self.phi0_2x2s = gb.moveaxis(gb.parseList([c1, c2]), 0, 1)
 
@@ -965,17 +965,16 @@ class Params:
             phif = gb.eye(2 * ng, 2 * ng, dtype=gb.complex128)
             psif = gb.zeros((2 * ng, 2 * ng), dtype=gb.complex128)
 
-            r1 = range(ng)
-            r2 = range(ng, 2 * ng)
+            r1 = gb.arange(ng)
+            r2 = gb.arange(ng, 2 * ng)
 
             # attention! phif is assumed to be identity in interface calculations. if need to change the form, you need to change coding there, not just changing phif here.
             phif[r2, r2] = -1.
 
             # attention! If need to change this form, note in interface matrix calculations this form is assumed to speed up things. Need to change coding there, not just changing psif here.
-            psif[r2, r1] = 1.j
-            #gb.indexAssign(psif, (r2, r1), 1.j)
-            psif[r1, r2] = -1.j
-            #gb.indexAssign(psif, (r1, r2), -1.j)
+            psif = gb.indexAssign(psif, (r2,r1), 1.j)
+            psif = gb.indexAssign(psif, (r1,r2), -1.j)
+
             self.phif = phif
             self.psif = psif
 
@@ -1235,7 +1234,7 @@ class Params:
             # t1 = time.process_time()
 
             idxa = gb.parseData(self.idx_g)
-            #ksa = gb.parseData(self.ks)
+            ksa = gb.castType(self.ks,gb.complex128)
             k_pa = gb.norm(self.ks, -1)  # norm of in-plane momentum
             i0 = (k_pa == 0.)
             ib = (k_pa != 0.)
@@ -1243,18 +1242,20 @@ class Params:
 
             cphi = gb.zeros(self._num_g_ac, dtype=gb.complex128)
             sphi = gb.zeros(self._num_g_ac, dtype=gb.complex128)
-            cphi[ib] = gb.castType(self.ks[ib, 0] / k_pa[ib], gb.complex128)
-            sphi[ib] = gb.castType(self.ks[ib, 1] / k_pa[ib], gb.complex128)
-            cphi[i0] = 1.
-            sphi[i0] = 0.
-            cphi[ii] = gb.cos(self._phi)
-            sphi[ii] = gb.sin(self._phi)
+
+            cphi = gb.indexAssign(cphi, ib, ksa[ib, 0] / k_pa[ib])
+            sphi = gb.indexAssign(sphi, ib, ksa[ib, 1] / k_pa[ib])
+            cphi = gb.indexAssign(cphi, i0, 1.)
+            sphi = gb.indexAssign(sphi, i0, 0.)
+            cphi = gb.indexAssign(cphi, ii, gb.cos(self._phi))
+            sphi = gb.indexAssign(sphi, ii, gb.sin(self._phi))
 
             cthe = k_pa / self.kii.real + 0j  # this is always positive
             # when omega complex, k_parallel is still calc as real
-            sthe = gb.sqrt(1 - cthe ** 2 + 0j)
-            cthe[ii] = gb.cos(gb.pi / 2 - self._theta)
-            sthe[ii] = gb.sin(gb.pi / 2 - self._theta)
+            sthe = gb.sqrt(1 - cthe**2 + 0j)
+            sthe = gb.indexAssign(sthe, gb.isnan(sthe), 0) # to convert jax sqrt(tracer(0)) nans to 0
+            cthe = gb.indexAssign(cthe, ii, gb.cos(gb.pi/2 - self._theta))
+            sthe = gb.indexAssign(sthe, ii, gb.sin(gb.pi/2 - self._theta))
             # todo: theta could be None (e.g. setting Excitation By Eigen)
 
             self.cos_phis = list(cphi)
@@ -1266,10 +1267,10 @@ class Params:
                 cthe_bk = k_pa / self.kio.real + 0j  # this is always positive
                 # todo: self.kio is updated in solving stage as which layer is output is determined then. But all `Params` data should be calculated at setting structure stage.
                 # when omega complex, k_parallel is still calc as real
-                sthe_bk = gb.sqrt(1 - cthe_bk ** 2 + 0j)
-                cthe_bk[ii] = gb.cos(
-                    gb.pi / 2 - self._theta)  # incorrect, out region could have different refractive index
-                sthe_bk[ii] = gb.sin(gb.pi / 2 - self._theta)
+                sthe_bk = gb.sqrt(1 - cthe_bk**2 + 0j)
+                sthe_bk = gb.indexAssign(sthe_bk, gb.isnan(sthe_bk), 0) # to convert jax sqrt(tracer(0)) nans to 0
+                cthe_bk = gb.indexAssign(cthe_bk, ii, gb.cos(gb.pi / 2 - self._theta)) # incorrect, out region could have different refractive index
+                sthe_bk = gb.indexAssign(sthe_bk, ii, gb.sin(gb.pi / 2 - self._theta))
                 self.cos_phis_bk = self.cos_phis.copy()
                 self.sin_phis_bk = self.sin_phis.copy()
                 self.cos_varthetas_bk = list(cthe)

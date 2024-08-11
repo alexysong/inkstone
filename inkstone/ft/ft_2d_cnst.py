@@ -20,6 +20,6 @@ def ft_2d_cnst(ks,gb=bl.backend()):
     ks_nm = gb.la.norm(ks, axis=-1)  # 1d array of n. The norm of each k vector
     idx_0 = gb.where(ks_nm == 0)[0]  # index to where k is (0, 0)
     s = 1j * gb.zeros(gb.getSize(ks_nm))
-    s[idx_0] = 1.
+    s = gb.indexAssign(s, idx_0, 1.)
 
-    return s.tolist()
+    return s

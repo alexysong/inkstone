@@ -116,7 +116,7 @@ class Mtr:
             self.ep_is_diagonal = True
             self.ep_is_isotropic = True
             self.ep_is_vac = val == 1.
-           
+
         elif gb.parseData(val).ndim == 1 and gb.getSize(gb.parseData(val)) == 3:
             ep = gb.diag(val) + 0j
             self._epsi = ep + 0j

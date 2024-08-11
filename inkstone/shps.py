@@ -44,7 +44,7 @@ class Shp:
 
         self.ks = ks  # list of k points to calculate Fourier series
         self.use_gibbs_correction(**kw_gibbs)
-        
+
 
     @property
     def ks(self) -> List[Union[float, Tuple[float, float]]]:
@@ -90,7 +90,7 @@ class Shp:
         self.use_gibbs_correction(**kw_gibbs)
         if self._if_gibbs_corr:
             s = gb.parseData(gibbs_corr(self.ks, **self._kw_gibbs))
-        ft = (self._ft * s).tolist()
+        ft = self._ft * s
         self._ft = ft
         return self._ft
 

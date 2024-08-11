@@ -88,7 +88,7 @@ def s_1l_rsp(thickness: float,
     aTlu = gb.lu_factor(a.T)
     aTlu2 = (gb.clone(aTlu[0]), gb.clone(aTlu[1]))
     a1 = aTlu2[0]
-    a1[gb.triu_indices(a1.shape[0])] *= 0.5
+    a1 = gb.assignAndMultiply(a1, gb.triu_indices(a1.shape[0]), 0.5)
     alu = gb.lu_factor(a)
     # alu2 = (alu[0].copy(), alu[1].copy())
     # a1 = alu2[0]
@@ -206,7 +206,7 @@ def s_1l_rsp_lrd(thickness: float,
     aTlu = gb.lu_factor(a.T)
     aTlu2 = (aTlu[0].copy(), aTlu[1].copy())
     a1 = aTlu2[0]
-    a1[gb.triu_indices(a1.shape[0])] *= 0.5
+    a1 = gb.assignAndMultiply(a1, gb.triu_indices(a1.shape[0]), 0.5)
     alu = gb.lu_factor(a)
     # alu2 = (alu[0].copy(), alu[1].copy())
     # a1 = alu2[0]
@@ -237,7 +237,7 @@ def s_1l_rsp_lrd(thickness: float,
     a2Tlu = gb.lu_factor(a2.T)
     a2Tlu2 = (gb.clone(a2Tlu[0]), gb.clone(a2Tlu[1]))
     a1 = a2Tlu2[0]
-    a1[gb.triu_indices(a1.shape[0])] *= 0.5
+    a1 = gb.assignAndMultiply(a1, gb.triu_indices(a1.shape[0]), 0.5)
     a2lu = gb.lu_factor(a2)
     # alu2 = (alu[0].copy(), alu[1].copy())
     # a1 = alu2[0]
@@ -299,7 +299,7 @@ def s_1l_1212(a, b):
     aTlu = gb.lu_factor(a.T)
     aTlu2 = (gb.clone(aTlu[0]), gb.clone(aTlu[1]))
     aT1 = aTlu2[0]
-    aT1[gb.triu_indices(aT1.shape[0])] *= 0.5
+    a1 = gb.assignAndMultiply(aT1, gb.triu_indices(aT1.shape[0]), 0.5)
     alu = gb.lu_factor(a)
     alu2 = (gb.clone(alu[0]), gb.clone(alu[1]))
     a1 = alu2[0]
@@ -338,7 +338,7 @@ def s_1l_1221(a, b):
     alu = gb.lu_factor(a)
     alu2 = (gb.clone(alu[0]), gb.clone(alu[1]))
     a1 = alu2[0]
-    a1[gb.triu_indices(a1.shape[0])] *= 0.5
+    a1 = gb.assignAndMultiply(a1, gb.triu_indices(a1.shape[0]), 0.5)
     aTlu = gb.lu_factor(a.T)
     aTlu2 = (gb.clone(aTlu[0]), gb.clone(aTlu[1]))
     at1 = aTlu2[0]

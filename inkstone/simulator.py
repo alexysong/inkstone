@@ -800,8 +800,8 @@ class Inkstone:
 
         aibo = []
         for z, n in zip([a, ab], [en, enb]):
-            i = gb.zeros(2 * self.pr.num_g, dtype=gb.complex128)
-            i[n] = z
+            i = gb.zeros(2*self.pr.num_g, dtype=gb.complex128)
+            i = gb.indexAssign(i, n, z)
             aibo.append(i)
             # todo: is this done?
 
@@ -857,8 +857,8 @@ class Inkstone:
                                 # if user specify 90 degree incidence, this is activated
                                 warn(
                                     'You are specifying incidence in a channel that is parallel to the surface of the structure. \n In this case, only specific field configuration is allowed.')
-                                ab[jj] = sa[i]
-                                ab[jj + self.pr._num_g_ac] = pa[i]
+                                ab = gb.indexAssign(ab, jj, sa[i])
+                                ab = gb.indexAssign(ab, jj+self.pr._num_g_ac, pa[i])
                             else:
                                 s = sa[i]
                                 p = pa[i]
@@ -880,10 +880,10 @@ class Inkstone:
                                 ey = s * cp + p * st * sp  # e_y
                                 phi_2x2 = gb.castType(layer_inci.phil_2x2s[:, :, jj], gb.complex128)
                                 v = gb.la.solve(phi_2x2, gb.parseList([ex, ey]))
-                                ab[jj] = v[0]
-                                ab[jj + self.pr._num_g_ac] = v[1]
+                                ab = gb.indexAssign(ab, jj, v[0])
+                                ab = gb.indexAssign(ab, jj+self.pr._num_g_ac, v[1])
 
-                    aibo.append(ab)
+                aibo.append(ab)
         else:
             warn("Haven't set excitation yet.", RuntimeWarning)
 
@@ -978,17 +978,15 @@ class Inkstone:
                 aTlu = gb.lu_factor(a.T)
                 aTlu2 = (gb.clone(aTlu[0]), gb.clone(aTlu[1]))
                 a1 = aTlu2[0]
-                a1[gb.triu_indices(a1.shape[0])] *= 0.5
-
+                a1 = gb.assignAndMultiply(a1, gb.triu_indices(a1.shape[0]), 0.5)
                 alu = gb.lu_factor(a)
                 alu2 = (gb.clone(alu[0]), gb.clone(alu[1]))
                 a1 = alu2[0]
-                a1[gb.triu_indices(a1.shape[0])] *= 0.5
-
+                a1 = gb.assignAndMultiply(a1, gb.triu_indices(a1.shape[0]), 0.5)
                 ab = gb.lu_solve(alu, b)
 
-                # alu = sla.lu_factor(a)
-                # aib = sla.lu_solve(alu, b)
+                # alu = self.gb.sla.lu_factor(a)
+                # aib = self.gb.sla.lu_solve(alu, b)
                 # sl11 = b @ ia
                 sl11 = gb.lu_solve(aTlu, b.T).T
                 # sl12 = a - b @ ia @ b
@@ -1599,13 +1597,11 @@ class Inkstone:
         i_in_l.append(za >= z_interfaces[-1])
 
         for idx, iin in enumerate(i_in_l):
-            za_l = za[iin] - ([0] + z_interfaces)[
-                idx]  # z coordinate of this layer w.r.t. the left interface of this layer
-            z_l = za_l.tolist()
-            if z_l:
-                fields = self.GetLayerFieldsListPoints(ll[idx], xy, z_l)
-                for F, f in zip(Fields, fields):
-                    F[:, iin] = f
+            za_l = za[iin] - ([0] + z_interfaces)[idx]  # z coordinate of this layer w.r.t. the left interface of this layer
+            if za_l.any() or za_l.size: # TODO: do other .any() type checks need to account for array of zeros?
+                fields = self.GetLayerFieldsListPoints(ll[idx], xy, za_l)
+                for f_idx, f in enumerate(fields):
+                    Fields[f_idx] = self.gb.indexAssign(Fields[f_idx], (slice(None),iin), f) # jax might not like differentiating this
 
         Ex, Ey, Ez, Hx, Hy, Hz = Fields
 
