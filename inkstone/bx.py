@@ -105,7 +105,7 @@ class Bx:
 
         """
         # t0 = time.process_time()
-        _ft = gb.parseData(self.shp.ft(**kw_gibbs), dtype=gb.complex128)
+        _ft = self.shp.ft(**kw_gibbs)
         # print(time.process_time()-t0)
 
         # no way of knowing if its material or that of the outer box changed

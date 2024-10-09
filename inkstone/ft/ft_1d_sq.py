@@ -28,7 +28,7 @@ def ft_1d_sq(width, ks, center=0., gb=bl.backend()):
     if width <= 0:
         raise ValueError("No zero or negative width")
 
-    ksa = gb.parseData(ks)
+    ksa = gb.data(ks)
 
     s = gb.exp(-1j * center * ksa) * width * gb.sinc(ksa * width / 2. / gb.pi)
     # note numpy sinc(x) definition is sin(pi x) / (pi x)

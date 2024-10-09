@@ -13,18 +13,19 @@ you do not really need to maintain this class
 from warnings import warn
 
 _backend = None
-
+backend_str = None
 
 def backend():
-    global _backend
+    global _backend, backend_str
     if _backend is None:
         warn('Backend is not initialized, default to numpy')
         set_backend('numpy')
+        backend_str = 'numpy'
     return _backend
 
 
 def set_backend(backend_name):
-    global _backend
+    global _backend, backend_str
     if _backend is not None:
         warn("Notice that this behaviour, the update to the backend, will not be observed by"
              "other modules that had already imported it. So, the result of this operation"
@@ -38,6 +39,7 @@ def set_backend(backend_name):
                             fromlist=[f'{backend_name.capitalize()}Backend'])
         BackendClass = getattr(module, f'{backend_name.capitalize()}Backend')
         _backend = BackendClass()
+        backend_str = backend_name
         print(f"Switched to {backend_name}, {_backend.raw_type}")
     except ImportError:
         raise NotImplementedError(f'{backend_name} is not found')

@@ -130,7 +130,7 @@ def test_j0_custom():
     """
     Test j0 custom jax vjp 
     """
-    from ..primitives import j0
+    from inkstone.primitives.jax_primitive import j0
     data = np.random.uniform(low=-1,high=1,size=(10,))
     def j0_sum(x):
         return jnp.sum(j0(x))
@@ -142,7 +142,7 @@ def test_j1_custom():
     """
     Test j1 custom jax vjp 
     """
-    from ..primitives import j1
+    from inkstone.primitives.jax_primitive import j1
     data = np.random.uniform(low=-1,high=1,size=(10,))
     def j1_sum(x):
         return jnp.sum(j1(x))

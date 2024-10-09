@@ -19,8 +19,8 @@ def conv_mtx_idx_2d(idx1, idx2):
 
     #i1 = np.array(idx1)  # (N, 2) shape
     #i2 = np.array(idx2)
-    idx1 = gb.parseData(idx1)
-    idx2 = gb.parseData(idx2)
+    idx1 = gb.data(idx1)
+    idx2 = gb.data(idx2)
 
     cmi = idx1[:, None, :] - idx2[None, :, :]  # (M, N, 2) shape, each element of (M, N, ...) is the 2 indices for mtx
 

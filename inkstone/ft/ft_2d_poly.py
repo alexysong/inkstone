@@ -32,13 +32,13 @@ def ft_2d_poly_1(vertices, ks, gb=bl.backend()):
 
     """
     # convert to array
-    ksa = gb.parseData(ks)  # each row is a [kx, ky]
+    ksa = gb.data(ks)  # each row is a [kx, ky]
 
     ks_nm = gb.la.norm(ksa, axis=-1)
     coef = -1j / ks_nm ** 2
 
     # convert tuples to numpy arrays
-    verti = gb.parseData(vertices)
+    verti = gb.data(vertices)
 
     # generate a shifted array of vertices of [r2, r3, ..., rn, r1], if originally [r1, r2, ..., rn]
     verti_roll = gb.roll(verti, -1, axis=0)
@@ -50,7 +50,7 @@ def ft_2d_poly_1(vertices, ks, gb=bl.backend()):
     cross = gb.cross(ln[:, None, :], ksa[None, :, :])
     # Say ln.shape is mx2, ksa is nx2, this gives mxn shape
 
-    term1 = cross * (gb.exp(-1j * rnc @ ksa.T)) * jn(0, ln @ ksa.T / 2.)
+    term1 = cross * (gb.exp(-1j * rnc @ ksa.T)) * gb.j0(ln @ ksa.T / 2.)
 
     s = coef * gb.sum(term1, axis=0)
 
@@ -77,16 +77,16 @@ def ft_2d_poly(vertices, ks,gb=bl.backend()):
     -----
     For k == (0, 0) and k != (0, 0), call different subroutine.
     """
-    ksa = gb.parseData(ks)  # convert to array
+    ksa = gb.data(ks)  # convert to array
     ks_nm = gb.la.norm(ksa, axis=-1)  # calculate the norm of each k vector
     idx_0 = gb.where(ks_nm == 0)[0]  # index to where k is (0, 0)
     idx_i = gb.where(ks_nm != 0)[0]  # index to where k is not (0, 0)
     ksa1 = gb.delete(ksa, idx_0, axis=0)  # new ks array that doesn't contain (0, 0)
 
-    s1 = gb.parseData(ft_2d_poly_1(vertices, ksa1))
+    s1 = gb.data(ft_2d_poly_1(vertices, ksa1))
     a = poly_area(vertices)
 
-    s = 1j * gb.zeros(ks_nm.size)
+    s = 1j * gb.zeros(gb.getSize(ks_nm))
     s = gb.indexAssign(s, idx_i, s1)
     s = gb.indexAssign(s, idx_0, a)
 

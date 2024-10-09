@@ -9,7 +9,10 @@ import jax
 from jax import grad as jax_grad
 # jax.config.update("jax_debug_nans", True)
 
-from inkstone import GenericBackend
+import inkstone.backends.BackendLoader as bl
+
+bl.set_backend('jax')
+bk = bl.backend()
 from inkstone.simulator import Inkstone as NewInkstone # rename to NewInkstone so switchTo works correctly
 
 import matplotlib.pyplot as plt
@@ -26,7 +29,7 @@ rel_tol = 1e-5
 # 1D 1 LAYER ################################################################################################################################################
 ### FUNCTIONS ###
 def simulation_1layer_1d(d,w,f,p,num_g=30,backend="jax"):
-    GenericBackend.switchTo(backend)
+
     s = NewInkstone()
     s.frequency = f
     s.lattice = 1
@@ -63,10 +66,9 @@ def abs_Ey_1layer_1d(d,w,f,p,z,num_g=30,backend="jax"):
     """
     Returns abs(Ey) at (x,y,z)=(0,0,z)
     """
-    GenericBackend.switchTo(backend)
     Ex, Ey, Ez, Hx, Hy, Hz = fields_1layer_1d(d,w,f,p,z,num_g,backend)
     # return jnp.real(Ey[0][0][0])
-    return GenericBackend.genericBackend.abs(Ey[0][0][0])
+    return bk.abs(Ey[0][0][0])
 
 
 
@@ -109,7 +111,6 @@ def params_1layer_1d():
 # 1D 2 LAYER ################################################################################################################################################
 ### FUNCTIONS ###
 def simulation_2layer_1d(d1,d2,w1,w2,p1,p2,f,theta,num_g=30,backend="jax"):
-    GenericBackend.switchTo(backend)
     s = NewInkstone()
     s.frequency = f
     s.lattice = 1
@@ -134,12 +135,11 @@ def reflection_2layer_1d(d1,d2,w1,w2,p1,p2,f,theta,order=-1,num_g=30,backend="ja
     """
     Return m=0 reflection coefficient with diffraction
     """
-    GenericBackend.switchTo(backend)
     s = simulation_2layer_1d(d1,d2,w1,w2,p1,p2,f,theta,num_g,backend)
-    inc_power = 0.5*1**2*GenericBackend.genericBackend.cos(theta*np.pi/180) # s_amp = 1 in simulation_2layer_1d
+    inc_power = 0.5*1**2*bl.cos(theta*np.pi/180) # s_amp = 1 in simulation_2layer_1d
     order_power = s.GetPowerFluxByOrder(layer='in', order=order, z=-1) # z = -1 is the incidence region
     r_order_power = order_power[1] # t_order_power = order_power[0]
-    r_order = GenericBackend.genericBackend.abs(r_order_power)/inc_power 
+    r_order = bk.abs(r_order_power)/inc_power
     return r_order
 
 def fields_2layer_1d(d1,d2,w1,w2,p1,p2,f,theta,z,num_g=30,backend="jax"):
@@ -153,9 +153,8 @@ def abs_Ey_2layer_1d(d1,d2,w1,w2,p1,p2,f,theta,z,num_g=30,backend="jax"):
     """
     Returns abs(Ey) at (x,y,z)=(0,0,z)
     """
-    GenericBackend.switchTo(backend)
     Ex, Ey, Ez, Hx, Hy, Hz = fields_2layer_1d(d1,d2,w1,w2,p1,p2,f,theta,z,num_g,backend)
-    return GenericBackend.genericBackend.abs(Ey[0][0][0])
+    return bk.abs(Ey[0][0][0])
 
 
 

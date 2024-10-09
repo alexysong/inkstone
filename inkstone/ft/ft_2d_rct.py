@@ -24,12 +24,12 @@ def ft_2d_rct(a, b, ks, center=None, angle=0.,gb=bl.backend()):
 
     if center is None:
         center = (0., 0.)
-    cen = gb.parseData(center)
+    cen = gb.data(center)
 
-    ksa = gb.parseData(ks)  # Nx2 array
+    ksa = gb.data(ks)  # Nx2 array
 
     ang = gb.pi * angle / 180.
-    rot = gb.parseData([[gb.cos(ang), -gb.sin(ang)], [gb.sin(ang), gb.cos(ang)]])
+    rot = gb.data([[gb.cos(ang), -gb.sin(ang)], [gb.sin(ang), gb.cos(ang)]])
     aksa = (rot.T @ ksa.T).T
 
     sx = ft_1d_sq(a, aksa[:, 0])

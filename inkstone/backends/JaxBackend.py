@@ -2,7 +2,7 @@
 
 import jax
 import jaxlib
-from inkstone.primitives import j0, j1, eig
+from inkstone.primitives.jax_primitive import j0, j1, eig
 from inkstone.backends.GenericBackend import GenericBackend
 
 jax.config.update("jax_enable_x64", True)
@@ -16,65 +16,63 @@ class JaxBackend(GenericBackend):
         self.raw_type = jaxlib.xla_extension.ArrayImpl
 
         self.abs = jnp.abs
-        self.sqrt = jnp.sqrt
         self.arange = jnp.arange
-        self.ceil = jnp.ceil
-        self.where = jnp.where
-        self.diag = jnp.diag
-        self.sin = jnp.sin
-        self.cos = jnp.cos
         self.arccos = jnp.arccos
         self.arcsin = jnp.arcsin
-        self.ones = jnp.ones
-        self.square = jnp.square
+        self.ceil = jnp.ceil
         self.concatenate = jnp.concatenate
         self.conj = jnp.conj
-        self.exp = jnp.exp
-        self.sinc = jnp.sinc
-        self.zeros = jnp.zeros
-        self.tan = jnp.tan
-        self.roll = jnp.roll
-        self.sum = jnp.sum
+        self.cos = jnp.cos
+        self.diag = jnp.diag
         self.dot = jnp.dot
+        self.einsum = jnp.einsum
+        self.exp = jnp.exp
+        self.eye = jnp.eye
+        self.fft = jnp.fft
+        self.full = jnp.full
         self.hsplit = jnp.hsplit
+        self.isnan = jnp.isnan
+        self.la = jnp.linalg
+        self.linspace = jnp.linspace
+        self.logspace = jnp.logspace
+        self.logical_not = jnp.logical_not
+        self.lu_factor = jsp.linalg.lu_factor
+        self.maximum = jnp.maximum
+        self.moveaxis = jnp.moveaxis
+        self.ones = jnp.ones
         self.repeat = jnp.repeat
         self.reshape = jnp.reshape
+        self.roll = jnp.roll
         self.rollaxis = jnp.rollaxis
-        self.moveaxis = jnp.moveaxis
-        self.full = jnp.full
-        self.logical_not = jnp.logical_not
-        self.maximum = jnp.maximum
-        self.einsum = jnp.einsum
-        self.isnan = jnp.isnan
-        self.linspace = jnp.linspace
-        self.lu_factor = jsp.linalg.lu_factor
-        self.solve = jsp.linalg.solve
-
-
-        self.la = jnp.linalg
+        self.sin = jnp.sin
+        self.sinc = jnp.sinc
         self.sla = jsp.linalg
-
-        self.fft = jnp.fft  # only numpy fft used
+        self.solve = jsp.linalg.solve
+        self.sqrt = jnp.sqrt
+        self.square = jnp.square
+        self.sum = jnp.sum
+        self.tan = jnp.tan
+        self.where = jnp.where
+        self.zeros = jnp.zeros  # only numpy fft used
 
         self.j0 = j0
         self.j1 = j1
         self.eig = eig
 
-        self.pi = jnp.pi
+        self.complex128 = jnp.complex128
         self.float64 = jnp.float64
         self.int32 = jnp.int32
-        self.complex128 = jnp.complex128
-        self.eye = jnp.eye
+        self.pi = jnp.pi
 
-    def parseData(self, i: any, dtype=None, **kwargs):
+    def data(self, i: any, dtype=None, **kwargs):
         #if isinstance(i, jax.Array):  # handle tracer inputs by not passing invalid dtype
         """
         JL
         TODO:
-        Need more robust handling of list of tracer inputs to self.gb.parseData
+        Need more robust handling of list of tracer inputs to self.gb.data
         Currently, if o is a JAX tracer, then the above control flow sets dtype = jax tracer.
         Since JAX does not accept dtype = jax tracer in jnp.array(), it throws an error.
-        Workaround is manually setting the parseData argument dtype whenever JAX throws an error
+        Workaround is manually setting the data argument dtype whenever JAX throws an error
         to avoid setting dtype = type(o)
         Potential fix is to manually check isinstance(o, jax.Array), but that requires the user
         to have installed JAX, which they may not have if they only want to use one of the other backends.
@@ -86,6 +84,9 @@ class JaxBackend(GenericBackend):
         """
         return jnp.array(i)
 
+    def isnan(self, a):
+        return jnp.isnan(a)
+
 
     def parseList(self, tup):
         return jnp.array(tup)
@@ -93,7 +94,7 @@ class JaxBackend(GenericBackend):
     def meshgrid(self, *xi):
         return jnp.meshgrid(*xi)
 
-    def castType(self, i, typ):  # typ(e), avoid collision with keyword
+    def castType(self, i, typ):  # type => typ, avoid collision with keyword
         return i.astype(typ)
 
     def cross(self, a, b):
@@ -154,7 +155,7 @@ class JaxBackend(GenericBackend):
         """
         return a.at[idx].set(b)
 
-    def assignAndMultiply(self, a, idx, b):
+    def assignMul(self, a, idx, b):
         """
         For numpy, multiply in-place with index assignment. For differentiation libraries, replace with differentiable not-in-place version
         """

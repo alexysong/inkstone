@@ -311,7 +311,7 @@ class Layer:
 
         bxs = list(self.patterns.values())
 
-        bx_areas = gb.parseData([a.shp.area for a in bxs])
+        bx_areas = gb.data([a.shp.area for a in bxs])
         idx = gb.argsort(bx_areas).tolist()
         # wcai: unnecessary numpy array conversion on list of str
         # also invalid on other backends like torch
@@ -349,7 +349,7 @@ class Layer:
                     pt1: Tuple[float, float] = bx1.shp.center
                 elif bx1.shp.shape == 'polygon':
                     vertices = bx1.shp.vertices
-                    v1, v2, v3 = gb.parseData([vertices[i] for i in range(3)])
+                    v1, v2, v3 = gb.data([vertices[i] for i in range(3)])
                     vm = (v3 + v1) / 2.
                     r = vm - v2
                     while True:
@@ -366,34 +366,34 @@ class Layer:
 
                     # see if pt1 is inside bx2
                     if bx2.shp.shape == 'rectangle':
-                        r = gb.parseData(pt1) - gb.parseData(bx2.shp.center)
+                        r = gb.data(pt1) - gb.data(bx2.shp.center)
                         a = bx2.shp.angle * gb.pi / 180.
-                        r1 = gb.parseData([[gb.cos(a), gb.sin(a)], [-gb.sin(a), gb.cos(a)]]) @ r
+                        r1 = gb.data([[gb.cos(a), gb.sin(a)], [-gb.sin(a), gb.cos(a)]]) @ r
                         if (gb.abs(r1[0]) < bx2.shp.side_lengths[0] / 2.) and (gb.abs(r1[1]) < bx2.shp.side_lengths[1] / 2.):
                             bx1.outside = bx2
                             break
                     elif bx2.shp.shape == 'parallelogram':
                         shp: Para = bx2.shp
-                        r = gb.parseData(pt1) - gb.parseData(shp.center)
+                        r = gb.data(pt1) - gb.data(shp.center)
                         a = shp.angle * gb.pi / 180.
-                        rot = gb.parseData([[gb.cos(a), gb.sin(a)], [-gb.sin(a), gb.cos(a)]])
+                        rot = gb.data([[gb.cos(a), gb.sin(a)], [-gb.sin(a), gb.cos(a)]])
                         m = gb.tan(gb.pi / 2 - shp.shear_angle * gb.pi / 180)
-                        sheer = gb.parseData([[1, -m],
+                        sheer = gb.data([[1, -m],
                                           [0, 1]])
                         r1 = sheer @ rot @ r
                         if (gb.abs(r1[0]) < shp.side_lengths[0] / 2.) and (gb.abs(r1[1]) < shp.side_lengths[1] * gb.sin(shp.shear_angle * gb.pi / 180) / 2.):
                             bx1.outside = bx2
                             break
                     elif bx2.shp.shape == 'disk':
-                        r = gb.parseData(pt1) - gb.parseData(bx2.shp.center)
+                        r = gb.data(pt1) - gb.data(bx2.shp.center)
                         d = gb.norm(r)
                         if d < bx2.shp.radius:
                             bx1.outside = bx2
                             break
                     elif bx2.shp.shape == 'ellipse':
-                        r = gb.parseData(pt1) - gb.parseData(bx2.shp.center)
+                        r = gb.data(pt1) - gb.data(bx2.shp.center)
                         a = bx2.shp.angle * gb.pi / 180.
-                        r1 = gb.parseData([[gb.cos(a), gb.sin(a)], [-gb.sin(a), gb.cos(a)]]) @ r
+                        r1 = gb.data([[gb.cos(a), gb.sin(a)], [-gb.sin(a), gb.cos(a)]]) @ r
                         if ((r1[0] ** 2 / bx2.shp.half_widths[0] ** 2 + r1[1] ** 2 / bx2.shp.half_widths[1] ** 2) < 1):
                             bx1.outside = bx2
                             break
@@ -420,7 +420,7 @@ class Layer:
         ep, ei, mu, mi = [t[None, :, :] * d[:, None, None] for t in [epsi_bg, epsi_bg_inv, mu_bg, mu_bg_inv]]   # each is complex ((2mmax+1)x(2nmax+1), 3, 3) shape
 
         for bx in self.patterns.values():
-            eb, eib, mb, mib = [gb.parseData(f, dtype=gb.complex128) / self.pr.uc_area for f in bx.ft(self.pr.ks_ep_mu)]
+            eb, eib, mb, mib = [f / self.pr.uc_area for f in bx.ft(self.pr.ks_ep_mu)]
             ep += eb
             ei += eib
             mu += mb
@@ -514,17 +514,17 @@ class Layer:
              for em in [gb.fft.ifftshift(self.epsi_fs, axes=(0, 1)), gb.fft.ifftshift(self.epsi_inv_fs, axes=(0, 1)), gb.fft.ifftshift(self.mu_fs, axes=(0, 1)), gb.fft.ifftshift(self.mu_inv_fs, axes=(0, 1))]]
 
         eu = self.epsi_fs_used
-        ea = gb.parseData(eu, dtype=gb.complex128)
+        ea = gb.data(eu, dtype=gb.complex128)
         mu = self.mu_fs_used
-        ma = gb.parseData(mu, dtype=gb.complex128)
+        ma = gb.data(mu, dtype=gb.complex128)
         idx = self.pr.idx_g_ep_mu_used
-        idxa = gb.parseData(idx)
+        idxa = gb.data(idx)
 
         # spatial coordinates in a unit cell of any shape
         x1 = gb.linspace(-0.5, 0.5, n1)
         x2 = gb.linspace(-0.5, 0.5, n2)
         xx1, xx2 = gb.meshgrid(x1, x2)
-        a1, a2 = [gb.parseData(lv) for lv in self.pr.latt_vec]
+        a1, a2 = [gb.data(lv) for lv in self.pr.latt_vec]
         xx = xx1 * a1[0] + xx2 * a2[0]
         yy = xx1 * a1[1] + xx2 * a2[1]
 
@@ -580,8 +580,8 @@ class Layer:
 
         t1 = time.process_time()
 
-        # ql2, self.phil = gb.la.eig(- self.P @ self.Q)
-        w2, v = gb.la.eig(- self.P @ self.Q)  # w2 shape (2num_g),  v shape (2num_g, 2num_g)
+        # ql2, self.phil = gb.eig(- self.P @ self.Q)
+        w2, v = gb.eig(- self.P @ self.Q)  # w2 shape (2num_g),  v shape (2num_g, 2num_g)
         self._rad_cha = gb.where(w2.real > 0)[0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
         w = gb.sqrt(w2 + 0j)
 
@@ -597,13 +597,13 @@ class Layer:
         # vh = -1j * q @ v / w[:, None, :]
 
         if wis0.any():
-            w2h_, vh_ = gb.la.eig(- self.Q @ self.P)
+            w2h_, vh_ = gb.eig(- self.Q @ self.P)
 
             o = self.pr.omega
             _o = o * (1 + 1e-13)
             P, Q = self._calc_PQ_3d(_o)
 
-            _w2, _v = gb.la.eig(-P @ Q)  # w2 shape (num_g, 2), v shape (num_g, 2, 2)
+            _w2, _v = gb.eig(-P @ Q)  # w2 shape (num_g, 2), v shape (num_g, 2, 2)
             _w2 = _w2  # shape (num_g, 2)
             _w = gb.sqrt(_w2 + 0j)
             _v_w0 = _v[:, i_wis0[0]]
@@ -618,15 +618,15 @@ class Layer:
                     v = self.gb.indexAssign(v, (slice(None),i_wis0[0][ii]), 0.)
                 else:
                     # the column of v is already correct
-                    vh[:, i_wis0[0][ii]] = gb.parseData([[0.],
+                    vh[:, i_wis0[0][ii]] = gb.data([[0.],
                                                      [0.]])
 
         # normalize such that the larger norm of v and vh's each column is 1
         vn = gb.norm(v, 0)
         vhn = gb.norm(vh, 0)
         nm = gb.maximum(vn, vhn)
-        v /= nm
-        vh /= nm
+        v = gb.div(v, nm)
+        vh = gb.div(vh, nm)
 
         phil = v
         psil = vh
@@ -682,9 +682,9 @@ class Layer:
         -------
 
         """
-        p = gb.parseData([[o * myx + 1. / o / ezz * kxa * kya, o * myy - 1. / o / ezz * kxa ** 2],
+        p = gb.data([[o * myx + 1. / o / ezz * kxa * kya, o * myy - 1. / o / ezz * kxa ** 2],
                       [-o * mxx + 1. / o / ezz * kya ** 2, -o * mxy - 1. / o / ezz * kxa * kya]], dtype=gb.complex128)  # (2, 2, num_g) shape
-        q = gb.parseData([[o * eyx + 1. / o / mzz * kxa * kya, o * eyy - 1. / o / mzz * kxa ** 2],
+        q = gb.data([[o * eyx + 1. / o / mzz * kxa * kya, o * eyy - 1. / o / mzz * kxa ** 2],
                       [-o * exx + 1. / o / mzz * kya ** 2, -o * exy - 1. / o / mzz * kxa * kya]], dtype=gb.complex128)  # (2, 2, num_g) shape
         p = gb.rollaxis(p, -1)  # shape (num_g, 2, 2)
         q = gb.rollaxis(q, -1)  # shape (num_g, 2, 2)
@@ -751,7 +751,7 @@ class Layer:
         else:  # not vacuum
             # before fixing Wood: for numG 100 this takes about 2ms
 
-            kxa, kya = [a.ravel() for a in gb.hsplit(gb.parseData(self.pr.ks), 2)]
+            kxa, kya = [a.ravel() for a in gb.hsplit(gb.data(self.pr.ks), 2)]
             o = self.pr.omega
             Kx = gb.clone(self.pr.Kx)
             Ky = gb.clone(self.pr.Ky)
@@ -813,22 +813,22 @@ class Layer:
                 # i_qsw = gb.where((gb.abs(qlh) <= gb.abs(o)) * (k_norm >= (skc * gb.abs(o))))[0]
                 i_qsw = gb.where((gb.abs(qlh) < gb.abs(o)))[0]
                 i_qlw = gb.where(gb.abs(qlh) > gb.abs(o))[0]
-                idxa = gb.parseData(self.pr.idx_g)
+                idxa = gb.data(self.pr.idx_g)
                 ii = (idxa[:, 0] == 0) & (idxa[:, 1] == 0)
 
-                c1 = gb.parseData([eyy * Ky, -exx * Kx], dtype=gb.complex128)
-                c2 = gb.parseData([Kx, Ky], dtype=gb.complex128)
+                c1 = gb.data([eyy * Ky, -exx * Kx], dtype=gb.complex128)
+                c2 = gb.data([Kx, Ky], dtype=gb.complex128)
                 c1f = gb.ones(ng, dtype=gb.complex128)
                 c2f = gb.clone(c1f)
 
                 # c1[:, i_knz] = gb.inputParser([[1.], [0.]])
                 # c2[:, i_knz] = -1j / o / alpha * gb.inputParser([1. / mzz * Kx[i_knz] * Ky[i_knz] / qlh[i_knz], 1./myy*(-exx/ezz*gb.square(Kx[i_knz]) - gb.square(qlh[i_knz])) / qlh[i_knz]])  # should not be |Kx|^2
-                c1 = gb.indexAssign(c1, (slice(None),i_kez), gb.parseData([[1.], [0.]], dtype=gb.complex128))
-                c2 = gb.indexAssign(c2, (slice(None),i_kez), gb.parseData([[0.], [1.]], dtype=gb.complex128))
+                c1 = gb.indexAssign(c1, (slice(None),i_kez), gb.data([[1.], [0.]], dtype=gb.complex128))
+                c2 = gb.indexAssign(c2, (slice(None),i_kez), gb.data([[0.], [1.]], dtype=gb.complex128))
                 cphi = gb.cos(self.pr._phi)
                 sphi = gb.sin(self.pr._phi)
-                c1 = gb.indexAssign(c1, (slice(None),ii), gb.parseData([[eyy * sphi], [-exx * cphi]], dtype=gb.complex128))
-                c2 = gb.indexAssign(c2, (slice(None),ii), gb.parseData([[cphi], [sphi]], dtype=gb.complex128))
+                c1 = gb.indexAssign(c1, (slice(None),ii), gb.data([[eyy * sphi], [-exx * cphi]], dtype=gb.complex128))
+                c2 = gb.indexAssign(c2, (slice(None),ii), gb.data([[cphi], [sphi]], dtype=gb.complex128))
                 # c1[:, ii] = gb.inputParser([[sphi], [-cphi]], dtype=gb.complex128)
 
                 c1f = gb.indexAssign(c1f, i_qlw, o / qlh[i_qlw] / k_norm[i_qlw])
@@ -863,7 +863,7 @@ class Layer:
                 psil = gb.indexAssign(psil, (r1,r2), c1[0,:])
                 psil = gb.indexAssign(psil, (r2,r2), c1[1,:])
 
-                self.phil_2x2s = gb.moveaxis(gb.parseData([c1, c2]), 0, 1)
+                self.phil_2x2s = gb.moveaxis(gb.data([c1, c2]), 0, 1)
 
                 # # debugging, check if phi is eigen and consistent with psi
                 # P = gb.zeros((2 * ng, 2 * ng), dtype=gb.complex128)
@@ -886,7 +886,7 @@ class Layer:
                 # pass
 
             else:  # require solving of 2x2 PQ Hamiltonian
-                w2, v = gb.la.eig(-pq)  # w2 shape (num_g, 2), v shape (num_g, 2, 2)
+                w2, v = gb.eig(-pq)  # w2 shape (num_g, 2), v shape (num_g, 2, 2)
                 w2 = w2  # shape (num_g, 2)
                 self._rad_cha = gb.where(w2.real > 0)[0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
                 w = gb.sqrt(w2 + 0j)
@@ -904,11 +904,11 @@ class Layer:
                 vh[i_wn0[0], :, i_wn0[1]] = -1j * (q[i_wn0[0], :, :] @ v[i_wn0[0], :, i_wn0[1]][:, :, None])[:, :, 0] / w[i_wn0[0], i_wn0[1], None]
 
                 if wis0.any():
-                    w2h_, vh_ = gb.la.eig(-qp)
+                    w2h_, vh_ = gb.eig(-qp)
 
                     _o = o * (1 + 1e-13)
                     _p, _q, _pq, _qp = self._calc_pq_3d_uniform(_o, mxx, mxy, myx, myy, mzz, exx, exy, eyx, eyy, ezz, kxa, kya)
-                    _w2, _v = gb.la.eig(-_pq)  # w2 shape (num_g, 2), v shape (num_g, 2, 2)
+                    _w2, _v = gb.eig(-_pq)  # w2 shape (num_g, 2), v shape (num_g, 2, 2)
                     _w2 = _w2  # shape (num_g, 2)
                     _w = gb.sqrt(_w2 + 0j)
                     _v_w0 = _v[i_wis0[0], :, i_wis0[1]]
@@ -920,10 +920,10 @@ class Layer:
                         if _vh_norm >= _v_norm:
                             # vh[i_wis0[0][ii], :, i_wis0[1][ii]] /= _vh_norm
                             vh = gb.indexAssign(vh, (i_wis0[0][ii], slice(None), i_wis0[1][ii]), vh_[i_wis0[0][ii], :, i_wis0[1][ii]])
-                            v = gb.indexAssign(v, (i_wis0[0][ii], slice(None), i_wis0[1][ii]), gb.parseData([0., 0.]))
+                            v = gb.indexAssign(v, (i_wis0[0][ii], slice(None), i_wis0[1][ii]), gb.data([0., 0.]))
                         else:
                             # the column of v is already correct
-                            vh = gb.indexAssign(vh, (i_wis0[0][ii], slice(None), i_wis0[1][ii]), gb.parseData([0., 0.]))
+                            vh = gb.indexAssign(vh, (i_wis0[0][ii], slice(None), i_wis0[1][ii]), gb.data([0., 0.]))
 
                 vn = gb.norm(gb.moveaxis(v, 1, 2).reshape(self.pr.num_g*2, 2), axis=1).reshape(self.pr.num_g, 2)[:, None, :]
                 vhn = gb.norm(gb.moveaxis(vh, 1, 2).reshape(self.pr.num_g * 2, 2), axis=1).reshape(self.pr.num_g, 2)[:, None, :]
@@ -947,9 +947,9 @@ class Layer:
                 psil = gb.indexAssign(psil, (r2,r1), v[:, 1, 0])
                 psil = gb.indexAssign(psil, (r2,r2), v[:, 1, 1])
 
-                row = gb.parseData([[0, 0], [ng, ng]])
+                row = gb.data([[0, 0], [ng, ng]])
                 rows = gb.repeat(row[:, :, None], ng, axis=2)
-                column = gb.parseData([[0, ng], [0, ng]])
+                column = gb.data([[0, ng], [0, ng]])
                 columns = gb.repeat(column[:, :, None], ng, axis=2)
                 self.phil_2x2s = phil[rows, columns]
 
@@ -1068,7 +1068,7 @@ class Layer:
 
         for P, Q in [(Ppilu, Qp), (Psilu, Qs)]:
 
-            # ql2, phil = gb.la.eig(- sla.lu_solve(P, Q))
+            # ql2, phil = gb.eig(- sla.lu_solve(P, Q))
             # rc = gb.where(ql2.real > 0)[0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
             # ql = gb.sqrt(ql2 + 0j)
             #
@@ -1078,7 +1078,7 @@ class Layer:
             # psil = -1j * Q @ phil * ql_inv
             # # psil = 1j * gb.la.inv(P) @ phil @ gb.diag(self.ql)
 
-            w2, v = gb.la.eig(- gb.lu_solve(P, Q))
+            w2, v = gb.eig(- gb.lu_solve(P, Q)) # todo: lu_solve() 11precision issue >1e-11
             rc = gb.where(w2.real > 0)[0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
             w = gb.sqrt(w2 + 0j)
 
@@ -1091,18 +1091,20 @@ class Layer:
 
             # for non zero w, calculate vh using -jQv/q
             vh = gb.zeros((self.pr.num_g, self.pr.num_g), dtype=gb.complex128)
-            vh = gb.indexAssign(vh, (slice(None),i_wn0[0]), -1j * (Q @ v[:, i_wn0[0]]) / w[i_wn0[0]])
+            vh = gb.indexAssign(vh, (slice(None), i_wn0[0]), -1j * gb.div(Q @ v[:, i_wn0[0]], w[i_wn0[0]]))
             # where w is 0, vh's column is 0
 
             # normalize such that the larger norm of v and vh's each column is 1
             vn = gb.norm(v, 0)
-            vhn = gb.norm(vh,0)
+            vhn = gb.norm(vh, 0)
             nm = gb.maximum(vn, vhn)
-            v /= nm
-            vh /= nm
 
-            phil = v
-            psil = vh
+            # commented: in-place operations, cannot track the gradient
+            # v /= nm
+            # vh /= nm
+
+            phil = gb.div(v, nm)  # <= v/=nm; phil=v
+            psil = gb.div(vh, nm) # <= vh/=nm; psil=vh
 
             # # debugging,  check if phi is eigen and consistent with psi
             # ng = self.pr.num_g
@@ -1157,7 +1159,7 @@ class Layer:
         # self.iml0 = (al0, bl0)
 
         # calc imfl
-        phif = self.pr.phif
+        #phif = self.pr.phif
         psif = self.pr.psif
         phil = self.phil
         psil = self.psil
@@ -1165,7 +1167,8 @@ class Layer:
         term1 = phil  # attention! check if phif is eye
         term2 = psif @ psil
         a0l = term1 + term2
-        b0l = term1 - term2
+        b0l = gb.sub(term1, term2)
+        # check prec_fix(), precision issue occurs with b0l on Torch
         self.imfl = (a0l, b0l)
 
 
@@ -1229,6 +1232,9 @@ class Layer:
             sm = s_1l_1212(*self.imfl)
         else:
             raise Exception('Layer is not the incident, a middle, or the output layer.')
+        #from inkstone.backends.BackendLoader import backend_str
+        #if backend_str == 'torch':
+        #    print(sm)
         self.sm = sm
 
         if self.pr.show_calc_time:

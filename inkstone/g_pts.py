@@ -24,8 +24,6 @@ def g_pts(num_g, b1, b2, gb=bl.backend()):
                     the indices of the k points, i.e. (m, n) as in m*b1 + n*b2 is the corresponding k points.
 
     """
-    b1 = gb.parseData(b1)
-    b2 = gb.parseData(b2)
 
     bz_are = gb.abs(gb.cross(b1, b2))  # Brillouin zone area
     k_radi = gb.sqrt(num_g * bz_are / gb.pi)  # k points within the vertices are to be included

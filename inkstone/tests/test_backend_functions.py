@@ -26,12 +26,12 @@ def test_numpy_backend_selected():
     """
     assert nb.backend == "numpy"
 
-def test_parseData_numpy_list_of_arrays():
+def test_data_numpy_list_of_arrays():
     """
-    Test parseData for numpy backend with list of arrays
+    Test data for numpy backend with list of arrays
     """
     data = [[np.array(1.),np.array(2.)],[np.array(3.),np.array(4.)]] 
-    converted_data = nb.parseData(data)
+    converted_data = nb.data(data)
     
     assert (converted_data == np.array([[1.,2.],[3.,4.]])).all()
 
@@ -45,11 +45,11 @@ def test_jax_backend_selected():
     """
     assert jb.backend == "jax"
 
-def test_parseData_jax_list_of_arrays():
+def test_data_jax_list_of_arrays():
     """
-    Test parseData for jax backend with list of arrays
+    Test data for jax backend with list of arrays
     """
     data = [[jnp.array(1.),jnp.array(2.)],[jnp.array(3.),jnp.array(4.)]] 
-    converted_data = jb.parseData(data)
+    converted_data = jb.data(data)
     
     assert (converted_data == jnp.array([[1.,2.],[3.,4.]])).all()

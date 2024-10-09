@@ -15,15 +15,18 @@ A circular hole of radius 0.2 in each unit cell.
         ⋮
 """
 import sys
+import torch
+
 from project_path import PATH as p
 sys.path.append(p)
 import inkstone.backends.BackendLoader as bl
-bl.set_backend('numpy')
+bl.set_backend('torch')
+torch.autograd.set_detect_anomaly(True)
 bk = bl.backend()
 from inkstone.simulator import Inkstone
 
 s = Inkstone()
-s.lattice = ((1, 0), (0, 1))
+s.lattice = ((1., 0.), (0., 1.))
 s.num_g = 100
 
 s.AddMaterial(name='di', epsilon=12)
@@ -43,6 +46,10 @@ Ex, Ey, Ez, Hx, Hy, Hz = s.GetFields(xmin=-0.5, xmax=0.5, nx=101,
                                      y=0,
                                      zmin=-0.2, zmax=0.7, nz=91)
 
+for _, elem in enumerate(Ey.real.flatten()):
+    elem.backward(retain_graph=True)
+    print(s.lattice.grad)
+"""
 #%% plotting
 from matplotlib import pyplot as plt
 
@@ -53,3 +60,4 @@ plt.xlabel('x')
 plt.ylabel('z')
 plt.colorbar()
 plt.show()
+"""

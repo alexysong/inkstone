@@ -4,6 +4,9 @@ from warnings import warn
 from collections import OrderedDict
 from typing import Tuple, Optional, List, Dict, Union
 import time
+
+import torch
+
 import inkstone.backends.BackendLoader as bl
 
 from inkstone.rsp import rsp, rsp_sa12lu, rsp_sb21lu
@@ -69,7 +72,7 @@ class Inkstone:
             Optional[Tuple[int, int, Tuple[any, any, any, any]]]] = []  # the cumulative scattering matrices reversed.
 
     @property
-    def lattice(self) -> Union[float, Tuple[Tuple[float, float], Tuple[float, float]]]:
+    def lattice(self) -> Union[float, Tuple[Tuple[float, float], Tuple[float, float]], torch.Tensor]:
         """
         The lattice vectors.
 
@@ -127,7 +130,7 @@ class Inkstone:
     def frequency(self, val):
         # self.pr.frequency = val
         if self.pr.frequency != val:
-            self.pr.frequency = val
+            self.pr.frequency = gb.data(val, requires_grad=True)
             for layer_name, layer in self.layers.items():
                 layer.if_mod = True
 
@@ -142,7 +145,7 @@ class Inkstone:
     def theta(self, val):
         if (val is not None) and (val != self.pr.theta):
             if val is not gb.raw_type:
-                val = gb.parseData(val)
+                val = gb.data(val)
             self.pr.theta = val
             for layer_name, layer in self.layers.items():
                 layer.if_mod = True
@@ -744,13 +747,13 @@ class Inkstone:
                 if _n is not None:
                     if not hasattr(_n, "__len__"):
                         _n = [_n]
-                    _n = gb.parseData(_n)
+                    _n = gb.data(_n)
 
                     if _a is None:
                         raise Exception('You input eigen number but not its amplitude.')
                     elif not hasattr(_a, "__len__"):
                         _a = [_a]
-                    _a = gb.parseData(_a)
+                    _a = gb.data(_a)
 
                     if len(_a) != len(_n):
                         raise Exception('The length of the amplitudes and the eigen numbers are not the same.')
@@ -847,7 +850,7 @@ class Inkstone:
                 if self.pr._num_g_ac:
                     ab = gb.zeros(2 * self.pr._num_g_ac, dtype=gb.complex128) + 0j
                     if (sa or pa) and od and self.pr.idx_g and \
-                            sphi and cphi and sthe and cthe:
+                            sphi is not None and cphi is not None and sthe is not None and cthe is not None:
                         # find the index of the input orders in the g list
                         idx = [i for order in od for i, j in enumerate(self.pr.idx_g) if j == order]
                         for i, jj in enumerate(idx):
@@ -978,11 +981,11 @@ class Inkstone:
                 aTlu = gb.lu_factor(a.T)
                 aTlu2 = (gb.clone(aTlu[0]), gb.clone(aTlu[1]))
                 a1 = aTlu2[0]
-                a1 = gb.assignAndMultiply(a1, gb.triu_indices(a1.shape[0]), 0.5)
+                a1 = gb.assignMul(a1, gb.triu_indices(a1.shape[0]), 0.5)
                 alu = gb.lu_factor(a)
                 alu2 = (gb.clone(alu[0]), gb.clone(alu[1]))
                 a1 = alu2[0]
-                a1 = gb.assignAndMultiply(a1, gb.triu_indices(a1.shape[0]), 0.5)
+                a1 = gb.assignMul(a1, gb.triu_indices(a1.shape[0]), 0.5)
                 ab = gb.lu_solve(alu, b)
 
                 # alu = self.gb.sla.lu_factor(a)
@@ -1354,11 +1357,11 @@ class Inkstone:
 
         """
         if z is None:
-            za = gb.parseData([0.])
+            za = gb.data([0.])
         elif hasattr(z, "__len__"):
-            za = gb.parseData(z)
+            za = z
         else:
-            za = gb.parseData([z])
+            za = gb.data([z])
 
         t = self.layers[layer].thickness
         if self.layers[layer].in_mid_out == 'in':
@@ -1428,7 +1431,7 @@ class Inkstone:
             order = [order]
         elif type(order[0]) is int:
             order = [(o, 0) for o in order]
-        idx = gb.parseData([self.pr.idx_g.index(o) for o in order])
+        idx = gb.data([self.pr.idx_g.index(o) for o in order])
 
         result = [f[idx] for f in [exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb]]
 
@@ -1474,9 +1477,9 @@ class Inkstone:
         ex, ey, ez, hx, hy, hz = [a + b for a, b in
                                   [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
 
-        xa, ya = gb.hsplit(gb.parseList(xy), 2)  # 2d array with one column
+        xa, ya = gb.hsplit(xy, 2)  # 2d array with one column
 
-        #kxa, kya = gb.hsplit(gb.parseData(self.pr.ks), 2)  # 2d array with one column
+        #kxa, kya = gb.hsplit(gb.data(self.pr.ks), 2)  # 2d array with one column
         kxa, kya = gb.hsplit(self.pr.ks, 2)
 
         phase = xa * kxa.T + ya * kya.T  # shape (len(xy), numg)
@@ -1534,9 +1537,9 @@ class Inkstone:
                                      ['x', 'y', 'z']):
             if c is not None:
                 if hasattr(c, '__len__'):
-                    c = gb.parseData(c)
+                    c = gb.data(c)
                 else:
-                    c = gb.parseData([c])
+                    c = gb.data([c])
                 u = c
             elif min is None or max is None or n is None:
                 warn(s + " points to get fields not defined properly. Default to 0.")
@@ -1581,10 +1584,10 @@ class Inkstone:
 
         ll = list(self.layers.keys())
 
-        if hasattr(z, "__len__"):
+        try:
+            len(z)
             za = z
-            # za = gb.parseData(z)
-        else:
+        except TypeError:
             za = [z]
 
         Fields = [gb.zeros((len(xy), len(za)), dtype=gb.complex128) for _ in range(6)]
@@ -1598,7 +1601,7 @@ class Inkstone:
 
         for idx, iin in enumerate(i_in_l):
             za_l = za[iin] - ([0] + z_interfaces)[idx]  # z coordinate of this layer w.r.t. the left interface of this layer
-            if za_l.any() or za_l.size: # TODO: do other .any() type checks need to account for array of zeros?
+            if za_l.any() or gb.getSize(za_l):
                 fields = self.GetLayerFieldsListPoints(ll[idx], xy, za_l)
                 for f_idx, f in enumerate(fields):
                     Fields[f_idx] = gb.indexAssign(Fields[f_idx], (slice(None),iin), f) # jax might not like differentiating this
@@ -1645,13 +1648,13 @@ class Inkstone:
                                      ['x', 'y', 'z']):
             if c is not None:
                 if hasattr(c, '__len__'):
-                    c = gb.parseData(c, dtype=gb.float64)
+                    c = gb.data(c, dtype=gb.float64)
                 else:
-                    c = gb.parseData([c], dtype=gb.float64)
+                    c = gb.data([c], dtype=gb.float64)
                 u = c
             elif None in [min, max, n]:
                 warn(s + " points to get fields not defined properly. Default to 0.")
-                u = gb.parseData(0., dtype=gb.float64)
+                u = gb.data(0., dtype=gb.float64)
             else:
                 u = gb.linspace(min, max, n, dtype=gb.float64)
             uu.append(u)
@@ -1659,8 +1662,8 @@ class Inkstone:
         x, y, z = uu
         xx, yy = gb.meshgrid(x, y)
 
-        xy = list(zip(xx.ravel(), yy.ravel()))
-
+        #xy = list(zip(xx.ravel(), yy.ravel())) # this will cause precision loss
+        xy = gb.stack((xx.ravel(), yy.ravel()), -1)
         fields = self.GetFieldsListPoints(xy, z)
 
         Ex, Ey, Ez, Hx, Hy, Hz = [a.reshape(*(xx.shape), len(z)) for a in fields]
@@ -1705,7 +1708,7 @@ class Inkstone:
         sb = -1.j / 4. * ((gb.einsum('i...,i...', ex.conj(), hyb) - gb.einsum('i...,i...', ey.conj(), hxb))
                           - (gb.einsum('i...,i...', hy.conj(), exb) - gb.einsum('i...,i...', hx.conj(), eyb)))
 
-        if sf.size == 1:
+        if gb.getSize(sf) == 1:
             sf = sf[0].real
             sb = sb[0].real
         else:
@@ -1765,7 +1768,7 @@ class Inkstone:
             order = [(o, 0) for o in order]
         else:
             raise ('Incorrect datatype for input argument `order`.', RuntimeError)
-        idx = gb.parseData([self.pr.idx_g.index(o) for o in order])
+        idx = gb.data([self.pr.idx_g.index(o) for o in order])
 
         exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer, z)
 
@@ -1777,7 +1780,7 @@ class Inkstone:
         sb = -1.j / 4. * ((ex.conj()[idx, :] * hyb[idx, :] - ey.conj()[idx, :] * hxb[idx, :])
                           - (hy.conj()[idx, :] * exb[idx, :] - hx.conj()[idx, :] * eyb[idx, :]))
 
-        if sf.size == 1:
+        if gb.getSize(sf):
             sf = sf.ravel()[0].real
             sb = sb.ravel()[0].real
         else:

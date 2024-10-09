@@ -53,7 +53,7 @@ class AutogradBackend(GenericBackend):
         self.eye = anp.eye
 
 
-    def parseData(self, i: any, dtype=None):
+    def data(self, i: any, dtype=None):
         return anp.array(i, dtype=dtype)
 
     def meshgrid(self, a, b):

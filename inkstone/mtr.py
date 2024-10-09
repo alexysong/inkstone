@@ -110,14 +110,15 @@ class Mtr:
 
     @epsi.setter
     def epsi(self, val):
-        if type(val) in [float, int, complex, gb.int32, gb.float64, gb.complex128]:
+        if type(val) in [float, int, complex]\
+                or (type(val) is gb.raw_type and val.dtype in [gb.int32, gb.float64, gb.complex128]):
             ep = gb.eye(3, dtype=gb.complex128) * val
             self._epsi = ep + 0j
             self.ep_is_diagonal = True
             self.ep_is_isotropic = True
             self.ep_is_vac = val == 1.
 
-        elif gb.parseData(val).ndim == 1 and gb.getSize(gb.parseData(val)) == 3:
+        elif gb.data(val).ndim == 1 and gb.getSize(gb.data(val)) == 3:
             ep = gb.diag(val) + 0j
             self._epsi = ep + 0j
             self.ep_is_diagonal = True
@@ -128,6 +129,7 @@ class Mtr:
             else:
                 self.ep_is_vac = False
         elif (type(val) is not gb.raw_type) or val.shape != (3, 3):
+            print(val.dtype, val.shape)
             raise ValueError('data format for epsilon is incorrect.')
         else:
             ep = val
@@ -153,9 +155,9 @@ class Mtr:
         adbc = v[0, 0] * v[1, 1] - v[0, 1] * v[1, 0]
         if adbc == 0 or v[2, 2] == 0:
             raise Exception('Singular permittivity tensor.')
-        ei = gb.parseList([[v[1, 1] / adbc, -v[0, 1] / adbc, gb.parseData(0)],
-                       [-v[1, 0] / adbc, v[0, 0] / adbc, gb.parseData(0)],
-                       [gb.parseData(0), gb.parseData(0), 1 / v[2, 2]]])
+        ei = gb.parseList([[v[1, 1] / adbc, -v[0, 1] / adbc, gb.data(0)],
+                       [-v[1, 0] / adbc, v[0, 0] / adbc, gb.data(0)],
+                       [gb.data(0), gb.data(0), 1 / v[2, 2]]])
         self._epsi_inv = ei
 
     @property
@@ -173,7 +175,7 @@ class Mtr:
                 self.mu_is_vac = True
             else:
                 self.mu_is_vac = False
-        elif gb.parseData(val).ndim == 1 and gb.getSize(gb.parseData(val)) == 3:
+        elif gb.data(val).ndim == 1 and gb.getSize(gb.data(val)) == 3:
             mu = gb.diag(val) + 0j
             self._mu = mu + 0j
             self.mu_is_diagonal = True
@@ -211,9 +213,9 @@ class Mtr:
         adbc = v[0, 0] * v[1, 1] - v[0, 1] * v[1, 0]
         if adbc == 0 or v[2, 2] == 0:
             raise Exception('Singular permittivity tensor.')
-        mi = gb.parseList([[v[1, 1] / adbc, -v[0, 1] / adbc, gb.parseData(0)],
-                       [-v[1, 0] / adbc, v[0, 0] / adbc, gb.parseData(0)],
-                       [gb.parseData(0), gb.parseData(0), 1 / v[2, 2]]])
+        mi = gb.parseList([[v[1, 1] / adbc, -v[0, 1] / adbc, gb.data(0)],
+                       [-v[1, 0] / adbc, v[0, 0] / adbc, gb.data(0)],
+                       [gb.data(0), gb.data(0), 1 / v[2, 2]]])
         self._mu_inv = mi
 
     @property

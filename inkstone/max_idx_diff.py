@@ -20,7 +20,7 @@ def max_idx_diff(idx,gb=bl.backend()):
     if not idx:
         raise ValueError("Received None/Empty input")
     
-    idxa = gb.parseData(idx)  # (N， 2) shape array
+    idxa = gb.data(idx)  # (N， 2) shape array
     m = idxa[:, 0].max() - idxa[:, 0].min()  # max m index as in g = mb1 + nb2
     n = idxa[:, 1].max() - idxa[:, 1].min()
 

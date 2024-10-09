@@ -3,7 +3,11 @@ Observing finite difference (wrt z position) divergence at boundary between two 
 
 """
 
-from inkstone import GenericBackend
+import inkstone.backends.BackendLoader as bl
+
+bl.set_backend('jax')
+bk = bl.backend()
+
 from inkstone.simulator import Inkstone as NewInkstone # rename to NewInkstone so switchTo works correctly
 
 import jax.numpy as jnp
@@ -12,11 +16,9 @@ from jax import grad as jax_grad
 import matplotlib.pyplot as plt
 
 
-
 # 1D 2 LAYER ################################################################################################################################################
 ### FUNCTIONS ###
-def simulation_2layer_1d(d1,d2,w1,w2,p1,p2,f,theta,num_g=30,backend="jax"):
-    GenericBackend.switchTo(backend)
+def simulation_2layer_1d(d1,d2,w1,w2,p1,p2,f,theta,num_g=30):
     s = NewInkstone()
     s.frequency = f
     s.lattice = 1
@@ -60,10 +62,9 @@ d1 = params_2layer_1d()[0]
 z_position = d1 # to measure |Ey|
 
 def Ey_z(z):
-    GenericBackend.switchTo("jax")
-    s = simulation_2layer_1d(*params_2layer_1d(),num_g,backend="jax")
+    s = simulation_2layer_1d(*params_2layer_1d(),num_g)
     Ex, Ey, Ez, Hx, Hy, Hz = s.GetFields(x=0,y=0,z=z)
-    return GenericBackend.genericBackend.abs(Ey[0][0][0])
+    return bk.abs(Ey[0][0][0])
 
 def FD_Ey_z(z, eps):
     return (Ey_z(z+eps/2) - Ey_z(z-eps/2))/eps
@@ -89,10 +90,9 @@ params_right = params_2layer_1d()[7:]
 f = 10.
 z = d1/2
 def Ey_f(f):
-    GenericBackend.switchTo("jax")
-    s = simulation_2layer_1d(*params_left,f,*params_right,num_g,backend="jax")
+    s = simulation_2layer_1d(*params_left,f,*params_right,num_g)
     Ex, Ey, Ez, Hx, Hy, Hz = s.GetFields(x=0,y=0,z=z)
-    return GenericBackend.genericBackend.abs(Ey[0][0][0])
+    return bk.abs(Ey[0][0][0])
 
 def FD_Ey_f(f, eps):
     return (Ey_f(f+eps/2) - Ey_f(f-eps/2))/eps
@@ -109,5 +109,5 @@ ax.set_yscale("symlog", linthresh=20)
 ax.set(xlabel=r"Finite difference step, $\epsilon$", ylabel=f"Finite difference for f = {f}")
 ax.legend()
 fig.tight_layout()
-fig.savefig("./Figures/FD_f_vs_eps.pdf")
+#fig.savefig("./Figures/FD_f_vs_eps.pdf")
 plt.show()

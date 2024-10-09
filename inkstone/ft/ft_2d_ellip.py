@@ -29,11 +29,11 @@ def ft_2d_ellip(a, b, ks, center=None, angle=0.,gb=bl.backend()):
     """
 
     ang = angle / 180. * gb.pi
-    stretch = gb.parseData([[a, 0], [0, b]])
-    rotate = gb.parseData([[gb.cos(ang), -gb.sin(ang)], [gb.sin(ang), gb.cos(ang)]])
+    stretch = gb.data([[a, 0], [0, b]])
+    rotate = gb.data([[gb.cos(ang), -gb.sin(ang)], [gb.sin(ang), gb.cos(ang)]])
     aff = rotate @ stretch
 
-    ksa = gb.parseData(ks)  # nx2 shape
+    ksa = gb.data(ks)  # nx2 shape
     aksa = (aff.T @ ksa.T).T
     aks_nm = gb.norm(aksa, axis=-1)  # 1d array of n. The norm of each k vector
     idx_0 = gb.where(aks_nm == 0)[0]  # index to where k is (0, 0)
@@ -44,9 +44,9 @@ def ft_2d_ellip(a, b, ks, center=None, angle=0.,gb=bl.backend()):
 
     if center is None:
         center = (0, 0)
-    cent = gb.parseData(center)
+    cent = gb.data(center)
 
-    s = 1j * gb.zeros(aks_nm.size)
+    s = 1j * gb.zeros(gb.getSize(aks_nm))
     s = gb.indexAssign(s, idx_i, gb.abs(gb.det(aff)) * 2 * gb.pi * gb.j1(aks_nm1) / aks_nm1 * gb.exp(-1j * cent @ ksa1.T))
     s = gb.indexAssign(s, idx_0, gb.pi * a * b)
 

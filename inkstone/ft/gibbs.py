@@ -31,12 +31,12 @@ def gibbs_corr(ks: List[Union[float, Tuple[float, float], Tuple[float, float, fl
 
     if len(ks) == 1 and (m is None):
         warn('Only one k point is given, with no m specified, can not calculate the correction factor.', UserWarning)
-        s = gb.parseData([1])
+        s = gb.data([1])
     else:
         if m == 0.:
             raise Exception('m can not be zero')
 
-        ksa = gb.parseData(ks)
+        ksa = gb.data(ks)
 
         # calculate the norms of the k's
         if ksa.ndim == 1:
@@ -47,20 +47,21 @@ def gibbs_corr(ks: List[Union[float, Tuple[float, float], Tuple[float, float, fl
 
         # calculate m if not given
         if m is None:
-            #knp = np.partition(kn, -2) #purpose?
+            #knp = np.partition(kn, -2) # topk(largest=False), also see todo below
             knp = gb.sort(kn)
-            m = kn.max() + (knp[-1] - knp[-2])#TODO: undefined order, how specify? topk(largest=False)
+            m = kn.max() + (knp[-1] - knp[-2])  # TODO: undefined order with partition or topk, how to ensure selection?
             if method == 'Gaussian':
                 m *= 0.7
 
-        m *= factor
-        ma = kn / m
+        m = gb.mul(m, factor)
+        ma = gb.div(kn, m) # todo: zero exists in m, check div implementation to see how it's handled
+        #print(ma)
 
         if method == 'Lanczos':
             s = (gb.sinc(ma)) ** order
         else:
+            #tmp = ma ** 2
+            #tmp = -1 * ma
             s = gb.exp(-ma**2)
 
     return s
-
-

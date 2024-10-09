@@ -9,57 +9,58 @@ class GenericBackend(ABC):
 
     def __init__(self):
         """
-        Define some functions which normally have the same/compatible API.
+        Define some functions which have the same/compatible API.
+        Also claim some constants that will be used (such as pi)
         Incompatible APIs will need to be defined as methods below as generic API
         """
         self.raw_type = None
+
         self.abs = None
-        self.sqrt = None
         self.arange = None
-        self.ceil = None
-        self.where = None
-        self.la = None
-        self.diag = None
-        self.sin = None
-        self.cos = None
         self.arccos = None
         self.arcsin = None
-        self.ones = None
-        self.square = None
+        self.ceil = None
         self.concatenate = None
-        self.exp = None
-        self.sinc = None
-        self.zeros = None
-        self.tan = None
-        self.roll = None
-        self.sum = None
+        self.conj = None
+        self.cos = None
+        self.diag = None
         self.dot = None
+        self.einsum = None
+        self.exp = None
+        self.eye = None
+        self.fft = None
+        self.full = None
         self.hsplit = None
+        self.la = None
+        self.linspace = None
+        self.logical_not = None
+        self.lu_factor = None
+        self.maximum = None
+        self.moveaxis = None
+        self.ones = None
         self.repeat = None
         self.reshape = None
-        self.moveaxis = None
-        self.full = None
-        self.logical_not = None
-        self.maximum = None
-        self.einsum = None
-        self.lu_factor = None
-        self.fft = None
+        self.roll = None
+        self.sin = None
+        self.sinc = None
         self.slogdet = None
         self.solve = None
-        self.eye = None
-        self.conj = None
-        self.cross = None
-        self.linspace = None
+        self.square = None
+        self.sqrt = None
+        self.sum = None
+        self.tan = None
+        self.where = None
+        self.zeros = None
 
-        self.pi = None
+        self.complex128 = None  # default complex precision
         self.float64 = None  # default float precision
         self.int32 = None  # default int precision
-        self.complex128 = None  # default complex precision
+        self.pi = None
 
     @abstractmethod
-    def parseData(self, i: any, dtype=None, **kwargs):
+    def data(self, i: any, dtype=None, **kwargs):
         """
-        Generic data parser api for user inputs.
+        Generic data parsing api for user inputs.
         In numpy, it is np.array(); in pytorch, it is torch.tensor()
 
         Parameters
@@ -72,6 +73,7 @@ class GenericBackend(ABC):
 
         """
         pass
+
 
     @abstractmethod
     def castType(self, i, typ):
@@ -93,7 +95,7 @@ class GenericBackend(ABC):
     def parseList(self, tup):
         """
         Primarily for torch. For other backends that support native list, it
-        works same as parseData.
+        works same as data.
         Convert list of tensor to tensor list, e.g. [tensor(1), tensor(2)] => tensor([1,2])
 
         :param tup: a list of tensor
@@ -101,6 +103,9 @@ class GenericBackend(ABC):
         """
         pass
 
+    @abstractmethod
+    def cross(self, a, b):
+        pass
 
     @abstractmethod
     def meshgrid(self, *xi):
@@ -128,12 +133,12 @@ class GenericBackend(ABC):
     @abstractmethod
     def clone(self, i):
         """
-        Generic API for cloning an array-like data
+        Generic API for deep cloning an array-like data
         Parameters
         ----------
-        i
+        i   the data to be cloned
 
-        Returns
+        Returns the deep clone of the i
         -------
 
         """
@@ -141,7 +146,7 @@ class GenericBackend(ABC):
 
     @abstractmethod
     def triu_indices(self, row, col=None, offset=0):
-        if not col:
+        if not col:     # the default behavior of numpy when col is not given
             col = row
         pass
 
@@ -169,6 +174,10 @@ class GenericBackend(ABC):
     def block(self, arr):
         pass
 
+    @abstractmethod
+    def isnan(self, a):
+        pass
+
     def indexAssign(self, a, idx, b):
         """
         For numpy, use index assignment. For differentiation libraries, replace with differentiable version
@@ -176,6 +185,19 @@ class GenericBackend(ABC):
         a[idx] = b
         return a
 
-    def assignAndMultiply(self, a, idx, b):
-        a[idx] *= b
+    def add(self,a,b):
+        return a + b
+
+    def sub(self,a,b):
+        return a - b
+
+    def mul(self,a,b):
+        return a * b
+
+    def div(self,a,b):
+        return a / b
+
+    def assignMul(self, a, idx, b):
+        a[idx] = a[idx] * b
         return a
+

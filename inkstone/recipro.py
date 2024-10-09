@@ -26,12 +26,12 @@ def recipro(a1, a2, gb=bl.backend()):
         if a2n == 0.:
             raise Exception("The two lattice vectors can't be both zero vectors.")
         else:
-            b1 = gb.parseData([float('inf'), float('inf')])
+            b1 = gb.data([float('inf'), float('inf')])
             b2 = 2 * gb.pi / (a2n ** 2) * a2
     else:
         if a2n == 0.:
             b1 = 2 * gb.pi / (a1n ** 2) * a1
-            b2 = gb.parseData([float('inf'), float('inf')])
+            b2 = gb.data([float('inf'), float('inf')])
         else:
             ar = gb.abs(gb.cross(a1, a2))  # area
             coef = 2 * gb.pi / ar

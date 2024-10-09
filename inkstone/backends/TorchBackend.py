@@ -1,7 +1,6 @@
-from warnings import warn
-
 import torch
 from inkstone.backends.GenericBackend import GenericBackend
+from inkstone.primitives.torch_primitive import j0, j1, eig
 
 
 class TorchBackend(GenericBackend):
@@ -9,51 +8,58 @@ class TorchBackend(GenericBackend):
     def __init__(self):
         super().__init__()
         self.raw_type = torch.Tensor
+
         self.abs = torch.abs
-        self.sqrt = torch.sqrt
         self.arange = torch.arange
-        self.ceil = torch.ceil
-        self.where = torch.where
-        self.la = torch.linalg
-        self.diag = torch.diag
-        self.sin = torch.sin
-        self.cos = torch.cos
         self.arccos = torch.arccos
         self.arcsin = torch.arcsin
-        self.ones = torch.ones
-        self.square = torch.square
+        self.ceil = torch.ceil
         self.concatenate = torch.concatenate
+        self.conj = torch.conj_physical
+        self.cos = torch.cos
+        self.diag = torch.diag
+        self.dot = torch.dot
+        self.einsum = torch.einsum
         self.exp = torch.exp
-        self.sinc = torch.sinc
-        self.zeros = torch.zeros
-        self.tan = torch.tan
-        self.roll = torch.roll
-        self.sum = torch.sum
-        self.dot = torch.dot  #unlike numpy, it supports 1d tensors only, which is fine in inkstone
+        self.eye = torch.eye
+        self.fft = torch.fft
+        self.full = torch.full
         self.hsplit = torch.hsplit
+        self.la = torch.linalg
+        self.linspace = torch.linspace
+        self.logspace = torch.logspace
+        self.logical_not = torch.logical_not
+        self.lu_factor = torch.linalg.lu_factor
+        self.maximum = torch.maximum
+        self.moveaxis = torch.moveaxis
+        self.ones = torch.ones
         self.repeat = torch.repeat_interleave
         self.reshape = torch.reshape
-        self.moveaxis = torch.moveaxis
-        self.full = torch.full
-        self.logical_not = torch.logical_not
-        self.maximum = torch.maximum
-        self.einsum = torch.einsum
-        self.lu_factor = torch.linalg.lu_factor
-        #       self.lu_solve = torch.linalg.lu_solve
-        self.fft = torch.fft
+        self.roll = torch.roll
+        self.sin = torch.sin
+        self.sinc = torch.sinc
         self.slogdet = torch.slogdet
         self.solve = torch.linalg.solve
-        self.linspace = torch.linspace
-        self.eye = torch.eye
-        self.conj = torch.conj_physical
-        self.cross = torch.linalg.cross
+        self.square = torch.square
+        self.sqrt = torch.sqrt
+        self.sum = torch.sum
+        self.tan = torch.tan
+        self.where = torch.where
+        self.zeros = torch.zeros
+        self.stack = torch.stack
 
-        self.pi = torch.pi
+        self.j0 = j0
+        self.j1 = j1
+        self.eig = eig
+
+        self.complex128 = torch.complex128  # default complex precision
         self.float64 = torch.float64  # default float precision
         self.int32 = torch.int32  # default int precision
-        self.complex128 = torch.complex128  # default complex precision
+        self.pi = torch.pi
 
-    def parseData(self, i: any, dtype=None, **kwargs):
+    def data(self, i: any, dtype=None, **kwargs):
+        if i is None:
+            return i
         req_grad = False
         try:
             req_grad = kwargs['requires_grad']
@@ -64,7 +70,12 @@ class TorchBackend(GenericBackend):
             if dtype is not None and dtype != i.dtype:
                 raise Exception("Do not use this function to change dtype")
             else:
-                print("Already parsed")
+                if not i.requires_grad and req_grad:
+                    i.requires_grad = req_grad
+                else:
+                    # You can breakpoint here to remove redundant parsing
+                    #print("Already parsed")
+                    pass
                 return i
         o = i
         while type(o) == list or type(o) == tuple:
@@ -86,7 +97,12 @@ class TorchBackend(GenericBackend):
                 dtype = self.complex128
             else:
                 dtype = type(o)
-        return torch.tensor(i, dtype=dtype,requires_grad=req_grad)
+
+        return torch.tensor(i, dtype=dtype, requires_grad=req_grad)
+
+    def cross(self, a, b):
+        return torch.linalg.cross(torch.cat([a, torch.tensor([0])]),
+                                  torch.cat([b, torch.tensor([0])]), dim=-1)[-1]
 
     def meshgrid(self, *tensors):
         """
@@ -115,10 +131,6 @@ class TorchBackend(GenericBackend):
             return torch.tensor(tup)
         return torch.stack(tup, dim=dim)
 
-    #  def cross(self, a, b):
-    #     return torch.cross(torch.tensor((a[0], a[1], 0), dtype=torch.float64),
-    #                        torch.tensor((b[0], b[1], 0), dtype=torch.float64), dim=-1)[-1]
-
     def getSize(self, i):
         #np.prod(i.size(),dtype=np.int32)
         #torch.Size is different from torch.tensor
@@ -145,29 +157,23 @@ class TorchBackend(GenericBackend):
     def lu_solve(self, p, q):
         return torch.linalg.lu_solve(p[0], p[1], q)
 
-    def __getattr__(self, name):
-        if hasattr(torch, name):
-            return getattr(torch, name)
-        elif hasattr(self, name):
-            return getattr(self, name)
-        else:
-            raise AttributeError(f"'{self.__name__}' has no attribute '{name}'")
 
     def norm(self, i, dim=None):
-        return torch.linalg.vector_norm(i,dim=dim)
+        return torch.linalg.vector_norm(i, dim=dim)
 
     def clone(self, i):
-        return i.clone()
+        return torch.clone(i)
 
     def argsort(self, ipt, dim=-1, **kwargs):
         descending = kwargs.pop('descending', False)
         stable = kwargs.pop('stable', True)
         return torch.argsort(ipt, dim=dim, descending=descending, stable=stable)
 
-    def sort(self,a,axis=-1, **kwargs):
-        des = kwargs.pop('descending',False)
+    def sort(self, a, axis=-1, **kwargs):
+        des = kwargs.pop('descending', False)
         stable = kwargs.pop('stable', True)
-        return torch.sort(a, dim=axis, descending=des, stable=stable)
+        sorte, indices = torch.sort(a, dim=axis, descending=des, stable=stable)
+        return sorte
 
     # manual implementation of block, at least matches all results on np docs
     def block(self, arr):
@@ -200,6 +206,60 @@ class TorchBackend(GenericBackend):
                 output.append(ar)
 
         return torch.cat(output) if depth == 1 else torch.cat(output, 1)
+
+    # from https://stackoverflow.com/questions/24743753/test-if-an-array-is-broadcastable-to-a-shape
+    def is_broadcastable(self, shp1, shp2):
+        for a, b in zip(shp1[::-1], shp2[::-1]):
+            if a == 1 or b == 1 or a == b:
+                pass
+            else:
+                return False
+        return True
+
+    def indexAssign(self, a: torch.Tensor, idx: [int, tuple, torch.Tensor], b):
+        if type(idx) is not int and len(idx) == 0:
+            return a
+
+        mask = torch.zeros_like(a, dtype=torch.bool)
+        mask[idx] = True
+
+        if torch.is_tensor(b) and not self.is_broadcastable(a.shape, b.shape):
+            # this is a workaround to solve shape mismatch on b and a
+            val = torch.zeros_like(a)
+            val[idx] = b
+
+            # Use torch.where to combine 'a' and 'b' based on the mask
+            return torch.where(mask, val, a)
+
+        return torch.where(mask, b, a)
+
+    def isnan(self, a):
+        return torch.isnan(a)
+
+    @staticmethod
+    def prec_fix(tensor, prec=16):
+        # Calculate the scaling factor
+
+        scale = 10 ** prec
+        if tensor.dtype == torch.complex128:
+            # Handle real and imaginary parts separately
+            real = torch.floor(tensor.real * scale) / scale
+            imag = torch.floor(tensor.imag * scale) / scale
+            return torch.complex(real, imag)
+
+        return torch.floor(tensor * scale) / scale
+
+    def add(self, a, b):
+        return a+b
+
+    def sub(self, a, b):
+        return self.prec_fix(a - b)
+
+    def mul(self, a, b):
+        return a * b
+
+    def div(self, a, b):
+        return self.prec_fix(a.div(torch.where(b == 0, 1e-16, b)))
 
 
 def getLsDepth(ls):
