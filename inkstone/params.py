@@ -715,8 +715,8 @@ class Params:
 
             kx = xx * b1[0] + yy * b2[0]
             ky = xx * b1[1] + yy * b2[1]
-            self.ks_ep_mu = list(zip(kx.ravel(), ky.ravel()))  # each element is (kx, ky) tuple.
-            self.ks_ep_mu = gb.parseList(self.ks_ep_mu)
+            self.ks_ep_mu = gb.stack((kx.ravel(), ky.ravel()), 1)  # each element is (kx, ky) tuple.
+            #self.ks_ep_mu = gb.parseList(self.ks_ep_mu)
             self.ka_ep_mu = (kx, ky)
 
             # print(t2 - t1)

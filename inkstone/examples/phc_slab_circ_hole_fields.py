@@ -20,7 +20,7 @@ import torch
 from project_path import PATH as p
 sys.path.append(p)
 import inkstone.backends.BackendLoader as bl
-bl.set_backend('torch')
+bl.set_backend('numpy')
 torch.autograd.set_detect_anomaly(True)
 bk = bl.backend()
 from inkstone.simulator import Inkstone
@@ -31,9 +31,9 @@ s.num_g = 100
 
 s.AddMaterial(name='di', epsilon=12)
 
-s.AddLayer(name='in', thickness=0, material_background='vacuum')
+s.AddLayer(name='in', thickness=0., material_background='vacuum')
 s.AddLayer(name='slab', thickness=0.5, material_background='di')
-s.AddLayerCopy(name='out', original_layer='in', thickness=0)
+s.AddLayerCopy(name='out', original_layer='in', thickness=0.)
 
 s.AddPatternDisk(layer='slab', pattern_name='disk', material='vacuum', radius=0.2)
 
@@ -46,10 +46,14 @@ Ex, Ey, Ez, Hx, Hy, Hz = s.GetFields(xmin=-0.5, xmax=0.5, nx=101,
                                      y=0,
                                      zmin=-0.2, zmax=0.7, nz=91)
 
+
+"""
 for _, elem in enumerate(Ey.real.flatten()):
     elem.backward(retain_graph=True)
     print(s.lattice.grad)
+
 """
+
 #%% plotting
 from matplotlib import pyplot as plt
 
@@ -60,4 +64,3 @@ plt.xlabel('x')
 plt.ylabel('z')
 plt.colorbar()
 plt.show()
-"""

@@ -622,8 +622,8 @@ class Layer:
                                                      [0.]])
 
         # normalize such that the larger norm of v and vh's each column is 1
-        vn = gb.norm(v, 0)
-        vhn = gb.norm(vh, 0)
+        vn = gb.norm(v, dim=0)
+        vhn = gb.norm(vh, dim=0)
         nm = gb.maximum(vn, vhn)
         v = gb.div(v, nm)
         vh = gb.div(vh, nm)

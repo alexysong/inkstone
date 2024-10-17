@@ -58,16 +58,21 @@ class GenericBackend(ABC):
     @abstractmethod
     def data(self, i: any, dtype=None, **kwargs):
         """
-        Generic data parsing api for user inputs.
-        In numpy, it is np.array(); in pytorch, it is torch.tensor()
+        it's the operation that is same as np.array() when using numpy as backend, or torch.tensor() when using
+        PyTorch as backend.
+
+        if dtype is not specified, it will be automatically inferred from the input dtype. For example,
+        the int object will make dtype as gb.int32, float as gb.float64, complex as gb.complex128
 
         Parameters
         ----------
-        i:  data with native python data type
-        dtype: specified data type
+        i       : the data (expected to be of the native python type)
+        dtype   : data type (gb.float64, gb.complex128, etc.)
+        kwargs  : optional keyword arguments that only exists in certain backends, e.g. requires_grad in TorchBackend
 
-        Returns parsed data
+        Returns
         -------
+        the data that the backend is comfortable to deal with. e.g. np.ndarray when use numpy or torch.Tensor when use PyTorch
 
         """
         pass
@@ -76,41 +81,82 @@ class GenericBackend(ABC):
     @abstractmethod
     def castType(self, i, typ):
         """
-        Generic API for type converting. In numpy, it is np.ndarray.astype(); In pytorch, it is torch.tensor.to()
+        Convert the dtype of i to type. In numpy, it is equivalent to np.ndarray.astype(); In pytorch, it is equivalent
+        to torch.tensor.to()
 
         Parameters
         ----------
-        i: parsed data
-        typ: dtype of backend
+        i: input data
+        typ: data type of the output data
 
         Returns
         -------
-
+        the input with dtype set to typ
         """
         pass
 
     @abstractmethod
     def parseList(self, tup):
         """
-        Primarily for torch. For other backends that support native list, it
-        works same as data.
-        Convert list of tensor to tensor list, e.g. [tensor(1), tensor(2)] => tensor([1,2])
+        This function converts list of tensor to tensor, e.g. [tensor(1), tensor(2)] => tensor([1,2])
+        Primarily for torch to solve incompatible list creation operation.
+        For example, a = [1,2]; b=[3,4]; [a,b] will be [[1,2],[3,4]].
+        However, if a=tensor([1,2]), b=tensor([3,4]), [a,b] will be [tensor([1,2]),tensor([3,4])],
+        while you may expect tensor([[1,2],[3,4]]) instead.
+        For other backends that support native list, it works same as data().
 
-        :param tup: a list of tensor
-        :return: tensor list
+        Parameters
+        ----------
+        tup : a python native list of tensors
+
+        Returns
+        -------
+        tensor
         """
         pass
 
     @abstractmethod
-    def cross(self, a, b):
+    def cross(self, a, b, dim=None):
+        """
+        Parameters
+        ----------
+        a   :   input data
+        b   :   another input data
+        dim :   the dimension to take the cross-product in
+
+        Returns
+        -------
+        the cross product of vectors in dimension dim of a and b
+        """
         pass
 
     @abstractmethod
     def ones(self, a, dtype):
+        """
+        Parameters
+        ----------
+        a       : a tuple of int that define the shape
+        dtype   : data type of the output
+
+        Returns
+        -------
+        the array filled with the scalar value 1, with the shape defined by a.
+        """
         pass
 
     @abstractmethod
     def zeros(self, a, dtype):
+        """
+        Parameters
+        ----------
+        a       : a tuple of int that define the shape
+        dtype   : data type of the output
+
+        Returns
+        -------
+        the array filled with the scalar value 0, with the shape defined by a.
+        """
+
         pass
 
     @abstractmethod
@@ -123,30 +169,33 @@ class GenericBackend(ABC):
 
         Returns
         -------
-
+        grids of coordinates specified by the 1D inputs in attr:xi
         """
         pass
 
     @abstractmethod
     def getSize(self, i):
         """
-        Generic API for getting number of elements in an array-like data
-        :param i: arraylike
-        :return: number of elements in i
+        Parameters
+        ----------
+        i : array_like
+
+        Returns
+        -------
+        number of elements in i
         """
         pass
 
     @abstractmethod
     def clone(self, i):
         """
-        Generic API for deep cloning an array-like data
         Parameters
         ----------
         i   the data to be cloned
 
-        Returns the deep clone of the i
+        Returns
         -------
-
+        a deep clone of i
         """
         pass
 

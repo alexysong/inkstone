@@ -71,7 +71,7 @@ class NumpyBackend(GenericBackend):
     def data(self, i: any, dtype=None, **kwargs):
         return np.array(i, dtype=dtype)
 
-    def cross(self, a, b):
+    def cross(self, a, b, dim=None):
         return np.cross(a, b)
 
     def meshgrid(self, *xi):

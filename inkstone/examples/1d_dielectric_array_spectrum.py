@@ -25,10 +25,10 @@ s.num_g = 30
 
 s.AddMaterial(name='di', epsilon=12)
 
-s.AddLayer(name='in', thickness=0, material_background='vacuum')
+s.AddLayer(name='in', thickness=0., material_background='vacuum')
 d = 0.55
 s.AddLayer(name='slab', thickness=d, material_background='di')
-s.AddLayerCopy(name='out', original_layer='in', thickness=0)
+s.AddLayerCopy(name='out', original_layer='in', thickness=0.)
 
 s.AddPattern1D(layer='slab', pattern_name='box', material='vacuum', width=0.45, center=0.5)
 

@@ -56,6 +56,7 @@ class TorchBackend(GenericBackend):
         self.pi = torch.pi
 
     def data(self, i: any, dtype=None, **kwargs):
+
         if i is None:
             return i
         req_grad = False
@@ -72,7 +73,6 @@ class TorchBackend(GenericBackend):
                     i.requires_grad = req_grad
                 else:
                     # You can breakpoint here to remove redundant parsing
-                    #print("Already parsed")
                     pass
                 return i
         o = i
@@ -98,12 +98,12 @@ class TorchBackend(GenericBackend):
 
         return torch.tensor(i, dtype=dtype, requires_grad=req_grad)
 
-    def cross(self, a, b):
+    def cross(self, a, b, dim=None):
         try:
             return torch.linalg.cross(a, b)
         except RuntimeError:
             return torch.linalg.cross(torch.cat([a, torch.tensor([0])]),
-                                      torch.cat([b, torch.tensor([0])]), dim=-1)
+                                      torch.cat([b, torch.tensor([0])]), dim=-1)[-1]
 
     def ones(self, c, dtype=torch.float64):
         return torch.ones(c, dtype=dtype)

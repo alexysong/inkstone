@@ -26,7 +26,7 @@ def ft_2d_disk(r, ks, center=(0,0),gb=bl.backend()):
     if ks is None:
         return []
      # nx2 shape
-    ks_nm = gb.norm(ks, -1)  # 1d array of n. The norm of each k vector
+    ks_nm = gb.norm(ks, dim=-1)  # 1d array of n. The norm of each k vector
     idx_0 = gb.where(ks_nm == 0)[0]  # index to where k is (0, 0)
     idx_i = gb.where(ks_nm != 0)[0]  # index to where k is not (0, 0)
     ks_nm1 = gb.delete(ks_nm, idx_0)

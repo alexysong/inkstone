@@ -18,20 +18,20 @@ import sys
 p ='C:/Users/w-a-c/Desktop/inkstone'
 sys.path.append(p)
 import inkstone.backends.BackendLoader as bl
-bl.set_backend('numpy')
+bl.set_backend('torch')
 bk = bl.backend()
 
 from inkstone.simulator import Inkstone
 
 s = Inkstone()
-s.lattice = ((1, 0), (0, 1))
+s.lattice = ((1., 0.), (0., 1.))
 s.num_g = 50
 
 s.AddMaterial(name='di', epsilon=12)
 
-s.AddLayer(name='in', thickness=0, material_background='vacuum')
+s.AddLayer(name='in', thickness=0., material_background='vacuum')
 s.AddLayer(name='slab', thickness=0.5, material_background='di')
-s.AddLayerCopy(name='out', original_layer='in', thickness=0)
+s.AddLayerCopy(name='out', original_layer='in', thickness=0.)
 
 s.AddPatternDisk(layer='slab', pattern_name='disk', material='vacuum', radius=0.2)
 
@@ -55,7 +55,7 @@ transmission = bk.parseList([a[0] for a in flux_out]) / incident
 
 #%% plotting
 from matplotlib import pyplot as plt
-plt.plot(freq, transmission)
+plt.plot(freq.detach(), transmission.detach())
 plt.xlabel('frequency')
 plt.ylabel('transmission')
 plt.show()
