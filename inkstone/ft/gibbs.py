@@ -51,7 +51,7 @@ def gibbs_corr(ks: List[Union[float, Tuple[float, float], Tuple[float, float, fl
             knp = gb.sort(kn)
             m = kn.max() + (knp[-1] - knp[-2])  # TODO: undefined order with partition or topk, how to ensure selection?
             if method == 'Gaussian':
-                m *= 0.7
+                m = m * 0.7
 
         m = gb.mul(m, factor)
         ma = gb.div(kn, m) # todo: zero exists in m, check div implementation to see how it's handled

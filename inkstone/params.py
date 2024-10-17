@@ -261,7 +261,7 @@ class Params:
     @omega.setter
     def omega(self, val: Union[float, complex]):
         if val is not None:
-            self._omega = val
+            self._omega = gb.data(val)
             self._frequency = val / gb.pi / 2.
             # self.q0_contain_0 = False
             # self._calc_gs()  # recalculating gs because some g may be possibly removed in previous runs to remove Wood's anomaly.
@@ -908,8 +908,8 @@ class Params:
             k_norm = gb.castType(k_norm, gb.complex128)  #compatible dtype with c1f,c2f assignment below
             #c1f[i_qlw] = o / q0h[i_qlw] / k_norm[i_qlw]
             #c2f[i_qlw] = 1j / k_norm[i_qlw]
-            c1f = gb.indexAssign(c1f,i_qlw, o / q0h[i_qlw] / k_norm[i_qlw])
-            c2f = gb.indexAssign(c2f,i_qlw, 1j / k_norm[i_qlw])
+            c1f = gb.indexAssign(c1f, i_qlw, o / q0h[i_qlw] / k_norm[i_qlw])
+            c2f = gb.indexAssign(c2f, i_qlw, 1j / k_norm[i_qlw])
 
             c1f = gb.indexAssign(c1f, i_qsw, 1. / k_norm[i_qsw])
             c2f = gb.indexAssign(c2f, i_qsw, 1j / o * q0h[i_qsw] / k_norm[i_qsw])
@@ -923,8 +923,8 @@ class Params:
             c1f = gb.indexAssign(c1f, ii, 1.)
             c2f = gb.indexAssign(c2f, ii, 1j * q0h[ii] / o)
 
-            c1 *= c1f
-            c2 *= c2f
+            c1 = c1 * c1f
+            c2 = c2 * c2f
 
             r1 = gb.arange(ng)
             r2 = gb.arange(ng, 2 * ng)
@@ -1243,7 +1243,7 @@ class Params:
 
             idxa = gb.data(self.idx_g)
             ksa = gb.castType(self.ks,gb.complex128)
-            k_pa = gb.norm(self.ks, -1)  # norm of in-plane momentum
+            k_pa = gb.norm(self.ks, dim=-1)  # norm of in-plane momentum
             i0 = (k_pa == 0.)
             ib = (k_pa != 0.)
             ii = (idxa[:, 0] == 0) & (idxa[:, 1] == 0)

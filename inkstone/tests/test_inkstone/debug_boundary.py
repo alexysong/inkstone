@@ -5,7 +5,7 @@ Observing finite difference (wrt z position) divergence at boundary between two 
 
 import inkstone.backends.BackendLoader as bl
 
-bl.set_backend('jax')
+bl.set_backend('torch')
 bk = bl.backend()
 
 from inkstone.simulator import Inkstone as NewInkstone # rename to NewInkstone so switchTo works correctly

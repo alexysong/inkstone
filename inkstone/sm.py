@@ -80,19 +80,19 @@ def s_1l_rsp(thickness: float,
     a = afl
     b = bfl
 
-    tng = afl.shape[0]
+    # tng = afl.shape[0]
 
     f = gb.exp(1j * ql * thickness)
 
     # ia = la.inv(a)
     aTlu = gb.lu_factor(a.T)
-    aTlu2 = (gb.clone(aTlu[0]), gb.clone(aTlu[1]))
-    a1 = aTlu2[0]
+    a1 = gb.clone(aTlu[0])
     a1 = gb.assignMul(a1, gb.triu_indices(a1.shape[0]), 0.5)
+    aTlu2 = (a1, aTlu[1])
     alu = gb.lu_factor(a)
     # alu2 = (alu[0].copy(), alu[1].copy())
     # a1 = alu2[0]
-    # a1[gb.triu_indices(a1.shape[0])] *= 0.5
+    # a1 = gb.assignAndMultiply(a1, gb.triu_indices(a1.shape[0]), 0.5)
 
     ab = gb.lu_solve(alu, b)
     ba = gb.lu_solve(aTlu, b.T).T
@@ -204,9 +204,9 @@ def s_1l_rsp_lrd(thickness: float,
 
     # ia = la.inv(a)
     aTlu = gb.lu_factor(a.T)
-    aTlu2 = (aTlu[0].copy(), aTlu[1].copy())
-    a1 = aTlu2[0]
-    gb.assignMul(a1, gb.triu_indices(a1.shape[0]), 0.5)
+    a1 = gb.clone(aTlu[0])
+    a1 = gb.assignMul(a1, gb.triu_indices(a1.shape[0]), 0.5)
+    aTlu2 = (a1, aTlu[1])
     alu = gb.lu_factor(a)
     # alu2 = (alu[0].copy(), alu[1].copy())
     # a1 = alu2[0]
@@ -237,7 +237,7 @@ def s_1l_rsp_lrd(thickness: float,
     a2Tlu = gb.lu_factor(a2.T)
     a2Tlu2 = (gb.clone(a2Tlu[0]), gb.clone(a2Tlu[1]))
     a1 = a2Tlu2[0]
-    gb.assignMul(a1, gb.triu_indices(a1.shape[0]), 0.5)
+    a1 = gb.assignMul(a1, gb.triu_indices(a1.shape[0]), 0.5)
     a2lu = gb.lu_factor(a2)
     # alu2 = (alu[0].copy(), alu[1].copy())
     # a1 = alu2[0]
@@ -303,7 +303,7 @@ def s_1l_1212(a, b):
     alu = gb.lu_factor(a)
     alu2 = (gb.clone(alu[0]), gb.clone(alu[1]))
     a1 = alu2[0]
-    gb.assignMul(a1, gb.triu_indices(a1.shape[0]), 0.5)
+    a1 = gb.assignMul(a1, gb.triu_indices(a1.shape[0]), 0.5)
     ab = gb.lu_solve(alu, b)
 
     s11 = gb.lu_solve(aTlu, b.T).T
@@ -333,13 +333,15 @@ def s_1l_1221(a, b):
     """
     # https://github.com/pytorch/pytorch/issues/46496
     alu = gb.lu_factor(a)
-    alu2 = (gb.clone(alu[0]), gb.clone(alu[1]))
+    a1 = gb.clone(alu[0])
+    a1 = gb.assignMul(a1, gb.triu_indices(a1.shape[0]), 0.5)
+    alu2 = (a1, alu[1])
 
-    gb.assignMul(alu2[0], gb.triu_indices(alu2[0].shape[0]), 0.5)
     aTlu = gb.lu_factor(a.T)
-    #aTlu2 = (gb.clone(aTlu[0]), gb.clone(aTlu[1]))
-    #at1 = gb.clone(aTlu[0])
-    #at1 = gb.assignMul(at1, gb.triu_indices(at1.shape[0]), 0.5)
+    # at1 = gb.clone(aTlu[0])
+    # at1 = gb.assignAndMultiply(at1, gb.triu_indices(at1.shape[0]), 0.5)
+    # aTlu2 = (at1, aTlu[1])
+
     ab = gb.lu_solve(alu, b)
 
     s11 = - ab

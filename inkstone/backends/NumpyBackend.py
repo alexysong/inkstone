@@ -59,6 +59,11 @@ class NumpyBackend(GenericBackend):
         self.int32 = np.int32
         self.pi = np.pi
 
+    @staticmethod
+    def fix_eigenvector_phase(x):
+        t = np.sqrt(x)
+        return np.where(t.imag<0,-t,t)
+
     def eig(self, A):
         r = sla.eig(A)
         return self.prec_fix(r[0]), self.prec_fix(r[1])
@@ -87,7 +92,7 @@ class NumpyBackend(GenericBackend):
     def clone(self, i):
         return i.copy()
 
-    def triu_indices(self, row, col=None, offset=0):
+    def triu_indices(self, row, offset=0, col=None):
         if not col:
             col = row
         return np.triu_indices(row, offset, col)
@@ -95,8 +100,13 @@ class NumpyBackend(GenericBackend):
     def lu_solve(self, p, q):
         return sla.lu_solve(p, q)
 
-    def norm(self, i, dim=None):
-        return np.linalg.norm(i, axis=dim)
+    def ones(self,p,dtype=np.float64):
+        return np.ones(p,dtype=dtype)
+
+    def zeros(self, p ,dtype=np.float64):
+        return np.zeros(p,dtype=dtype)
+    def norm(self, i, ord=None, dim=None):
+        return np.linalg.norm(i, ord=ord, axis=dim)
 
     def argsort(self, ipt, dim=-1, **kwargs):
         kind = kwargs.pop('kind',None)
@@ -118,7 +128,7 @@ class NumpyBackend(GenericBackend):
         return np.isnan(a)
 
     @staticmethod
-    def prec_fix(arr, prec=16):
+    def prec_fix(arr, prec=15):
         # Calculate the scaling factor
         # For real numbers
         scale = 10 ** prec

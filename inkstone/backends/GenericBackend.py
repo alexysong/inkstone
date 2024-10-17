@@ -37,7 +37,6 @@ class GenericBackend(ABC):
         self.lu_factor = None
         self.maximum = None
         self.moveaxis = None
-        self.ones = None
         self.repeat = None
         self.reshape = None
         self.roll = None
@@ -50,7 +49,6 @@ class GenericBackend(ABC):
         self.sum = None
         self.tan = None
         self.where = None
-        self.zeros = None
 
         self.complex128 = None  # default complex precision
         self.float64 = None  # default float precision
@@ -108,6 +106,14 @@ class GenericBackend(ABC):
         pass
 
     @abstractmethod
+    def ones(self, a, dtype):
+        pass
+
+    @abstractmethod
+    def zeros(self, a, dtype):
+        pass
+
+    @abstractmethod
     def meshgrid(self, *xi):
         """
 
@@ -145,7 +151,7 @@ class GenericBackend(ABC):
         pass
 
     @abstractmethod
-    def triu_indices(self, row, col=None, offset=0):
+    def triu_indices(self, row,  offset=0, col=None):
         if not col:     # the default behavior of numpy when col is not given
             col = row
         pass
@@ -155,8 +161,9 @@ class GenericBackend(ABC):
         pass
 
     @abstractmethod
-    def norm(self, i, dim=None):
+    def norm(self, i, ord=None, dim=None):
         pass
+
 
     @abstractmethod
     def argsort(self, ipt, dim=-1, **kwargs):

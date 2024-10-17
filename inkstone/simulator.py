@@ -85,7 +85,7 @@ class Inkstone:
 
     @lattice.setter
     def lattice(self, val):
-        if val != self.pr.latt_vec:
+        if type(val) is not type(self.pr.latt_vec) or val != self.pr.latt_vec:
             self.pr.latt_vec = val
             for layer_name, layer in self.layers.items():
                 layer.if_mod = True
@@ -264,8 +264,8 @@ class Inkstone:
                     thickness = 0.
                 layer.in_mid_out = 'in'
             self.layers[name] = layer
-            self.thicknesses[name] = thickness
-            self.total_thickness += thickness
+            self.thicknesses[name] = gb.data(thickness, requires_grad=True)
+            self.total_thickness = self.total_thickness+thickness
             self.thicknesses_c.append(self.total_thickness)
             self.csms.append([])
             # self._determine_layers()
@@ -293,8 +293,8 @@ class Inkstone:
             layer_copy = LayerCopy(name, layer, thickness)
             self.layers[name] = layer_copy
 
-            self.thicknesses[name] = thickness
-            self.total_thickness += thickness
+            self.thicknesses[name] = gb.data(thickness,requires_grad=True)
+            self.total_thickness = self.total_thickness+thickness
             self.thicknesses_c.append(self.total_thickness)
 
             self.csms.append([])
@@ -978,6 +978,7 @@ class Inkstone:
 
                 a, b = layer.imfl
                 # ia = la.inv(a)
+                '''
                 aTlu = gb.lu_factor(a.T)
                 aTlu2 = (gb.clone(aTlu[0]), gb.clone(aTlu[1]))
                 a1 = aTlu2[0]
@@ -987,9 +988,17 @@ class Inkstone:
                 a1 = alu2[0]
                 a1 = gb.assignMul(a1, gb.triu_indices(a1.shape[0]), 0.5)
                 ab = gb.lu_solve(alu, b)
+                '''
+                aTlu = gb.lu_factor(a.T)
+                alu = gb.lu_factor(a)
+                a1 = gb.clone(alu[0])
+                a1 = gb.assignMul(a1, gb.triu_indices(a1.shape[0]), 0.5)
+                alu2 = (a1, alu[1])
 
-                # alu = self.gb.sla.lu_factor(a)
-                # aib = self.gb.sla.lu_solve(alu, b)
+                ab = gb.lu_solve(alu, b)
+
+                # alu = gb.lu_factor(a)
+                # aib = gb.lu_solve(alu, b)
                 # sl11 = b @ ia
                 sl11 = gb.lu_solve(aTlu, b.T).T
                 # sl12 = a - b @ ia @ b
@@ -1474,19 +1483,23 @@ class Inkstone:
 
         exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer,
                                                                                                   z)  # each has shape (num_g, len(z))
-        ex, ey, ez, hx, hy, hz = [a + b for a, b in
+        ex, ey, ez, hx, hy, hz = [gb.prec_fix(a + b) for a, b in
                                   [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
-
         xa, ya = gb.hsplit(xy, 2)  # 2d array with one column
 
         #kxa, kya = gb.hsplit(gb.data(self.pr.ks), 2)  # 2d array with one column
         kxa, kya = gb.hsplit(self.pr.ks, 2)
 
         phase = xa * kxa.T + ya * kya.T  # shape (len(xy), numg)
+        E = lambda x: gb.exp(1j * phase) @ x
+        Ex = E(ex)
+        Ey = E(ey)
+        Ez = E(ez)
 
-        Ex, Ey, Ez = [(gb.exp(1j * phase) @ e) for e in [ex, ey, ez]]  # shape (len(xy), len(z))
-
-        Hx, Hy, Hz = [(-1j * gb.exp(1j * phase) @ h) for h in [hx, hy, hz]]  # shape (len(xy), len(z))
+        H = lambda x: -1j * gb.exp(1j * phase) @ x
+        Hx = H(hx)
+        Hy = H(hy)
+        Hz = H(hz)
 
         # else:
         #     Ex, Ey, Ez, Hx, Hy, Hz = [gb.nan*gb.zeros((len(xy), len(z))) for i in range(6)]

@@ -216,8 +216,8 @@ class TestBackendComparison(unittest.TestCase):
     def test_conj(self):
         x = np.random.randn(5) + 1j * np.random.randn(5)
         np_result = self.np_backend.conj(x)
-        torch_result = torch.conj_physical(torch.from_numpy(x))
-        self.assert_close(np_result, torch_result)
+        torch_result = torch.conj(torch.from_numpy(x))
+        self.assert_close(np_result, torch_result.resolve_conj())
 
     def test_cross(self):
         x = np.random.randn(3)

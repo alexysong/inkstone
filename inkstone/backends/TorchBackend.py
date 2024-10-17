@@ -32,7 +32,6 @@ class TorchBackend(GenericBackend):
         self.lu_factor = torch.linalg.lu_factor
         self.maximum = torch.maximum
         self.moveaxis = torch.moveaxis
-        self.ones = torch.ones
         self.repeat = torch.repeat_interleave
         self.reshape = torch.reshape
         self.roll = torch.roll
@@ -45,7 +44,6 @@ class TorchBackend(GenericBackend):
         self.sum = torch.sum
         self.tan = torch.tan
         self.where = torch.where
-        self.zeros = torch.zeros
         self.stack = torch.stack
 
         self.j0 = j0
@@ -101,8 +99,17 @@ class TorchBackend(GenericBackend):
         return torch.tensor(i, dtype=dtype, requires_grad=req_grad)
 
     def cross(self, a, b):
-        return torch.linalg.cross(torch.cat([a, torch.tensor([0])]),
-                                  torch.cat([b, torch.tensor([0])]), dim=-1)[-1]
+        try:
+            return torch.linalg.cross(a, b)
+        except RuntimeError:
+            return torch.linalg.cross(torch.cat([a, torch.tensor([0])]),
+                                      torch.cat([b, torch.tensor([0])]), dim=-1)
+
+    def ones(self, c, dtype=torch.float64):
+        return torch.ones(c, dtype=dtype)
+
+    def zeros(self, c, dtype=torch.float64):
+        return torch.zeros(c, dtype=dtype)
 
     def meshgrid(self, *tensors):
         """
@@ -112,7 +119,7 @@ class TorchBackend(GenericBackend):
        """
         return torch.meshgrid(*tensors, indexing='xy')
 
-    def castType(self, i, typ):  # typ(e), avoid collision with keyword
+    def castType(self, i, typ):
         return i.to(typ)
 
     def parseList(self, tup, dim=0):
@@ -147,19 +154,19 @@ class TorchBackend(GenericBackend):
         indices = [slice(None) if i != axis else skip for i in range(x.ndim)]
         return x.__getitem__(indices)
 
-    def triu_indices(self, row, col=None, offset=0):
-        #a: input, b: dim to sort along, c: descending, d: controls the relative order of equivalent elements
+    def triu_indices(self, row, offset=0, col=None):
         if not col:
             #print("col needs to be specified when using torch. But here it's set =m if missing, like what numpy does")
             col = row
-        return torch.triu_indices(row, col, offset)
+        idx = torch.triu_indices(row, col, offset)
+        return idx[0], idx[1]
 
     def lu_solve(self, p, q):
         return torch.linalg.lu_solve(p[0], p[1], q)
 
 
-    def norm(self, i, dim=None):
-        return torch.linalg.vector_norm(i, dim=dim)
+    def norm(self, i, ord=None, dim=None):
+        return torch.linalg.norm(i, ord=ord, dim=dim)
 
     def clone(self, i):
         return torch.clone(i)
@@ -237,14 +244,15 @@ class TorchBackend(GenericBackend):
         return torch.isnan(a)
 
     @staticmethod
-    def prec_fix(tensor, prec=16):
+    def prec_fix(tensor, prec=15):
         # Calculate the scaling factor
 
         scale = 10 ** prec
         if tensor.dtype == torch.complex128:
             # Handle real and imaginary parts separately
             real = torch.floor(tensor.real * scale) / scale
-            imag = torch.floor(tensor.imag * scale) / scale
+            i = torch.floor(tensor.imag * scale)
+            imag = i / scale
             return torch.complex(real, imag)
 
         return torch.floor(tensor * scale) / scale
@@ -259,6 +267,10 @@ class TorchBackend(GenericBackend):
         return a * b
 
     def div(self, a, b):
+        if type(a) is not self.raw_type:
+            a = self.data(a)
+        if type(b) is not self.raw_type:
+            b = self.data(b)
         return self.prec_fix(a.div(torch.where(b == 0, 1e-16, b)))
 
 

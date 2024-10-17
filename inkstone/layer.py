@@ -614,8 +614,8 @@ class Layer:
                 _v_norm = gb.sqrt(gb.conj(_v_w0[ii]) @ _v_w0[ii])
                 if _vh_norm >= _v_norm:
                     # vh[i_wis0[0][ii], :, i_wis0[1][ii]] /= _vh_norm
-                    vh = self.gb.indexAssign(vh, (slice(None),i_wis0[0][ii]), vh_[:, i_wis0[0][ii]])
-                    v = self.gb.indexAssign(v, (slice(None),i_wis0[0][ii]), 0.)
+                    vh = gb.indexAssign(vh, (slice(None),i_wis0[0][ii]), vh_[:, i_wis0[0][ii]])
+                    v = gb.indexAssign(v, (slice(None),i_wis0[0][ii]), 0.)
                 else:
                     # the column of v is already correct
                     vh[:, i_wis0[0][ii]] = gb.data([[0.],
@@ -717,22 +717,22 @@ class Layer:
         else:
             if self.pr.omega.imag < 0:
                 if self.pr.ccnif == "physical":
-                    w = gb.assignAndMultiply(w, (w2.real < 0) * (w.imag < 0), -1)
+                    w = gb.assignMul(w, (w2.real < 0) * (w.imag < 0), -1)
                 elif self.pr.ccnif == "ac":
-                    w = gb.assignAndMultiply(w, (w2.real < 0) * (w.imag > 0), -1)
+                    w = gb.assignMul(w, (w2.real < 0) * (w.imag > 0), -1)
                 else:
                     warn("ccnif not recognized. Default to 'physical'.")
-                    w = gb.assignAndMultiply(w, (w2.real < 0) * (w.imag < 0), -1)
+                    w = gb.assignMul(w, (w2.real < 0) * (w.imag < 0), -1)
             elif self.pr.omega.imag > 0:
                 if self.pr.ccpif == "ac":
-                    w = gb.assignAndMultiply(w, (w2.real < 0) * (w.imag < 0), -1)
+                    w = gb.assignMul(w, (w2.real < 0) * (w.imag < 0), -1)
                 elif self.pr.ccpif == "physical":
-                    w = gb.assignAndMultiply(w, (w2.real < 0) * (w.imag > 0), -1)
+                    w = gb.assignMul(w, (w2.real < 0) * (w.imag > 0), -1)
                 else:
                     warn("ccpif not recognized. Default to 'ac'.")
-                    w = gb.assignAndMultiply(w, (w2.real < 0) * (w.imag < 0), -1)
+                    w = gb.assignMul(w, (w2.real < 0) * (w.imag < 0), -1)
             else:
-                w = gb.assignAndMultiply(w, w.imag < 0, -1)
+                w = gb.assignMul(w, w.imag < 0, -1)
 
         return w
 
@@ -928,8 +928,8 @@ class Layer:
                 vn = gb.norm(gb.moveaxis(v, 1, 2).reshape(self.pr.num_g*2, 2), axis=1).reshape(self.pr.num_g, 2)[:, None, :]
                 vhn = gb.norm(gb.moveaxis(vh, 1, 2).reshape(self.pr.num_g * 2, 2), axis=1).reshape(self.pr.num_g, 2)[:, None, :]
                 nm = gb.maximum(vn, vhn)
-                v /= nm
-                vh /= nm
+                v = gb.div(v,nm)
+                vh = gb.div(vh,nm)
 
                 ng = self.pr.num_g
                 r1 = range(ng)
@@ -1078,7 +1078,7 @@ class Layer:
             # psil = -1j * Q @ phil * ql_inv
             # # psil = 1j * gb.la.inv(P) @ phil @ gb.diag(self.ql)
 
-            w2, v = gb.eig(- gb.lu_solve(P, Q)) # todo: lu_solve() 11precision issue >1e-11
+            w2, v = gb.eig(- gb.lu_solve(P, Q))
             rc = gb.where(w2.real > 0)[0].tolist()  # todo: even for radiation channel, if omega.imag larger than omega.real, q02.real is negative
             w = gb.sqrt(w2 + 0j)
 
@@ -1095,16 +1095,15 @@ class Layer:
             # where w is 0, vh's column is 0
 
             # normalize such that the larger norm of v and vh's each column is 1
-            vn = gb.norm(v, 0)
-            vhn = gb.norm(vh, 0)
+            vn = gb.norm(v, dim=0)
+            vhn = gb.norm(vh, dim=0)
             nm = gb.maximum(vn, vhn)
 
-            # commented: in-place operations, cannot track the gradient
-            # v /= nm
-            # vh /= nm
+            v = v / nm
+            vh = vh / nm
 
-            phil = gb.div(v, nm)  # <= v/=nm; phil=v
-            psil = gb.div(vh, nm) # <= vh/=nm; psil=vh
+            phil = v
+            psil = vh
 
             # # debugging,  check if phi is eigen and consistent with psi
             # ng = self.pr.num_g
@@ -1164,11 +1163,10 @@ class Layer:
         phil = self.phil
         psil = self.psil
         # term1 = phif @ phil
-        term1 = phil  # attention! check if phif is eye
+        term1 = phil # attention! check if phif is eye
         term2 = psif @ psil
         a0l = term1 + term2
-        b0l = gb.sub(term1, term2)
-        # check prec_fix(), precision issue occurs with b0l on Torch
+        b0l = term1 - term2
         self.imfl = (a0l, b0l)
 
 

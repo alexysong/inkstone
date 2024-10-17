@@ -146,8 +146,8 @@ class JaxBackend(GenericBackend):
     def lu_solve(self, p, q):
         return self.sla.lu_solve(p, q)
 
-    def norm(self, p, dim=None):
-        return self.la.norm(p,axis=dim)
+    def norm(self, p, ord=None, dim=None):
+        return self.la.norm(p,ord=ord,axis=dim)
 
     def indexAssign(self, a, idx, b):
         """
