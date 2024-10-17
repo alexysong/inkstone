@@ -1483,7 +1483,7 @@ class Inkstone:
 
         exf, exb, eyf, eyb, ezf, ezb, hxf, hxb, hyf, hyb, hzf, hzb = self._calc_field_fs_layer_fb(layer,
                                                                                                   z)  # each has shape (num_g, len(z))
-        ex, ey, ez, hx, hy, hz = [gb.prec_fix(a + b) for a, b in
+        ex, ey, ez, hx, hy, hz = [(a + b) for a, b in
                                   [(exf, exb), (eyf, eyb), (ezf, ezb), (hxf, hxb), (hyf, hyb), (hzf, hzb)]]
         xa, ya = gb.hsplit(xy, 2)  # 2d array with one column
 

@@ -293,22 +293,18 @@ def s_1l_1212(a, b):
     s22  :  any
     """
 
-    a = a
-    b = b
-
     aTlu = gb.lu_factor(a.T)
     #aTlu2 = (gb.clone(aTlu[0]), gb.clone(aTlu[1]))
     #aT1 = aTlu2[0]
     #a1 = gb.assignMul(aT1, gb.triu_indices(aT1.shape[0]), 0.5)
     alu = gb.lu_factor(a)
-    alu2 = (gb.clone(alu[0]), gb.clone(alu[1]))
-    a1 = alu2[0]
+    a1 = gb.clone(alu[0])
     a1 = gb.assignMul(a1, gb.triu_indices(a1.shape[0]), 0.5)
     ab = gb.lu_solve(alu, b)
 
     s11 = gb.lu_solve(aTlu, b.T).T
     s12 = 1./2. * (a - b @ ab)
-    s21 = alu2
+    s21 = (a1, gb.clone(alu[1]))
     s22 = - ab
 
     return s11, s12, s21, s22

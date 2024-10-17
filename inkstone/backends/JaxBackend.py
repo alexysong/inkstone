@@ -39,7 +39,6 @@ class JaxBackend(GenericBackend):
         self.lu_factor = jsp.linalg.lu_factor
         self.maximum = jnp.maximum
         self.moveaxis = jnp.moveaxis
-        self.ones = jnp.ones
         self.repeat = jnp.repeat
         self.reshape = jnp.reshape
         self.roll = jnp.roll
@@ -47,13 +46,13 @@ class JaxBackend(GenericBackend):
         self.sin = jnp.sin
         self.sinc = jnp.sinc
         self.sla = jsp.linalg
+        self.stack = jnp.stack
         self.solve = jsp.linalg.solve
         self.sqrt = jnp.sqrt
         self.square = jnp.square
         self.sum = jnp.sum
         self.tan = jnp.tan
         self.where = jnp.where
-        self.zeros = jnp.zeros  # only numpy fft used
 
         self.j0 = j0
         self.j1 = j1
@@ -69,7 +68,7 @@ class JaxBackend(GenericBackend):
         """
         JL
         TODO:
-        Need more robust handling of list of tracer inputs to self.gb.data
+        Need more robust handling of list of tracer inputs to gb.data
         Currently, if o is a JAX tracer, then the above control flow sets dtype = jax tracer.
         Since JAX does not accept dtype = jax tracer in jnp.array(), it throws an error.
         Workaround is manually setting the data argument dtype whenever JAX throws an error
@@ -87,6 +86,11 @@ class JaxBackend(GenericBackend):
     def isnan(self, a):
         return jnp.isnan(a)
 
+    def zeros(self, a, dtype=jnp.float64):# only numpy fft used
+        return jnp.zeros(a, dtype=dtype)
+
+    def ones(self, a, dtype=jnp.float64):
+        return jnp.ones(a, dtype=dtype)
 
     def parseList(self, tup):
         return jnp.array(tup)
@@ -97,8 +101,8 @@ class JaxBackend(GenericBackend):
     def castType(self, i, typ):  # type => typ, avoid collision with keyword
         return i.astype(typ)
 
-    def cross(self, a, b):
-        return jnp.cross(a, b)
+    def cross(self, a, b, dim=None):
+        return jnp.cross(a, b, axis=dim)
 
     def getSize(self, i):
         return i.size
@@ -126,9 +130,6 @@ class JaxBackend(GenericBackend):
         order = kwargs.pop('order', None)
         return jnp.sort(i, axis=dim, descending=des,kind=kind,order=order)
 
-    def linspace(self, start, end, num=50, required_grad=False):
-        return jnp.linspace(start, end, num)
-
     #  def partition(self, i, kth, dim=-1):
     #       match self.backend:
     #         case "torch":
@@ -144,10 +145,10 @@ class JaxBackend(GenericBackend):
         return jnp.block(arr)
 
     def lu_solve(self, p, q):
-        return self.sla.lu_solve(p, q)
+        return jsp.linalg.lu_solve(p, q)
 
     def norm(self, p, ord=None, dim=None):
-        return self.la.norm(p,ord=ord,axis=dim)
+        return jnp.linalg.norm(p,ord=ord,axis=dim)
 
     def indexAssign(self, a, idx, b):
         """

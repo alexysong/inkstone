@@ -24,6 +24,7 @@ class AutogradBackend(GenericBackend):
         self.arcsin = anp.arcsin
         self.ones = anp.ones
         self.square = anp.square
+        self.stack = anp.stack
         self.concatenate = anp.concatenate
         self.concatenate = anp.concatenate
         self.conj = anp.conj
@@ -52,20 +53,23 @@ class AutogradBackend(GenericBackend):
         self.complex128 = np.complex128
         self.eye = anp.eye
 
-
-    def data(self, i: any, dtype=None):
+    def data(self, i: any, dtype=None, **kwargs):
         return anp.array(i, dtype=dtype)
 
     def meshgrid(self, a, b):
         return anp.meshgrid(a, b)
 
+    def zeros(self, a, dtype):
+        return anp.zeros(a, dtype=dtype)
+
+    def ones(self, a, dtype):
+        return anp.ones(a, dtype=dtype)
 
     def castType(self, i, typ):  # typ(e), avoid collision with keyword
         return i.astype(typ)
 
     def cross(self, a, b):
         return anp.cross(a, b)
-
 
     def getSize(self, i):
         return i.size
@@ -92,8 +96,12 @@ class AutogradBackend(GenericBackend):
 
     def norm(self, a, dim=None):
         return anp.linalg.norm(a, axis=dim)
+
     def sort(self, i, dim=-1, des=False, sort_alg='quicksort'):
         return anp.sort(i, dim, sort_alg)
 
     def block(self, arr):
         return anp.block(arr)
+
+    def isnan(self, a):
+        return anp.isnan(a)
