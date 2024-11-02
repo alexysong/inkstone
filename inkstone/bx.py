@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-import inkstone.backends.BackendLoader as bl
+from inkstone.backends.Backend import Backend
+from inkstone.backends.BackendRegistry import backend
 # import numpy.linalg as la
 from inkstone.shps import Rect, Para, Disk, Elli, Poly, OneD
 from warnings import warn
-from typing import Tuple
+from typing import Tuple, Optional
 from inkstone.mtr import Mtr
 
-gb = bl.backend()
+gb: Optional[Backend] = None
 class Bx:
     # Bx doesn't know what lattice it is in
 
@@ -28,6 +29,8 @@ class Bx:
         kwargs      :
                         other arguments for setting up the shape, to be passed on to `Rect`, `Disk`, `Elli`, `Poly`, or `OneD`.
         """
+        global gb
+        gb = backend()
         self.epsi_ft = None
         self.epsi_inv_ft = None
         self.mu_ft = None
@@ -175,7 +178,7 @@ class Bx:
             for attr in shape_attributes[self.shp.shape]:
                 value = locals().get(attr)
                 if value is not None:
-                    setattr(self.shp, attr, value)
+                    setattr(self.shp, attr, gb.data(value,requires_grad=True))
             self.shp.use_gibbs_correction(**kw_gibbs)
         except KeyError:
             print(f"Missing attributes info for shape {self.shp.shape}")

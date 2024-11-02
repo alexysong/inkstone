@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
-import inkstone.backends.BackendLoader as bl
+from typing import Optional
+
+from inkstone.backends.BackendRegistry import backend
+from .backends.Backend import Backend
 # import scipy.linalg as sla
 # import scipy.sparse as sps
 from .rsp import rsp_sa21Tlu, rsp_sb12Tlu
 
-gb = bl.backend()
+gb: Optional[Backend] = None
 def s_1l(thickness, ql, al0, bl0):
     """
     calculate the scattering matrix of 1 layer.
@@ -25,6 +28,8 @@ def s_1l(thickness, ql, al0, bl0):
                             four elements of the scattering matrix
 
     """
+    global gb
+    gb = backend()
 
     a = al0
     b = bl0
@@ -77,6 +82,9 @@ def s_1l_rsp(thickness: float,
     -------
 
     """
+    global gb
+    gb = backend()
+
     a = afl
     b = bfl
 
@@ -197,6 +205,9 @@ def s_1l_rsp_lrd(thickness: float,
     -------
 
     """
+    global gb
+    gb = backend()
+
     a = afl
     b = bfl
 
@@ -292,6 +303,8 @@ def s_1l_1212(a, b):
             lu factorization
     s22  :  any
     """
+    global gb
+    gb = backend()
 
     aTlu = gb.lu_factor(a.T)
     #aTlu2 = (gb.clone(aTlu[0]), gb.clone(aTlu[1]))
@@ -327,7 +340,11 @@ def s_1l_1221(a, b):
     s21  :  any
     s22  :  any
     """
+    global gb
+    gb = backend()
+
     # https://github.com/pytorch/pytorch/issues/46496
+
     alu = gb.lu_factor(a)
     a1 = gb.clone(alu[0])
     a1 = gb.assignMul(a1, gb.triu_indices(a1.shape[0]), 0.5)

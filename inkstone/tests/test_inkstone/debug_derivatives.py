@@ -9,7 +9,7 @@ import jax
 from jax import grad as jax_grad
 # jax.config.update("jax_debug_nans", True)
 
-import inkstone.backends.BackendLoader as bl
+from inkstone.backends.BackendRegistry import backend
 
 bl.set_backend('jax')
 bk = bl.backend()

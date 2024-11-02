@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from typing import Tuple, Union, Optional
-import inkstone.backends.BackendLoader as bl
+
+from inkstone.backends.Backend import Backend
+from inkstone.backends.BackendRegistry import backend
 # import numpy.linalg as la
 # from warnings import warn
 
-gb = bl.backend()
+gb: Optional[Backend] = None
 class Mtr:
     # material need to have a name such that user can access it by its name
     def __init__(self,
@@ -16,6 +18,9 @@ class Mtr:
         """
         Material.
         """
+        global gb
+        gb = backend()
+
         self._epsi: Optional[any] = None
         self._mu: Optional[any] = None
         self._epsi_inv: Optional[any] = None
@@ -110,17 +115,16 @@ class Mtr:
 
     @epsi.setter
     def epsi(self, val):
-        if type(val) in [float, int, complex]\
-                or (type(val) is gb.raw_type and val.dtype in [gb.int32, gb.float64, gb.complex128]):
+        if type(val) in [float, int, complex]:
             ep = gb.eye(3, dtype=gb.complex128) * val
-            self._epsi = ep + 0j
+            self._epsi = gb.data(ep,dtype=gb.complex128 ,requires_grad=True)
             self.ep_is_diagonal = True
             self.ep_is_isotropic = True
             self.ep_is_vac = val == 1.
 
-        elif gb.data(val).ndim == 1 and gb.getSize(gb.data(val)) == 3:
-            ep = gb.diag(val) + 0j
-            self._epsi = ep + 0j
+        elif gb.data(val).ndim == 1 and len(val) == 3:
+            ep = gb.data(gb.diag(val),dtype=gb.complex128,requires_grad=True)
+            #self._epsi = ep + 0j
             self.ep_is_diagonal = True
             self.ep_is_isotropic = check_iso(ep)
 
@@ -132,8 +136,8 @@ class Mtr:
             print(val.dtype, val.shape)
             raise ValueError('data format for epsilon is incorrect.')
         else:
-            ep = val
-            self._epsi = val + 0j
+            ep = gb.data(val, dtype=gb.complex128,requires_grad=True)
+            self._epsi = ep
             if check_diag(val):
                 self.ep_is_diagonal = True
                 if check_iso(val):
@@ -168,7 +172,7 @@ class Mtr:
     def mu(self, val):
         if type(val) in [float, int, complex, gb.float64, gb.complex128]:
             mu = gb.eye(3, dtype=gb.complex128) * val
-            self._mu = mu + 0j
+            self._mu = mu
             self.mu_is_diagonal = True
             self.mu_is_isotropic = True
             if val == 1.:

@@ -19,8 +19,8 @@ import torch
 
 from project_path import PATH as p
 sys.path.append(p)
-import inkstone.backends.BackendLoader as bl
-bl.set_backend('numpy')
+from inkstone.backends.BackendRegistry import backend
+bl.set_backend('torch')
 torch.autograd.set_detect_anomaly(True)
 bk = bl.backend()
 from inkstone.simulator import Inkstone
@@ -47,19 +47,16 @@ Ex, Ey, Ez, Hx, Hy, Hz = s.GetFields(xmin=-0.5, xmax=0.5, nx=101,
                                      zmin=-0.2, zmax=0.7, nz=91)
 
 
-"""
-for _, elem in enumerate(Ey.real.flatten()):
-    elem.backward(retain_graph=True)
-    print(s.lattice.grad)
 
-"""
+print(bk.get_gradient(Ex[0,0,1].real, s.lattice))
 
 #%% plotting
 from matplotlib import pyplot as plt
+r = bk.abs(Ex[0, :, :]).T.detach()
 
 plt.pcolormesh(bk.linspace(-0.5, 0.5, 101),
                bk.linspace(-0.2, 0.7, 91),
-               bk.abs(Ex[0, :, :]).T, shading='gouraud')
+               r, shading='gouraud')
 plt.xlabel('x')
 plt.ylabel('z')
 plt.colorbar()

@@ -14,7 +14,7 @@ Each rod has side length 0.55.
 import sys
 from project_path import PATH as p
 sys.path.append(p)
-import inkstone.backends.BackendLoader as bl
+from inkstone.backends.BackendRegistry import backend
 bl.set_backend('torch')
 bk = bl.backend()
 

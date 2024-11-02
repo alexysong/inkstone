@@ -10,7 +10,7 @@ import numpy as np
 import autograd.numpy as anp
 import jax.numpy as jnp
 
-from .. import GenericBackend
+from inkstone.backends.BackendRegistry import backend
 
 
 # SETTINGS ################################################################################################
@@ -19,7 +19,7 @@ np.random.seed(2024)
 
 
 # PYTHON IN-PLACE ################################################################################################
-nb = GenericBackend.GenericBackend("numpy")
+nb = bl.set_backend("numpy")
 def test_numpy_backend_selected():
     """
     Ensure the numpy backend is selected
@@ -93,7 +93,7 @@ def test_assignAndMultiply_numpy_truth_index():
         
 
 # JAX IN-PLACE ################################################################################################
-jb = GenericBackend.GenericBackend("jax")
+jb = bl.set_backend("jax")
 def test_jax_backend_selected():
     """
     Ensure the jax backend is selected

@@ -3,7 +3,7 @@ Observing finite difference (wrt z position) divergence at boundary between two 
 
 """
 
-import inkstone.backends.BackendLoader as bl
+from inkstone.backends.BackendRegistry import backend
 
 bl.set_backend('torch')
 bk = bl.backend()

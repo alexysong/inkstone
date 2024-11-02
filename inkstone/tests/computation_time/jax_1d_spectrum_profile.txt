@@ -11,7 +11,7 @@
       603    0.014    0.000   28.194    0.047 layer.py:1238(solve)
 253563/82868    1.141    0.000   18.835    0.000 lax_numpy.py:2487(array)
 491371/489827    0.646    0.000   17.823    0.000 core.py:389(bind_with_trace)
-     6849    0.013    0.000   15.737    0.002 GenericBackend.py:227(parseData)
+     6849    0.013    0.000   15.737    0.002 GenericBackend.py:227(data)
 488571/488235    0.327    0.000   15.372    0.000 core.py:873(process_primitive)
 490496/490137    0.306    0.000   15.101    0.000 core.py:384(bind)
       402    0.013    0.000   15.068    0.037 layer.py:410(_calc_ep_mu_fs_3d)

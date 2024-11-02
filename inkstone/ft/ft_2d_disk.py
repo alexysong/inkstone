@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import inkstone.backends.BackendLoader as bl
+from inkstone.backends.BackendRegistry import backend
 from scipy.special import jn
 
 
 
-def ft_2d_disk(r, ks, center=(0,0),gb=bl.backend()):
+def ft_2d_disk(r, ks, center=(0,0)):
     """
     calculate the fourier transform of a function, its value is 1 inside a disk, outside its value is 0.
 
@@ -23,6 +23,7 @@ def ft_2d_disk(r, ks, center=(0,0),gb=bl.backend()):
     s       :   list[complex]
                 1d array, Fourier coefficient at the input ks positions
     """
+    gb = backend()
     if ks is None:
         return []
      # nx2 shape

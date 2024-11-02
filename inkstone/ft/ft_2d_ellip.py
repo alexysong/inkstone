@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import inkstone.backends.BackendLoader as bl
+from inkstone.backends.BackendRegistry import backend
 from scipy.special import jn
 
 
-def ft_2d_ellip(a, b, ks, center=None, angle=0.,gb=bl.backend()):
+def ft_2d_ellip(a, b, ks, center=None, angle=0.):
     """
     Calculate the fourier transform of a function with value 1 inside a ellipse and 0 outside.
 
@@ -27,7 +27,7 @@ def ft_2d_ellip(a, b, ks, center=None, angle=0.,gb=bl.backend()):
                 1d array, Fourier coefficient at the input ks positions
 
     """
-
+    gb=backend()
     ang = angle / 180. * gb.pi
     stretch = gb.data([[a, 0], [0, b]])
     rotate = gb.data([[gb.cos(ang), -gb.sin(ang)], [gb.sin(ang), gb.cos(ang)]])

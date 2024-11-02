@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
-import inkstone.backends.BackendLoader as bl
+from typing import Optional
+
+from inkstone.backends.Backend import Backend
+from inkstone.backends.BackendRegistry import backend
 #import numpy as np
 
-gb = bl.backend()
+gb: Optional[Backend] = None
 def conv_mtx_idx_2d(idx1, idx2):
     """
     Indexing matrix to generate epsilon and mu convolution matrices.
@@ -16,7 +19,8 @@ def conv_mtx_idx_2d(idx1, idx2):
     cmi             :   ndarray
                         convolution matrix index, shape NxMx2
     """
-
+    global gb
+    gb = backend()
     #i1 = np.array(idx1)  # (N, 2) shape
     #i2 = np.array(idx2)
     idx1 = gb.data(idx1)

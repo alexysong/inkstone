@@ -45,7 +45,8 @@ class EigFunction(autograd.Function):
         vt = _T(v)
         r1 = f * _dot(vt, grad_v)
         r2 = -f * (
-            _dot(_dot(vt, torch.conj(v)), torch.real(_dot(vt, grad_v)) * torch.eye(n, device=A.device, dtype=v.dtype)))
+            _dot(_dot(vt, torch.conj(v)),
+                 torch.real(_dot(vt, grad_v)) * torch.eye(n, device=A.device, dtype=v.dtype)))
 
         # Use torch.linalg.solve instead of explicit inversion
         grad_A = _dot(torch.linalg.solve(vt, ge + r1 + r2), vt)
@@ -55,6 +56,7 @@ class EigFunction(autograd.Function):
 
         return grad_A
 
+eig = lambda A: EigFunction.apply(A)
 
 # Wrapper functions
 j0 = torch.special.bessel_j0
@@ -63,4 +65,4 @@ j1 = torch.special.bessel_j1
 
 #eig = torch.linalg.eig
 
-eig = lambda A: EigFunction.apply(A)
+

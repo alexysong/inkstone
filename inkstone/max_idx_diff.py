@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import inkstone.backends.BackendLoader as bl
+from inkstone.backends.BackendRegistry import backend
 
 
-def max_idx_diff(idx,gb=bl.backend()):
+def max_idx_diff(idx):
     """
     imagine a 2d grid. given a list of integer indices (tuples), calculate the maximum relative difference in x and y in these indices.
 
@@ -16,6 +16,7 @@ def max_idx_diff(idx,gb=bl.backend()):
     m, n    :   int
 
     """
+    gb=backend()
     # wcai: none checking
     if not idx:
         raise ValueError("Received None/Empty input")

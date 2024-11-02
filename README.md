@@ -88,14 +88,29 @@ yourself, or ask backend developer to implement it.
 
 ### Inkstone backend development:
 
-To add new functions, you must define it in `GenericBackend` first, then implement it in 
-its implementations (e.g. `NumpyBackend`, `TorchBackend`), or at least in the backend
+To add new functions, you must claim it in `Backend` first, then implement it in its child classes
+named by xxxBackend (e.g. `NumpyBackend`, `TorchBackend`), or at least in the backend
 implementation you plan to use.
 
-To add new backend (assume its name "xxx"), you must inherit GenericBackend, and 
+To add new backend (assume its name "xxx"), you must inherit `Backend`, and 
 define/implement all attributes/functions claimed there. Name your backend
-'xxxBackend', and put it in the same directory as `GenericBackend`. Then you can simply use it by doing `bg.set_backend('xxx')` without extra coding like `elif` to 
+'xxxBackend', and put it in the same directory as `Backend`. Then you can simply use it by 
+
+`from inkstone.backends.BackendRegistry import backend`
+
+`bk = bl.set_backend('xxx')`
+
+without extra coding like `elif` to 
 let program recognise your new backend.
+
+#### Possible bug fixing guidance
+
+`Expected isFloatingType(grad.scalar_type()) || (input_is_complex == grad_is_complex) to be true, but got false. `
+
+This tells that the gradient of the node is not of the floating type (unlikely) or
+the gradient dtype (which is very likely complex128) is not same as node's dtype (which is likely float64).
+Try to set dtype of node to `gb.complex128` on its initialization in Inkstone.
+If you think it shouldn't be of type complex128 (logically), I have no idea how to solve this issue.
 
 ## Citing
 If you find Inkstone useful for your research, we would appreciate you citing our [paper](https://doi.org/10.1103/PhysRevLett.120.193903). For your convenience, you can use the following BibTex entry:

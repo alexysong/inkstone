@@ -17,7 +17,7 @@ A circular hole of radius 0.2 in each unit cell.
 import sys
 p ='C:/Users/w-a-c/Desktop/inkstone'
 sys.path.append(p)
-import inkstone.backends.BackendLoader as bl
+from inkstone.backends.BackendRegistry import backend
 bl.set_backend('torch')
 bk = bl.backend()
 

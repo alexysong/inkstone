@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 # import scipy.linalg as sla
-import backends.BackendLoader as bl
-gb = bl.backend()
+from backends.BackendRegistry import backend
+gb: Optional[Backend] = None
 
 def im(phi1, psi1, phi2, psi2, phi1_is_idt=False, psi1_is_idt=False):
     """
@@ -26,6 +26,8 @@ def im(phi1, psi1, phi2, psi2, phi1_is_idt=False, psi1_is_idt=False):
     b12     :   ndarray
 
     """
+    global gb
+    gb = backend()
 
     if phi1_is_idt:
         term1 = phi2

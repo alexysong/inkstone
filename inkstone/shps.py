@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-
-import inkstone.backends.BackendLoader as bl
+from inkstone.backends.Backend import Backend
+from inkstone.backends.BackendRegistry import backend
 from typing import List, Union, Tuple, Optional
 from inkstone.ft.ft_1d_sq import ft_1d_sq
 from inkstone.ft.ft_2d_rct import ft_2d_rct
@@ -11,7 +11,7 @@ from inkstone.ft.ft_2d_poly import ft_2d_poly
 from inkstone.ft.poly_area import poly_area
 from inkstone.ft.gibbs import gibbs_corr
 
-gb=bl.backend()
+gb: Optional[Backend] = None
 class Shp:
     # Shp doesn't know what lattice it is in
     # Shape recalculate its fourier series at read time (when accessing self.ft()).
@@ -36,6 +36,9 @@ class Shp:
         ks                  :   list of k points to calculate FT on
         kw_gibbs            :   keyword arguments for Gibbs correction, to be passed to `.ft.gibbs.gibbs_corr`
         """
+        global gb
+        gb = backend()
+
         self.shape: str = shp
         self.area: Optional[float] = None
         self._ft: Optional[List[float]] = None  # 1d array Fourier series at the k points
@@ -130,8 +133,8 @@ class OneD(Shp):
 
     @width.setter
     def width(self, val: float):
-        self._width = val
-        self.area = val
+        self._width = gb.data(val, requires_grad=True)
+        self.area = gb.data(val)
 
     @property
     def center(self) -> float:
@@ -142,9 +145,9 @@ class OneD(Shp):
     def center(self, val: float):
         if val is None:
             if self._center is None:
-                self._center = 0.
+                self._center = gb.data(0.,requires_grad=True)
         else:
-            self._center = val
+            self._center = gb.data(val,requires_grad=True)
 
     @property
     def ks(self) -> List[float]:
@@ -198,8 +201,8 @@ class Rect(Shp):
     @side_lengths.setter
     def side_lengths(self, val):
         # assume when setting side lengths it must have been changed. no `If` which is slow.
-        self.area = val[0] * val[1]
-        self._side_lengths = val
+        self.area = gb.data(val[0] * val[1],requires_grad=True)
+        self._side_lengths = gb.data(val,requires_grad=True)
 
     @property
     def center(self):
@@ -209,9 +212,9 @@ class Rect(Shp):
     def center(self, val):
         if val is None:
             if self._center is None:
-                self._center = (0., 0.)
+                self._center = gb.data([0., 0.],requires_grad=True)
         else:
-            self._center = val
+            self._center = gb.data(val,requires_grad=True)
 
     @property
     def angle(self):
@@ -221,9 +224,9 @@ class Rect(Shp):
     def angle(self, val):
         if val is None:
             if self._angle is None:
-                self._angle = 0.
+                self._angle = gb.data(0.,requires_grad=True)
         else:
-            self._angle = val
+            self._angle = gb.data(val,requires_grad=True)
 
     def _calc_ft(self) -> List[complex]:
         """
@@ -274,8 +277,8 @@ class Para(Shp):
     @side_lengths.setter
     def side_lengths(self, val):
         # assume when setting side lengths it must have been changed. no `If` which is slow.
-        self.area = val[0] * val[1]
-        self._side_lengths = val
+        self.area = gb.data(val[0] * val[1],requires_grad=True)
+        self._side_lengths = gb.data(val,requires_grad=True)
 
     @property
     def center(self):
@@ -285,9 +288,9 @@ class Para(Shp):
     def center(self, val):
         if val is None:
             if self._center is None:
-                self._center = (0., 0.)
+                self._center = gb.data([0., 0.],requires_grad=True)
         else:
-            self._center = val
+            self._center = gb.data(val,requires_grad=True)
 
     @property
     def angle(self):
@@ -297,9 +300,9 @@ class Para(Shp):
     def angle(self, val):
         if val is None:
             if self._angle is None:
-                self._angle = 0.
+                self._angle = gb.data(0.,requires_grad=True)
         else:
-            self._angle = val
+            self._angle = gb.data(val,requires_grad=True)
 
     @property
     def shear_angle(self):
@@ -309,9 +312,9 @@ class Para(Shp):
     def shear_angle(self, val):
         if val is None:
             if self._shear_angle is None:
-                self._shear_angle = 0.
+                self._shear_angle = gb.data(0.,requires_grad=True)
         else:
-            self._shear_angle = val
+            self._shear_angle = gb.data(val,requires_grad=True)
 
     def _calc_ft(self) -> List[complex]:
         """
@@ -349,8 +352,8 @@ class Elli(Shp):
     @half_lengths.setter
     def half_lengths(self, val):
         # assume when setting side lengths it must have been changed. no `If` which is slow.
-        self._half_lengths = val
-        self.area = gb.pi * val[0] * val[1]
+        self._half_lengths = gb.data(val,requires_grad=True)
+        self.area = gb.data(gb.pi * val[0] * val[1],requires_grad=True)
 
     @property
     def center(self):
@@ -360,9 +363,9 @@ class Elli(Shp):
     def center(self, val):
         if val is None:
             if self._center is None:
-                self._center = (0., 0.)
+                self._center = gb.data([0., 0.],requires_grad=True)
         else:
-            self._center = val
+            self._center = gb.data(val,requires_grad=True)
 
     @property
     def angle(self):
@@ -372,9 +375,9 @@ class Elli(Shp):
     def angle(self, val):
         if val is None:
             if self._angle is None:
-                self._angle = 0.
+                self._angle = gb.data(0.,requires_grad=True)
         else:
-            self._angle = val
+            self._angle = gb.data(val,requires_grad=True)
 
     def _calc_ft(self) -> List[complex]:
         """
@@ -405,8 +408,8 @@ class Disk(Shp):
     @radius.setter
     def radius(self, val):
         # assume when setting side lengths it must have been changed. no `If` which is slow.
-        self._radius = val
-        self.area = gb.pi * val ** 2
+        self._radius = gb.data(val,requires_grad=True)
+        self.area = gb.data(gb.pi * val ** 2,requires_grad=True)
 
     @property
     def center(self):
@@ -417,9 +420,9 @@ class Disk(Shp):
     def center(self, val):
         if val is None:
             if self._center is None:
-                self._center = (0., 0.)
+                self._center = gb.data([0.,0.],requires_grad=True)
         else:
-            self._center = val
+            self._center = gb.data(val,requires_grad=True)
 
     def _calc_ft(self) -> List[complex]:
         """
@@ -449,8 +452,8 @@ class Poly(Shp):
     @vertices.setter
     def vertices(self, val):
         # assume when setting side lengths it must have been changed. no `If` which is slow.
-        self._vertices = val
-        self.area = poly_area(val)
+        self._vertices = gb.data(val,requires_grad=True)
+        self.area = gb.data(poly_area(val),requires_grad=True)
 
     def _calc_ft(self) -> List[complex]:
         """

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import inkstone.backends.BackendLoader as bl
+from inkstone.backends.BackendRegistry import backend
 
 
-def poly_area(vertices,gb=bl.backend()):
+def poly_area(vertices):
     """
 
     Parameters
@@ -16,6 +16,8 @@ def poly_area(vertices,gb=bl.backend()):
     a               :   float
                         area of polygon
     """
+    gb=backend()
+    
     verti = gb.data(vertices)
     x = verti[:, 0]
     y = verti[:, 1]

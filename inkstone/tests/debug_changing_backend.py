@@ -6,8 +6,8 @@ Debugging backend changing methods to ensure complete backend switch
 import numpy as np
 import jax.numpy as jnp
 
-from .. import GenericBackend
-from ..simulator import Inkstone
+import inkstone.backends.BackendRegistry as bl
+from inkstone.simulator import Inkstone
 
 
 # SETTINGS ################################################################################################
@@ -23,7 +23,7 @@ def debug_one_layer_simulation_1D(frequency=0.4, theta=0., phi=0.,
     if version == "old":
         raise NotImplementedError("Need to determine how to import inkstone v0.3.10 in test file") 
     elif version == "new":
-        GenericBackend.switchTo(backend)
+        bl.set_backend(backend)
         # GenericBackend.genericBackend = GenericBackend.GenericBackend(backend)
         s = Inkstone()
     else:
@@ -52,7 +52,7 @@ def debug_one_layer_simulation_1D(frequency=0.4, theta=0., phi=0.,
 # s = debug_one_layer_simulation_1D(version="new", backend="jax")
 simulation_nb = debug_one_layer_simulation_1D(version="new", backend="numpy")
 fields_nb = simulation_nb.GetFields(xmin=-0.5, xmax=0.5, nx=101, y=0, zmin=-0.2, zmax=0.75, nz=101)
-simulation_jb = debug_one_layer_simulation_1D(version="new", backend="jax")
+simulation_jb = debug_one_layer_simulation_1D(version="new", backend="torch")
 fields_jb = simulation_jb.GetFields(xmin=-0.5, xmax=0.5, nx=101, y=0, zmin=-0.2, zmax=0.75, nz=101)
 
 for f_nb, f_jb in zip(fields_nb,fields_jb):

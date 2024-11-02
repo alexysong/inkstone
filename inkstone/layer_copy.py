@@ -2,12 +2,14 @@
 
 from typing import Tuple, Optional, List
 import time
+
+from inkstone.backends.Backend import Backend
 from inkstone.layer import Layer
 from inkstone.sm import s_1l_1212, s_1l_1221, s_1l_rsp
 from warnings import warn
-import inkstone.backends.BackendLoader as bl
+from inkstone.backends.BackendRegistry import backend
 
-gb = bl.backend()
+gb: Optional[Backend] = None
 class LayerCopy:
 
     def __init__(self, name: str, layer: Layer, thickness: float):
@@ -20,6 +22,8 @@ class LayerCopy:
         layer       :   the original layer
         thickness   :   thickness of this layer
         """
+        global gb
+        gb=backend()
 
         self.name = name
         self.is_copy = True

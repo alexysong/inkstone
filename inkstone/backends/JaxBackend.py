@@ -2,66 +2,142 @@
 
 import jax
 import jaxlib
-from inkstone.primitives.jax_primitive import j0, j1, eig
-from inkstone.backends.GenericBackend import GenericBackend
+from inkstone.backends.primitives.jax_primitive import j0, j1, eig
+from inkstone.backends.Backend import Backend
 
 jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
 import jax.scipy as jsp
 
 
-class JaxBackend(GenericBackend):
+class JaxBackend(Backend):
     def __init__(self):
         super().__init__()
         self.raw_type = jaxlib.xla_extension.ArrayImpl
 
-        self.abs = jnp.abs
-        self.arange = jnp.arange
-        self.arccos = jnp.arccos
-        self.arcsin = jnp.arcsin
-        self.ceil = jnp.ceil
-        self.concatenate = jnp.concatenate
-        self.conj = jnp.conj
-        self.cos = jnp.cos
-        self.diag = jnp.diag
-        self.dot = jnp.dot
-        self.einsum = jnp.einsum
-        self.exp = jnp.exp
-        self.eye = jnp.eye
-        self.fft = jnp.fft
-        self.full = jnp.full
-        self.hsplit = jnp.hsplit
-        self.isnan = jnp.isnan
-        self.la = jnp.linalg
-        self.linspace = jnp.linspace
-        self.logspace = jnp.logspace
-        self.logical_not = jnp.logical_not
-        self.lu_factor = jsp.linalg.lu_factor
-        self.maximum = jnp.maximum
-        self.moveaxis = jnp.moveaxis
-        self.repeat = jnp.repeat
-        self.reshape = jnp.reshape
-        self.roll = jnp.roll
-        self.rollaxis = jnp.rollaxis
-        self.sin = jnp.sin
-        self.sinc = jnp.sinc
-        self.sla = jsp.linalg
-        self.stack = jnp.stack
-        self.solve = jsp.linalg.solve
-        self.sqrt = jnp.sqrt
-        self.square = jnp.square
-        self.sum = jnp.sum
-        self.tan = jnp.tan
-        self.where = jnp.where
-
-        self.j0 = j0
-        self.j1 = j1
-        self.eig = eig
+        self.ifftshift = jnp.fft.ifftshift
 
         self.complex128 = jnp.complex128
         self.float64 = jnp.float64
         self.int32 = jnp.int32
         self.pi = jnp.pi
+
+    def abs(self, *args, **kwargs):
+        return jnp.abs(*args, **kwargs)
+
+    def arange(self, *args, **kwargs):
+        return jnp.arange(*args, **kwargs)
+
+    def arccos(self, *args, **kwargs):
+        return jnp.arccos(*args, **kwargs)
+
+    def arcsin(self, *args, **kwargs):
+        return jnp.arcsin(*args, **kwargs)
+
+    def ceil(self, *args, **kwargs):
+        return jnp.ceil(*args, **kwargs)
+
+    def concatenate(self, *args, **kwargs):
+        return jnp.concatenate(*args, **kwargs)
+
+    def conj(self, *args, **kwargs):
+        return jnp.conj(*args, **kwargs)
+
+    def cos(self, *args, **kwargs):
+        return jnp.cos(*args, **kwargs)
+
+    def diag(self, *args, **kwargs):
+        return jnp.diag(*args, **kwargs)
+
+    def dot(self, *args, **kwargs):
+        return jnp.dot(*args, **kwargs)
+
+    def einsum(self, *args, **kwargs):
+        return jnp.einsum(*args, **kwargs)
+
+    def exp(self, *args, **kwargs):
+        return jnp.exp(*args, **kwargs)
+
+    def eye(self, *args, **kwargs):
+        return jnp.eye(*args, **kwargs)
+
+    def full(self, *args, **kwargs):
+        return jnp.full(*args, **kwargs)
+
+    def hsplit(self, *args, **kwargs):
+        return jnp.hsplit(*args, **kwargs)
+
+    def isnan(self, *args, **kwargs):
+        return jnp.isnan(*args, **kwargs)
+
+    def linspace(self, *args, **kwargs):
+        return jnp.linspace(*args, **kwargs)
+
+    def logspace(self, *args, **kwargs):
+        return jnp.logspace(*args, **kwargs)
+
+    def logical_not(self, *args, **kwargs):
+        return jnp.logical_not(*args, **kwargs)
+
+    def lu_factor(self, *args, **kwargs):
+        return jsp.linalg.lu_factor(*args, **kwargs)
+
+    def maximum(self, *args, **kwargs):
+        return jnp.maximum(*args, **kwargs)
+
+    def moveaxis(self, *args, **kwargs):
+        return jnp.moveaxis(*args, **kwargs)
+
+    def repeat(self, *args, **kwargs):
+        return jnp.repeat(*args, **kwargs)
+
+    def reshape(self, *args, **kwargs):
+        return jnp.reshape(*args, **kwargs)
+
+    def roll(self, *args, **kwargs):
+        return jnp.roll(*args, **kwargs)
+
+    def rollaxis(self, *args, **kwargs):
+        return jnp.rollaxis(*args, **kwargs)
+
+    def sin(self, *args, **kwargs):
+        return jnp.sin(*args, **kwargs)
+
+    def sinc(self, *args, **kwargs):
+        return jnp.sinc(*args, **kwargs)
+
+    def stack(self, *args, **kwargs):
+        return jnp.stack(*args, **kwargs)
+
+
+    def slogdet(self, *args, **kwargs):
+        return jnp.linalg.slogdet(*args, **kwargs)
+    def solve(self, *args, **kwargs):
+        return jsp.linalg.solve(*args, **kwargs)
+
+    def sqrt(self, *args, **kwargs):
+        return jnp.sqrt(*args, **kwargs)
+
+    def square(self, *args, **kwargs):
+        return jnp.square(*args, **kwargs)
+
+    def sum(self, *args, **kwargs):
+        return jnp.sum(*args, **kwargs)
+
+    def tan(self, *args, **kwargs):
+        return jnp.tan(*args, **kwargs)
+
+    def where(self, *args, **kwargs):
+        return jnp.where(*args, **kwargs)
+
+    def j0(self, *args, **kwargs):
+        return j0(*args, **kwargs)
+
+    def j1(self, *args, **kwargs):
+        return j1(*args, **kwargs)
+
+    def eig(self, *args, **kwargs):
+        return eig(*args, **kwargs)
 
     def data(self, i: any, dtype=None, **kwargs):
         #if isinstance(i, jax.Array):  # handle tracer inputs by not passing invalid dtype
@@ -161,3 +237,18 @@ class JaxBackend(GenericBackend):
         For numpy, multiply in-place with index assignment. For differentiation libraries, replace with differentiable not-in-place version
         """
         return a.at[idx].multiply(b)
+
+    def get_gradient(self, y, x):
+        """
+
+        Parameters
+        ----------
+        y   : the calculation function (not the result value)
+        x   : the parameter with respect to y
+
+        Returns
+        -------
+
+        """
+        grad_loss = jax.jit(jax.grad(y))
+        return grad_loss(x)

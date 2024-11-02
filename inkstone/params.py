@@ -3,13 +3,15 @@
 from typing import Tuple, List, Union, Optional
 # import time
 from warnings import warn
+
+from inkstone.backends.Backend import Backend
 from inkstone.recipro import recipro
 from inkstone.g_pts import g_pts
 from inkstone.g_pts_1d import g_pts_1d
 from inkstone.max_idx_diff import max_idx_diff
 from inkstone.conv_mtx_idx import conv_mtx_idx_2d
-import inkstone.backends.BackendLoader as bl
-gb=bl.backend()
+from inkstone.backends.BackendRegistry import backend
+gb: Optional[Backend] = None
 
 class Params:
     """
@@ -40,6 +42,8 @@ class Params:
                             Theta is the angle between incident k and z axis.
                             phi is the angle between the in-plane projection of k and the x axis. Rotating from kx axis phi degrees ccw around z axis to arrive at the kx of incident wave.
         """
+        global gb
+        gb = backend()
 
         self.gs: Optional[List[Tuple[
             float, float]]] = None  # list of g points for E and H fields. Added by k_pa_inci to get the ks, i.e. k points for E and H
@@ -196,7 +200,7 @@ class Params:
             else:
                 val = gb.data(val, requires_grad=True)
         self._latt_vec: Union[Tuple[Tuple[float, float], Tuple[float, float]]] = val
-        self._recipr_vec: Tuple[Tuple[float, float], Tuple[float, float]] = recipro(val[0], val[1], gb=gb)
+        self._recipr_vec: Tuple[Tuple[float, float], Tuple[float, float]] = recipro(val[0], val[1])
         self.if_2d()
         self._calc_gs()
         self._calc_uc_area()
@@ -350,16 +354,17 @@ class Params:
     @property
     def theta(self) -> Union[float, complex]:
         """he angle between incident k and z axis, in degrees, range: [0, pi/2]"""
-        if self._theta is not None:
-            theta = self._theta / gb.pi * 180.
-        else:
-            theta = None
-        return theta
+        #if self._theta is not None:
+        #    theta = self._theta / gb.pi * 180.
+        #else:
+        #    theta = None
+        return self._theta
 
     @theta.setter
     def theta(self, val: Union[float, complex]):
         if val is not None:
-            self._theta = val * gb.pi / 180.
+            # val * gb.pi / 180
+            self._theta = gb.data(val, dtype=gb.complex128,requires_grad=True)
             self._calc_k_pa_inci()
             # self._calc_angles()  # called through _calc_k_pa_inci() - _calc_ks()
         else:
@@ -370,16 +375,16 @@ class Params:
     @property
     def phi(self) -> float:
         """ the angle between the in-plane projection of k and the x axis in degrees. Rotating from kx axis phi degrees ccw around z axis to arrive at the kx of incident wave. """
-        if self._phi is not None:
-            phi = self._phi / gb.pi * 180.
-        else:
-            phi = None
-        return phi
+        #if self._phi is not None:
+        #    phi = self._phi / gb.pi * 180.
+        #else:
+        #    phi = None
+        return self._phi
 
     @phi.setter
     def phi(self, val: float):
         if val is not None:
-            self._phi: float = gb.data(val * gb.pi / 180.)
+            self._phi: float = gb.data(val, requires_grad=True)
             self._calc_k_pa_inci()
             # self._calc_angles()  # called through _calc_k_pa_inci() -  _calc_ks()
         else:
@@ -454,10 +459,11 @@ class Params:
             order = [order]
         for od in order:
             if not (od in self.idx_g):
-                raise Exception(
-                    'The incident order you specified is not within the order list. Possible solution is to reduce order or increase the number of G points.')
+                raise Exception('The incident order you specified is not within the order list.'
+                                'Possible solution is to reduce order or increase the number of G points.')
         self._incident_orders = order
-        # considered allowing 1d several orders. But then ambiguity:is [0, 1] 2d order (0, 1) or is it two 1d orders 0 and 1?
+        # considered allowing 1d several orders.
+        # But then ambiguity:is [0, 1] 2d order (0, 1) or is it two 1d orders 0 and 1?
 
         if order_back is None:
             if self._incident_orders_bk is None:
@@ -691,7 +697,7 @@ class Params:
         if self.idx_g:
             # t1 = time.process_time()
 
-            m, n = max_idx_diff(self.idx_g, gb)
+            m, n = max_idx_diff(self.idx_g)
             self.mmax = m
             self.nmax = n
             x = gb.arange(-m, m + 1)
@@ -1218,11 +1224,11 @@ class Params:
     def _calc_uc_area(self):
         if type(self.latt_vec) is not None:
             #print(type(self.latt_vec))
-            if not isinstance(self.latt_vec, (tuple, gb.raw_type)):
+            if not isinstance(self.latt_vec, Union[tuple, gb.raw_type]):
                 self._uc_area = self.latt_vec
             else:
                 a1, a2 = self.latt_vec
-                a1n, a2n = [gb.la.norm(a) for a in [a1, a2]]
+                a1n, a2n = [gb.norm(a) for a in [a1, a2]]
                 if a1n != 0. and a2n != 0.:
                     self._uc_area = gb.abs(gb.cross(self.latt_vec[0], self.latt_vec[1]))
                 elif a1n == 0.:  # 1D

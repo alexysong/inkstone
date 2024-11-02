@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-import inkstone.backends.BackendLoader as bl
+from inkstone.backends.BackendRegistry import backend
 
 
-def ft_1d_sq(width, ks, center=0., gb=bl.backend()):
+def ft_1d_sq(width, ks, center=0.):
     """
     Calculate the Fourier transform of a 1d square function.
 
@@ -25,6 +25,7 @@ def ft_1d_sq(width, ks, center=0., gb=bl.backend()):
     s           :   list[complex]
                     1D array, Fourier series coefficients at the corresponding points
     """
+    gb = backend()
     if width <= 0:
         raise ValueError("No zero or negative width")
 

@@ -1,63 +1,38 @@
 import autograd.numpy as anp
+from autograd import grad
+from inkstone.backends.primitives.autograd_primitive import j0,j1,eig
 import numpy as np
 import scipy.linalg as sla
 
-from inkstone.backends.GenericBackend import GenericBackend
+from inkstone.backends.Backend import Backend
 
 
-class AutogradBackend(GenericBackend):
+class AutogradBackend(Backend):
 
     def __init__(self):
         super().__init__()
         self.raw_type = anp.ndarray
-        self.abs = anp.abs
-        self.sqrt = anp.sqrt
-        self.arange = anp.arange
-        self.ceil = anp.ceil
-        self.where = anp.where
-        self.la = anp.linalg
-        self.lu_factor = sla.lu_factor
-        self.diag = anp.diag
-        self.sin = anp.sin
-        self.cos = anp.cos
-        self.arccos = anp.arccos
-        self.arcsin = anp.arcsin
-        self.ones = anp.ones
-        self.square = anp.square
-        self.stack = anp.stack
-        self.concatenate = anp.concatenate
-        self.concatenate = anp.concatenate
-        self.conj = anp.conj
-        self.exp = anp.exp
-        self.sinc = anp.sinc
-        self.zeros = anp.zeros
-        self.tan = anp.tan
-        self.roll = anp.roll
-        self.sum = anp.sum
-        self.dot = anp.dot
-        self.hsplit = anp.hsplit
-        self.repeat = anp.repeat
-        self.reshape = anp.reshape
-        self.moveaxis = anp.moveaxis
-        self.full = anp.full
-        self.logical_not = anp.logical_not
-        self.maximum = anp.maximum
-        self.einsum = anp.einsum
-        self.linspace = anp.linspace
-        self.fft = anp.fft
-        self.solve = sla.solve
+        self.ifftshift = anp.fft.ifftshift
 
         self.pi = np.pi
         self.float64 = np.float64
         self.int32 = np.int32
         self.complex128 = np.complex128
-        self.eye = anp.eye
+
+    def j0(self, *args, **kwargs):
+        return j0(*args, **kwargs)
+
+    def j1(self, *args, **kwargs):
+        return j1(*args, **kwargs)
+
+    def eig(self, *args, **kwargs):
+        return eig(*args, **kwargs)
 
     def data(self, i: any, dtype=None, **kwargs):
         return anp.array(i, dtype=dtype)
 
-    def meshgrid(self, a, b):
-        return anp.meshgrid(a, b)
+    def meshgrid(self, *xi):
+        return anp.meshgrid(*xi)
 
     def zeros(self, a, dtype):
         return anp.zeros(a, dtype=dtype)
@@ -105,3 +80,112 @@ class AutogradBackend(GenericBackend):
 
     def isnan(self, a):
         return anp.isnan(a)
+
+    def abs(self, *args, **kwargs):
+        return anp.abs(*args, **kwargs)
+
+    def sqrt(self, *args, **kwargs):
+        return anp.sqrt(*args, **kwargs)
+
+    def arange(self, *args, **kwargs):
+        return anp.arange(*args, **kwargs)
+
+    def ceil(self, *args, **kwargs):
+        return anp.ceil(*args, **kwargs)
+
+    def where(self, *args, **kwargs):
+        return anp.where(*args, **kwargs)
+
+    def lu_factor(self, *args, **kwargs):
+        return sla.lu_factor(*args, **kwargs)
+
+    def diag(self, *args, **kwargs):
+        return anp.diag(*args, **kwargs)
+
+    def sin(self, *args, **kwargs):
+        return anp.sin(*args, **kwargs)
+
+    def cos(self, *args, **kwargs):
+        return anp.cos(*args, **kwargs)
+
+    def arccos(self, *args, **kwargs):
+        return anp.arccos(*args, **kwargs)
+
+    def arcsin(self, *args, **kwargs):
+        return anp.arcsin(*args, **kwargs)
+
+    def ones(self, *args, **kwargs):
+        return anp.ones(*args, **kwargs)
+
+    def square(self, *args, **kwargs):
+        return anp.square(*args, **kwargs)
+
+    def stack(self, *args, **kwargs):
+        return anp.stack(*args, **kwargs)
+
+    def concatenate(self, *args, **kwargs):
+        return anp.concatenate(*args, **kwargs)
+
+    def conj(self, *args, **kwargs):
+        return anp.conj(*args, **kwargs)
+
+    def exp(self, *args, **kwargs):
+        return anp.exp(*args, **kwargs)
+
+    def sinc(self, *args, **kwargs):
+        return anp.sinc(*args, **kwargs)
+
+    def zeros(self, *args, **kwargs):
+        return anp.zeros(*args, **kwargs)
+
+    def tan(self, *args, **kwargs):
+        return anp.tan(*args, **kwargs)
+
+    def roll(self, *args, **kwargs):
+        return anp.roll(*args, **kwargs)
+
+    def sum(self, *args, **kwargs):
+        return anp.sum(*args, **kwargs)
+
+    def dot(self, *args, **kwargs):
+        return anp.dot(*args, **kwargs)
+
+    def hsplit(self, *args, **kwargs):
+        return anp.hsplit(*args, **kwargs)
+
+    def repeat(self, *args, **kwargs):
+        return anp.repeat(*args, **kwargs)
+
+    def reshape(self, *args, **kwargs):
+        return anp.reshape(*args, **kwargs)
+
+    def moveaxis(self, *args, **kwargs):
+        return anp.moveaxis(*args, **kwargs)
+
+    def full(self, *args, **kwargs):
+        return anp.full(*args, **kwargs)
+
+    def logical_not(self, *args, **kwargs):
+        return anp.logical_not(*args, **kwargs)
+
+    def maximum(self, *args, **kwargs):
+        return anp.maximum(*args, **kwargs)
+
+    def einsum(self, *args, **kwargs):
+        return anp.einsum(*args, **kwargs)
+
+    def linspace(self, *args, **kwargs):
+        return anp.linspace(*args, **kwargs)
+
+    def solve(self, *args, **kwargs):
+        return sla.solve(*args, **kwargs)
+
+    def eye(self, *args, **kwargs):
+        return anp.eye(*args, **kwargs)
+
+    def slogdet(self, *args, **kwargs):
+        return anp.linalg.slogdet(*args, **kwargs)
+
+    def get_gradient(self, y, x):
+        y_grad = grad(y)
+        return y_grad(x)

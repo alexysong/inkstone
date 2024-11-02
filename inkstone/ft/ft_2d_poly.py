@@ -7,12 +7,12 @@ Reference:
 K. McInturff and P.S. Simon, "The Fourier transform of linearly varying functions with polygonal support", IEEE Trans. Ann. Prop.  39, 1441 (1991)
 """
 
-import inkstone.backends.BackendLoader as bl
+from inkstone.backends.BackendRegistry import backend
 from scipy.special import jn
 from inkstone.ft.poly_area import poly_area
 
 
-def ft_2d_poly_1(vertices, ks, gb=bl.backend()):
+def ft_2d_poly_1(vertices, ks):
     """
     Calculate the fourier transform of a function with value 1 inside a polygon and 0 outside. Assuming none of the required k is at (0, 0)
 
@@ -31,6 +31,7 @@ def ft_2d_poly_1(vertices, ks, gb=bl.backend()):
                     1d array, value of Fourier coefficient at the corresponding ks points.
 
     """
+    gb=backend()
     # convert to array
     ksa = gb.data(ks)  # each row is a [kx, ky]
 
@@ -57,7 +58,7 @@ def ft_2d_poly_1(vertices, ks, gb=bl.backend()):
     return s
 
 
-def ft_2d_poly(vertices, ks,gb=bl.backend()):
+def ft_2d_poly(vertices, ks):
     """
     Calculate the Fourier transform of a function with value 1 inside a polygon shape and 0 outside.
 
@@ -77,6 +78,8 @@ def ft_2d_poly(vertices, ks,gb=bl.backend()):
     -----
     For k == (0, 0) and k != (0, 0), call different subroutine.
     """
+    gb=backend()
+    
     ksa = gb.data(ks)  # convert to array
     ks_nm = gb.la.norm(ksa, axis=-1)  # calculate the norm of each k vector
     idx_0 = gb.where(ks_nm == 0)[0]  # index to where k is (0, 0)

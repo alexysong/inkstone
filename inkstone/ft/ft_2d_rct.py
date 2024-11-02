@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import inkstone.backends.BackendLoader as bl
+from inkstone.backends.BackendRegistry import backend
 from inkstone.ft.ft_1d_sq import ft_1d_sq
 
 
-def ft_2d_rct(a, b, ks, center=None, angle=0.,gb=bl.backend()):
+def ft_2d_rct(a, b, ks, center=None, angle=0.):
     """
 
     Parameters
@@ -21,7 +21,8 @@ def ft_2d_rct(a, b, ks, center=None, angle=0.,gb=bl.backend()):
     s               :   list[complex]
                         1d array
     """
-
+    gb=backend()
+    
     if center is None:
         center = (0., 0.)
     cen = gb.data(center)

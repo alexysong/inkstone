@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import inkstone.backends.BackendLoader as bl
+from inkstone.backends.BackendRegistry import backend
 import time
 # import scipy.sparse as sps
 # import warnings
 
-gb = bl.backend()
 def rsp(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
     """
     Take the Redheffer star product (rsp) of two scattering matrices.
@@ -28,6 +27,8 @@ def rsp(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
     UTEP EMLab.
     Victor's Notes on Redheffer star product is actually skewed.
     """
+    gb = backend()
+
     time1 = time.process_time()
 
     # identity matrix
@@ -91,6 +92,8 @@ def rsp_sa21Tlu(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
     s22     :   any
 
     """
+    gb = backend()
+
     idt = gb.eye(sa11.shape[0], dtype=gb.complex128)
 
     t1 = idt - sb11 @ sa22
@@ -130,6 +133,7 @@ def rsp_sa12lu(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
     s22     :   any
 
     """
+    gb = backend()
     idt = gb.eye(sa11.shape[0], dtype=gb.complex128)
 
     t1 = idt - sb11 @ sa22
@@ -169,6 +173,8 @@ def rsp_sb12Tlu(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
     s22     :   any
 
     """
+    gb = backend()
+
     idt = gb.eye(sa11.shape[0], dtype=gb.complex128)
 
     t1 = idt - sb11 @ sa22
@@ -208,6 +214,7 @@ def rsp_sb21lu(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
     s22     :   any
 
     """
+    gb = backend()
     idt = gb.eye(sa11.shape[0], dtype=gb.complex128)
 
     t1 = idt - sb11 @ sa22
@@ -248,6 +255,7 @@ def rsp_sa12lu_sb21lu(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
     s22     :   any
 
     """
+    gb = backend()
     idt = gb.eye(sa11.shape[0], dtype=gb.complex128)
 
     t1 = idt - sb11 @ sa22
@@ -290,6 +298,7 @@ def rsp_sa21Tlu_sb21lu(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
     s22     :   any
 
     """
+    gb = backend()
     idt = gb.eye(sa11.shape[0], dtype=gb.complex128)
 
     t1 = idt - sb11 @ sa22
@@ -332,6 +341,7 @@ def rsp_sa12lu_sb12Tlu(sa11, sa12, sa21, sa22, sb11, sb12, sb21, sb22):
     s22     :   any
 
     """
+    gb = backend()
     idt = gb.eye(sa11.shape[0], dtype=gb.complex128)
 
     t1 = idt - sb11 @ sa22

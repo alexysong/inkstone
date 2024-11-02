@@ -5,12 +5,7 @@ Testing which methods are/aren't differentiable for each autodiff library
 
 import torch # import before numpy to avoid OMP error 15
 import numpy as np
-import numpy.linalg as nla
 
-import scipy as sp
-import scipy.linalg as sla
-
-import autograd.numpy as anp
 from autograd import grad as grada, holomorphic_grad as holomorphic_grada
 
 import jax
@@ -130,7 +125,7 @@ def test_j0_custom():
     """
     Test j0 custom jax vjp 
     """
-    from inkstone.primitives.jax_primitive import j0
+    from inkstone.backends.primitives.jax_primitive import j0
     data = np.random.uniform(low=-1,high=1,size=(10,))
     def j0_sum(x):
         return jnp.sum(j0(x))
@@ -142,7 +137,7 @@ def test_j1_custom():
     """
     Test j1 custom jax vjp 
     """
-    from inkstone.primitives.jax_primitive import j1
+    from inkstone.backends.primitives.jax_primitive import j1
     data = np.random.uniform(low=-1,high=1,size=(10,))
     def j1_sum(x):
         return jnp.sum(j1(x))

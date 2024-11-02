@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import inkstone.backends.BackendLoader as bl
+from inkstone.backends.BackendRegistry import backend
 
-def g_pts(num_g, b1, b2, gb=bl.backend()):
+def g_pts(num_g, b1, b2):
     """
     given number of lattice points, and two lattice vectors, give the list of all lattice points inside a circle. the total number of lattice points returned is roughly the given number of lattice points.
 
@@ -24,7 +24,8 @@ def g_pts(num_g, b1, b2, gb=bl.backend()):
                     the indices of the k points, i.e. (m, n) as in m*b1 + n*b2 is the corresponding k points.
 
     """
-
+    gb=backend()
+    
     bz_are = gb.abs(gb.cross(b1, b2))  # Brillouin zone area
     k_radi = gb.sqrt(num_g * bz_are / gb.pi)  # k points within the vertices are to be included
 

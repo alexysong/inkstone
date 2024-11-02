@@ -6,7 +6,8 @@ from collections import OrderedDict
 from typing import Optional, Set, Union, Tuple, Dict, List
 import time
 
-import inkstone.backends.BackendLoader as bl
+from inkstone.backends.Backend import Backend
+from inkstone.backends.BackendRegistry import backend
 
 from inkstone.ft.ft_2d_cnst import ft_2d_cnst
 from inkstone.sm import s_1l_rsp, s_1l_1212, s_1l_1221
@@ -16,7 +17,7 @@ from inkstone.mtr import Mtr
 from inkstone.shps import Para
 from inkstone.helpers.pt_in_poly import pt_in_poly
 
-gb=bl.backend()
+gb: Optional[Backend] = None
 class Layer:
     # todo: for uniform layer should use sparse matrices, faster less memory
 
@@ -40,6 +41,8 @@ class Layer:
                         keyword arguments to pass on to SetLayer
 
         """
+        global gb
+        gb = backend()
         self.pr: Params = params
 
         self.if_mod: bool = True  # if this layer is modified
@@ -443,10 +446,10 @@ class Layer:
 
         if self.patterns:
             idx = self.pr.idx_conv_mtx
-            ems = [gb.fft.ifftshift(self.epsi_fs.swapaxes(0, 1), (0, 1)),
-                   gb.fft.ifftshift(self.epsi_inv_fs.swapaxes(0, 1), (0, 1)),
-                   gb.fft.ifftshift(self.mu_fs.swapaxes(0, 1), (0, 1)),
-                   gb.fft.ifftshift(self.mu_inv_fs.swapaxes(0, 1), (0, 1))]
+            ems = [gb.ifftshift(self.epsi_fs.swapaxes(0, 1), (0, 1)),
+                   gb.ifftshift(self.epsi_inv_fs.swapaxes(0, 1), (0, 1)),
+                   gb.ifftshift(self.mu_fs.swapaxes(0, 1), (0, 1)),
+                   gb.ifftshift(self.mu_inv_fs.swapaxes(0, 1), (0, 1))]
             self.epxxcm, self.epxycm, self.epyxcm, self.epyycm, self.epzzcm, \
             self.eixxcm, self.eixycm, self.eiyxcm, self.eiyycm, self.eizzcm, \
             self.muxxcm, self.muxycm, self.muyxcm, self.muyycm, self.muzzcm, \

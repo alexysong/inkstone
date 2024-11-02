@@ -7,14 +7,17 @@ import time
 
 import torch
 
-import inkstone.backends.BackendLoader as bl
+from inkstone.backends import Backend
+from inkstone.backends.BackendRegistry import backend
 
 from inkstone.rsp import rsp, rsp_sa12lu, rsp_sb21lu
 from inkstone.params import Params
 from inkstone.mtr import Mtr
 from inkstone.layer import Layer
 from inkstone.layer_copy import LayerCopy
-gb=bl.backend()
+
+gb: Optional[Backend] = None
+
 
 class Inkstone:
     # todo: more tests of magneto-optics and gyro-magnetic
@@ -39,6 +42,9 @@ class Inkstone:
         num_g           :   number of G point
         theta, phi      :   incident angle in degrees
         """
+        global gb
+        gb = backend()
+
         # global parameters
         self.pr: Params = Params(latt_vec=lattice, num_g=num_g,
                                  omega=omega, frequency=frequency, theta=theta, phi=phi,
@@ -144,8 +150,6 @@ class Inkstone:
     @theta.setter
     def theta(self, val):
         if (val is not None) and (val != self.pr.theta):
-            if val is not gb.raw_type:
-                val = gb.data(val)
             self.pr.theta = val
             for layer_name, layer in self.layers.items():
                 layer.if_mod = True
@@ -160,7 +164,7 @@ class Inkstone:
     @phi.setter
     def phi(self, val):
         if (val is not None) and (val != self.pr.phi):
-            self.pr.phi = val
+            self.pr.phi = gb.data(val, dtype=gb.complex128, requires_grad=True)
             for layer_name, layer in self.layers.items():
                 layer.if_mod = True
 
@@ -255,17 +259,20 @@ class Inkstone:
         thickness           :   regardless of user input, the first layer and the last layer's thicknesses are set to 0
         material_background :   background material
         """
+        thickness = gb.data(thickness, requires_grad=True)
         if name not in self.layers.keys():
             layer = Layer(name, thickness, material_background, self.materials, self.pr)
             if not self.layers:
                 if thickness != 0.:
-                    warn(
-                        'You set the first layer (incident region) thickness to be nonzero. This thickness is ignored and set to 0, i.e. treated as infinity. If you meant there was an infinite vacuum before this layer, please explicitly add that using AddLayer().')
-                    thickness = 0.
+                    warn('You set the first layer (incident region) thickness to be nonzero.'
+                         'This thickness is ignored and set to 0, i.e. treated as infinity.'
+                         'If you meant there was an infinite vacuum before this layer, please '
+                         'explicitly add that using AddLayer().')
+                    thickness = gb.data(0., requires_grad=True)
                 layer.in_mid_out = 'in'
             self.layers[name] = layer
-            self.thicknesses[name] = gb.data(thickness, requires_grad=True)
-            self.total_thickness = self.total_thickness+thickness
+            self.thicknesses[name] = thickness
+            self.total_thickness = self.total_thickness + thickness
             self.thicknesses_c.append(self.total_thickness)
             self.csms.append([])
             # self._determine_layers()
@@ -293,8 +300,8 @@ class Inkstone:
             layer_copy = LayerCopy(name, layer, thickness)
             self.layers[name] = layer_copy
 
-            self.thicknesses[name] = gb.data(thickness,requires_grad=True)
-            self.total_thickness = self.total_thickness+thickness
+            self.thicknesses[name] = gb.data(thickness, requires_grad=True)
+            self.total_thickness = self.total_thickness + thickness
             self.thicknesses_c.append(self.total_thickness)
 
             self.csms.append([])
@@ -463,9 +470,9 @@ class Inkstone:
                      **kw_gibbs
                      ):
         if not self.pr.is_1d_latt:
-            warn(
-                'This is a 3D calculation (i.e. 2D in-plane). Setting 1D in-plane patterns may lead to unexpected results.',
-                RuntimeWarning)
+            warn('This is a 3D calculation (i.e. 2D in-plane). '
+                 'Setting 1D in-plane patterns may lead to unexpected results.',
+                 RuntimeWarning)
 
         if layer in self.layers.keys():
             self.layers[layer].add_box(material, "1d", box_name=pattern_name, width=width, center=center, **kw_gibbs)
@@ -475,7 +482,8 @@ class Inkstone:
                     if ly.original_layer_name == self.layers[layer].original_layer_name:
                         ly.if_mod = True
         else:
-            warn('Did not find the layer you specified. The layer is not changed.', UserWarning)
+            warn('Did not find the layer you specified.'
+                 ' The layer is not changed.', UserWarning)
 
     def AddPatternRectangle(self,
                             layer: str,
@@ -611,8 +619,6 @@ class Inkstone:
                         ly.if_mod = True
         else:
             warn('Did not find the layer you specified. The layer is NOT changed.', UserWarning)
-
-
 
     def SetExcitation(self,
                       theta: Union[float, complex] = None,
@@ -803,7 +809,7 @@ class Inkstone:
 
         aibo = []
         for z, n in zip([a, ab], [en, enb]):
-            i = gb.zeros(2*self.pr.num_g, dtype=gb.complex128)
+            i = gb.zeros(2 * self.pr.num_g, dtype=gb.complex128)
             i = gb.indexAssign(i, n, z)
             aibo.append(i)
             # todo: is this done?
@@ -861,7 +867,7 @@ class Inkstone:
                                 warn(
                                     'You are specifying incidence in a channel that is parallel to the surface of the structure. \n In this case, only specific field configuration is allowed.')
                                 ab = gb.indexAssign(ab, jj, sa[i])
-                                ab = gb.indexAssign(ab, jj+self.pr._num_g_ac, pa[i])
+                                ab = gb.indexAssign(ab, jj + self.pr._num_g_ac, pa[i])
                             else:
                                 s = sa[i]
                                 p = pa[i]
@@ -882,7 +888,7 @@ class Inkstone:
                                 ex = -s * sp + p * st * cp  # e_x
                                 ey = s * cp + p * st * sp  # e_y
                                 phi_2x2 = gb.castType(layer_inci.phil_2x2s[:, :, jj], gb.complex128)
-                                v = gb.la.solve(phi_2x2, gb.parseList([ex, ey]))
+                                v = gb.solve(phi_2x2, gb.parseList([ex, ey]))
                                 ab = gb.indexAssign(ab, jj, v[0])
                                 ab = gb.indexAssign(ab, jj + self.pr._num_g_ac, v[1])
 
@@ -1392,6 +1398,7 @@ class Inkstone:
         qla = self.layers[layer].ql[:, None]  # 1-column 2d array of length 2num_g
         d = self.layers[layer].thickness
 
+
         ef = phil * al @ gb.exp(
             1j * qla * za)  # todo: for incident/output region, z too negative and high order ql cause overflow. this is the wave exponential decaying towards the slab
         eb = phil * bl @ gb.exp(1j * qla * (d - za))
@@ -1613,11 +1620,13 @@ class Inkstone:
         i_in_l.append(za >= z_interfaces[-1])
 
         for idx, iin in enumerate(i_in_l):
-            za_l = za[iin] - ([0] + z_interfaces)[idx]  # z coordinate of this layer w.r.t. the left interface of this layer
+            za_l = za[iin] - ([0] + z_interfaces)[
+                idx]  # z coordinate of this layer w.r.t. the left interface of this layer
             if za_l.any() or gb.getSize(za_l):
                 fields = self.GetLayerFieldsListPoints(ll[idx], xy, za_l)
                 for f_idx, f in enumerate(fields):
-                    Fields[f_idx] = gb.indexAssign(Fields[f_idx], (slice(None),iin), f) # jax might not like differentiating this
+                    Fields[f_idx] = gb.indexAssign(Fields[f_idx], (slice(None), iin),
+                                                   f)  # jax might not like differentiating this
 
         Ex, Ey, Ez, Hx, Hy, Hz = Fields
 
@@ -1717,7 +1726,7 @@ class Inkstone:
 
         sf = -1.j / 4. * ((gb.einsum('i...,i...', ex.conj(), hyf) - gb.einsum('i...,i...', ey.conj(), hxf))
                           - (gb.einsum('i...,i...', hy.conj(), exf) - gb.einsum('i...,i...', hx.conj(),
-                                                                                          eyf)))  # 1d array of length len(z)
+                                                                                eyf)))  # 1d array of length len(z)
         sb = -1.j / 4. * ((gb.einsum('i...,i...', ex.conj(), hyb) - gb.einsum('i...,i...', ey.conj(), hxb))
                           - (gb.einsum('i...,i...', hy.conj(), exb) - gb.einsum('i...,i...', hx.conj(), eyb)))
 
@@ -1851,7 +1860,7 @@ class Inkstone:
         sm_b = self.sm
 
         sm = gb.block([[sm_b[0], sm_b[1]],
-                            [sm_b[2], sm_b[3]]])
+                       [sm_b[2], sm_b[3]]])
 
         rci = []
         rco = []
