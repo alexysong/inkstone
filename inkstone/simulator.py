@@ -400,22 +400,22 @@ class Inkstone:
 
         Examples
         --------
-            s.AddPattern(name="slab", material="vacuum", shape="rectangle", pattern_name="rect1",
+            s.AddPattern(layer="slab", material="vacuum", shape="rectangle", pattern_name="rect1",
                          side_lengths=(0.5, 0.4), center=(0., 0.), angle=0., **kw_gibbs)
 
-            s.AddPattern(name="slab", material="vacuum", shape="parallelogram", pattern_name="para1",
+            s.AddPattern(layer="slab", material="vacuum", shape="parallelogram", pattern_name="para1",
                          side_lengths=(0.5, 0.4), center=(0., 0.), angle=0., shear_angle=80., **kw_gibbs)
 
-            s.AddPattern(name="slab", material="vacuum", shape="disk", pattern_name="disk1",
+            s.AddPattern(layer="slab", material="vacuum", shape="disk", pattern_name="disk1",
                          radius=0.2, center=(0., 0.), **kw_gibbs)
 
-            s.AddPattern(name="slab", material="vacuum", shape="ellipse", pattern_name="elli1",
+            s.AddPattern(layer="slab", material="vacuum", shape="ellipse", pattern_name="elli1",
                          half_lengths=(0.3, 0.2), center=(0.1, 0.05), angle=30., **kw_gibbs)
 
-            s.AddPattern(name="slab", material="vacuum", shape="polygon", pattern_name="poly1",
+            s.AddPattern(layer="slab", material="vacuum", shape="polygon", pattern_name="poly1",
                          vertices=[(0, 0), (0.4, 0), (0.5, 0.4), (0.1, 0.5)], **kw_gibbs)
 
-            s.AddPattern(name="slab", material="vacuum", shape="1d", pattern_name="box",
+            s.AddPattern(layer="slab", material="vacuum", shape="1d", pattern_name="box",
                          width=0.4, center=0.1, **kw_gibbs)
         """
 
